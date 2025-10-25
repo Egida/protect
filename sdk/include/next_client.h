@@ -18,6 +18,8 @@ next_client_t * next_client_create( void * context, uint64_t server_id, void (*p
 
 void next_client_update( next_client_t * client );
 
+void next_client_send_packet( next_client_t * client, const uint8_t * packet_data, int packet_bytes );
+
 void next_client_disconnect( next_client_t * client );
 
 int next_client_state( next_client_t * client );

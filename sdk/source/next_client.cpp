@@ -29,6 +29,7 @@ struct next_client_t
     void * context;
     int state;
     uint16_t bound_port;
+    int num_updates;
     next_platform_socket_t * socket;
     void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes );
     next_client_stats_t client_stats;
@@ -94,8 +95,26 @@ void next_client_update( next_client_t * client )
 {
     next_assert( client );
 
+    // todo: mock connection
+    client->num_updates++;
+    if ( client->num_updates == 100 )
+    {
+        client->state = NEXT_CLIENT_CONNECTED;
+    }
+
     // todo
     (void) client;
+    next_platform_sleep( 1.0 / 100.0 );
+}
+
+void next_client_send_packet( next_client_t * client, const uint8_t * packet_data, int packet_bytes )
+{
+    next_assert( client );
+
+    // todo
+    (void) client;
+    (void) packet_data;
+    (void) packet_bytes;
 }
 
 void next_client_disconnect( next_client_t * client )
@@ -112,6 +131,9 @@ int next_client_state( next_client_t * client )
 
 void next_client_destroy( next_client_t * client )
 {
+    // IMPORTANT: Please disconnect and wait for the client to disconnect before destroying the client
+    next_assert( client->state == NEXT_CLIENT_DISCONNECTED );
+
     if ( client->socket )
     {
         next_platform_socket_destroy( client->socket );

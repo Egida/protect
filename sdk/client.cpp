@@ -44,10 +44,31 @@ int main()
         return 1;
     }
 
+    next_printf( NEXT_LOG_LEVEL_INFO, "connecting" );
+
+    bool previous_connected = false;
+
+    uint8_t packet_data[1024];
+    memset( packet_data, 0, sizeof(packet_data) );
+
     while ( !quit )
     {
+        next_client_send_packet( client, packet_data, (int) sizeof(packet_data) );
+
         next_client_update( client );
+
+        if ( !previous_connected )
+        {
+            if ( next_client_state( client ) == NEXT_CLIENT_CONNECTED )
+            {
+                next_printf( NEXT_LOG_LEVEL_INFO, "connected" );
+
+                previous_connected = true;
+            }
+        }
     }
+
+    next_printf( NEXT_LOG_LEVEL_INFO, "disconnecting" );
 
     next_client_disconnect( client );
 
@@ -55,6 +76,8 @@ int main()
     {
         next_client_update( client );
     }
+
+    next_printf( NEXT_LOG_LEVEL_INFO, "disconnected" );
 
     next_client_destroy( client );
 
