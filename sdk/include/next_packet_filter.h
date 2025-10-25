@@ -7,6 +7,7 @@
 #define NEXT_PACKET_FILTER_H
 
 #include "next.h"
+#include "next_address.h"
 
 void next_generate_pittle( uint8_t * output, const uint8_t * from_address, const uint8_t * to_address, uint16_t packet_length );
 

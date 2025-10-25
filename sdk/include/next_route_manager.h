@@ -7,6 +7,7 @@
 #define NEXT_ROUTE_MANAGER_H
 
 #include "next.h"
+#include "next_address.h"
 
 struct next_route_manager_t;
 

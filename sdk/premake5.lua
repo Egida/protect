@@ -92,3 +92,15 @@ project "client"
 		links { "pthread" }
 	filter "system:macosx"
 		linkoptions { "-framework SystemConfiguration -framework CoreFoundation" }
+
+project "server"
+	kind "ConsoleApp"
+	links { "next", "sodium" }
+	files { "server.cpp" }
+	includedirs { "include" }
+	filter "system:windows"
+		disablewarnings { "4324" }
+	filter "system:not windows"
+		links { "pthread" }
+	filter "system:macosx"
+		linkoptions { "-framework SystemConfiguration -framework CoreFoundation" }
