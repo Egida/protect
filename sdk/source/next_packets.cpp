@@ -3,6 +3,9 @@
     Licensed under the Network Next Source Available License 1.0
 */
 
+// todo
+#if 0
+
 #include "next_packets.h"
 #include "next_read_write.h"
 #include "next_header.h"
@@ -925,3 +928,5 @@ int next_read_backend_packet( uint8_t packet_id, uint8_t * packet_data, int begi
 
     return (int) packet_id;
 }
+
+#endif // #if 0

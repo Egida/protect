@@ -216,6 +216,40 @@ namespace next
     {
         return sequence_greater_than( s2, s1 );
     }
+
+    /**
+        Convert a signed integer to an unsigned integer with zig-zag encoding.
+        0,-1,+1,-2,+2... becomes 0,1,2,3,4 ...
+        @param n The input value.
+        @returns The input value converted from signed to unsigned with zig-zag encoding.
+     */
+
+    inline int signed_to_unsigned( int n )
+    {
+        return ( n << 1 ) ^ ( n >> 31 );
+    }
+
+    /**
+        Convert an unsigned integer to as signed integer with zig-zag encoding.
+        0,1,2,3,4... becomes 0,-1,+1,-2,+2...
+        @param n The input value.
+        @returns The input value converted from unsigned to signed with zig-zag encoding.
+     */
+
+    inline int unsigned_to_signed( uint32_t n )
+    {
+        return ( n >> 1 ) ^ ( -int32_t( n & 1 ) );
+    }
+
+    template <typename T> T clamp( const T & value, const T & a, const T & b )
+    {
+        if ( value < a )
+            return a;
+        else if ( value > b )
+            return b;
+        else
+            return value;
+    }
 }
 
 #endif // #ifndef NEXT_UTIL_H

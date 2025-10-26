@@ -6,6 +6,9 @@
 #ifndef NEXT_PACKETS_H
 #define NEXT_PACKETS_H
 
+// todo
+#if 0
+
 #include "next.h"
 #include "next_config.h"
 #include "next_address.h"
@@ -996,3 +999,5 @@ int next_read_backend_packet( uint8_t packet_id, uint8_t * packet_data, int begi
 // ------------------------------------------------------------------------------------------------------
 
 #endif // #ifndef NEXT_PACKETS_H
+
+#endif // #if 0

@@ -7,6 +7,7 @@
 #define NEXT_SERVER_H
 
 #include "next_address.h"
+#include "next_serialize.h"
 
 struct next_server_t;
 
@@ -20,7 +21,13 @@ void next_server_destroy( next_server_t * server );
 
 void next_server_update( next_server_t * server );
 
-void next_server_send_packet( next_server_t * server, int client_index, const uint8_t * packet_data, int packet_bytes );
+uint8_t * net_server_start_packet( struct net_server_t * server, int client_index );
+
+void net_server_finish_packet( struct net_server_t * server, uint8_t * packet_data, int packet_bytes );
+
+void net_server_abort_packet( struct net_server_t * server, uint8_t * packet_data );
+
+void net_server_send_packets( struct net_server_t * server );
 
 bool next_server_client_connected( next_server_t * server, int client_index );
 

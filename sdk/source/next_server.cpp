@@ -103,18 +103,35 @@ void next_server_update( next_server_t * server )
     }
 }
 
-void next_server_send_packet( next_server_t * server, int client_index, const uint8_t * packet_data, int packet_bytes )
+uint8_t * net_server_start_packet( struct net_server_t * server, int client_index )
 {
     next_assert( server );
-
-    if ( server->state != NEXT_SERVER_RUNNING )
-        return;
-
     // todo
-    (void) server;
     (void) client_index;
+    return NULL;
+}
+
+void net_server_finish_packet( struct net_server_t * server, uint8_t * packet_data, int packet_bytes )
+{
+    next_assert( server );
+    (void) server;
     (void) packet_data;
     (void) packet_bytes;
+    // todo
+}
+
+void net_server_abort_packet( struct net_server_t * server, uint8_t * packet_data )
+{
+    next_assert( server );
+    // todo
+    (void) packet_data;
+}
+
+void net_server_send_packets( struct net_server_t * server )
+{
+    next_assert( server );
+    // todo
+    (void) server;
 }
 
 bool next_server_client_connected( next_server_t * server, int client_index )
