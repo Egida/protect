@@ -1,18 +1,26 @@
 
-Necessary components:
+DONE
 
-    ----------------
+    Sketch out client
 
-    Start with SDK
+    Sketch out server
 
-    I want a client SDK with no threads for packet send and receive
+    Generalize relay module so it's the "network next" kernel module instead. It can be used by server, and by backends.
 
-    ----------------
+TODO
 
-    Server should have a process running that handles the network next stuff in XDP
+    Setup terraform on the project and build SDK, kernel module, client, server and test
 
-    Minimal, if any, changes made on the server-side to packet processing
+    ------
 
-    No packets read on a background thread, XDP for the parts that need to respond right away
+    Implement client backend with XDP, model it on the relay
 
-    ----------------
+    Implement server with XDP (so we can do relay-like stuff and return )
+
+    Should we implement client and server backend in XDP? I think yes. We want this to be as scalable and low-cost as possible
+
+    Sketch out client backend
+
+    Sketch out server backend
+
+    Extend relay to support
