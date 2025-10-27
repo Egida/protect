@@ -7,9 +7,11 @@ DONE
 
     Generalize relay module so it's the "network next" kernel module instead. It can be used by server, and by backends.
 
-TODO
+    Setup terraform on the project and build SDK and relay
 
-    Setup terraform on the project and build SDK, kernel module, client, server and test
+TODO
+    
+    I'd like to build the relay module separately, and actually test building it and installing it works?
 
     ------
 
