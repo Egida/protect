@@ -50,7 +50,7 @@ blocks:
           commands:
             - |
               if [ -z "$SEMAPHORE_GIT_TAG_NAME" ]; then
-                export SEMAPHORE_GIT_TAG_NAME relay-release
+                export SEMAPHORE_GIT_TAG_NAME=relay-release
               fi
             - checkout
             - uname -r
