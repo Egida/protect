@@ -34,10 +34,12 @@ blocks:
       jobs:
         - name: "Build SDK"
           commands:
-            - sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libsodium-dev premake5
+            - sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libsodium-dev wget
             - checkout
             - cd sdk
-            - premake5 gmake
+            - wget https://github.com/premake/premake-core/releases/download/v5.0.0-beta7/premake-5.0.0-beta7-linux.tar.gz
+            - tar -zxf premake-5.0.0-beta7-linux.tar.gz
+            - ./premake5 gmake
             - make -j
 
   - name: "Relay"
