@@ -19,9 +19,9 @@ TODO
 
     Sequence of operations I want:
 
-        1. Client generates a connect token (this would be given to it by the game's backend...). This connect token basically says "this client user hash X from buyer Y wants to connect to server id Z", signed by some secret private key corresponding to the buyer, for which we know the public key. It should be super simple and stupid to generate (how does the buyer know the server id for the server?). Should server id be the hash of the IP address, and match id is separate still? This would make this part easier.
+        1. Client generates a connect token (this would be given to it by the game's backend...). This connect token basically says "this client user hash X from buyer Y wants to connect to server id Z", signed by some secret private key corresponding to the buyer, for which we know the public key. It should be super simple and stupid to generate (server id is just the hash of the public address + port of the server).
 
-        2. The client passes this connect token to the client backend, which checks it and returns some "client state" (encrypted with backend private key) to be used on any other calls, plus enough information for the client to start pinging near relays.
+        2. The client passes the connect token to the client backend, which checks it and returns some "client state" (encrypted with backend private key) to be used on any other calls, plus enough information for the client to start pinging near relays.
 
         3. The client pings near relays for 10 seconds. Possibly with an early out at 5 seconds if there is low jitter and packet loss (common case --> fast connect).
 
