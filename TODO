@@ -15,17 +15,94 @@ DONE
 
 TODO
 
+    *** DESIGN ***
+
     Sequence of operations I want:
 
-        1. Client generates a connect token (this would be given to it by the game backend...). This connect token basically says "this client user hash wants to connect to server id X"
+        1. Client generates a connect token (this would be given to it by the game's backend...). This connect token basically says "this client user hash X from buyer Y wants to connect to server id Z", signed by some secret private key corresponding to the buyer, for which we know the public key. It should be super simple and stupid to generate (how does the buyer know the server id for the server?). Should server id be the hash of the IP address, and match id is separate still? This would make this part easier.
 
-        2. The client passes this connect token to the client backend, which auths it (JWT style)
+        2. The client passes this connect token to the client backend, which checks it and returns some "client state" (encrypted with backend private key) to be used on any other calls, plus enough information for the client to start pinging near relays.
 
-        3. The 
+        3. The client pings near relays for 10 seconds. Possibly with an early out at 5 seconds if there is low jitter and packet loss (common case --> fast connect).
 
-        3. The client takes the connect token and pings the near relays, and then passes up that connect token + the relay ping results to the "client backend" over UDP (golang for now...)
+        4. The client passes the relay ping results up to the client backend with the "client state".
 
-        4. The client backend checks the connect token and the ping results and returns an initial route to the client
+        4. The client backend may evolve the client state and return it back down, along with "OK, here are two routes to use to server" *or* "Try pinging relays again, here are the relays to ping", *or* "Fail". We do this because if decisions are made primarily on the backend then it can be must easier to tune and fix. We need to keep the SDK as stupid as possible.
+
+        5. The client punches the two routes through relays, and once they are both confirmed considers itself connected and the game can start sending UDP packets.
+
+        6. Every 10 seconds the client renews the two routes. If one route is not confirmed, the system will keep trying, potentially passing down a different route for the route that is not confirmed, or even generating two different routes randomly.
+
+        7. After n retries (probably 30 seconds...) the connect will fail.
+
+        8. Every 5 minutes the client will be told to do near relay pings again, again, the client can be told to retry this n times.
+
+        9. The timeouts for anything should be generous (for example 30 seconds, not 10)
+
+        10. The goal is to be relaxed and allow clients to weather temporary periods of broken connectivity without being disconnected.
+
+        11. The client should also have a clean disconnect to the server, sent across relays whenever the route changes (to close down the old route...), and to the server in the end (sent across both routes together...), so the server knows that the client has disconnected clean, or 
+
+        12. We might need to implement some fast reconnect logic when the same user hash tries to connect to the server again, while there is a timing out entry for that user hash (30 seconds+ timeout...)
+
+    ------
+
+    We probably want there to be some token that comes from the server, so we can enforce that we only enable this client to keep hitting our backend as long as it actually is able to talk to the server.
+
+    ------
+
+    We also want to protect against sharing of connect tokens, so we can do the same thing we did in space game with the whole server disconnects if the user hash is no longer assigned to it (newest client connecting takes over per-user hash, ie. only one connection per-user hash allowed)
+
+    ------
+
+    One question is whether we can fit two routes into the one UDP response packet, or if we need to have two response packets for the one request, or maybe two requests, one per-route.
+
+    ------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     ------
     

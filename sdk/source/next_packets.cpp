@@ -4,6 +4,9 @@
 */
 
 // todo
+int next_packets_cpp = 0;
+
+// todo
 #if 0
 
 #include "next_packets.h"

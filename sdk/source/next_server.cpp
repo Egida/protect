@@ -8,6 +8,7 @@
 #include "next_internal_config.h"
 #include "next_constants.h"
 #include "next_platform.h"
+#include "next_hash.h"
 
 #include <memory.h>
 
@@ -18,6 +19,7 @@ struct next_server_t
     next_address_t bind_address;
     next_address_t public_address;
     uint64_t server_id;
+    uint64_t match_id;
     next_platform_socket_t * socket;
     void (*packet_received_callback)( next_server_t * server, void * context, int client_index, const uint8_t * packet_data, int packet_bytes );
 };
@@ -53,7 +55,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     server->context = context;
     server->packet_received_callback = packet_received_callback;
 
-
     server->socket = next_platform_socket_create( server->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, next_global_config.socket_send_buffer_size, next_global_config.socket_receive_buffer_size );
     if ( server->socket == NULL )
     {
@@ -68,9 +69,11 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     server->bind_address = bind_address;
     server->public_address = public_address;
     server->state = NEXT_SERVER_RUNNING;
-    server->server_id = next_random_uint64();
+    server->server_id = next_hash_string( public_address_string );
+    server->match_id = next_random_uint64();
 
     next_printf( NEXT_LOG_LEVEL_INFO, "server id is %016" PRIx64, server->server_id );
+    next_printf( NEXT_LOG_LEVEL_INFO, "match id is %016" PRIx64, server->match_id );
 
     return server;    
 }
