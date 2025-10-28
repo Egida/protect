@@ -13,6 +13,12 @@ DONE
 
     OK all the stuff is building in semaphore.
 
+    Can we switch over from libsodium to libhydrogen on the client, since the client will really not benefit significantly from any advanced assembly shit?
+
+    This way we could avoid using our franken-libsodium in most places, and then link on the server to libsodium for fast routines where it matters (or do it all in XDP?)
+
+    No, because libhydrogen does not support SHA256 hashinrg, and it only supports Gimli hash, which the linux kernel does not support
+
 TODO
 
     ----------
@@ -76,12 +82,6 @@ TODO
     The client backend also supports a ping/pong, with the client state being passed in (to make the ping request packet larger than the pong response).
 
     To reply with a pong the "client state" must not have expired (20 seconds?)
-
-    ----------
-
-    Can we switch over from libsodium to libhydrogen on the client, since the client will really not benefit significantly from any advanced assembly shit?
-
-    This way we could avoid using our franken-libsodium in most places, and then link on the server to libsodium for fast routines where it matters (or do it all in XDP?)
 
     ----------
 

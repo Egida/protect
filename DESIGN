@@ -1,5 +1,7 @@
 DESIGN
 
+Client operation:
+
     1. Client generates a connect token (this would be given to it by the game's backend...). This connect token basically says "timestamp: the client user hash X from buyer Y wants to connect to server id Z", signed by some secret private key corresponding to the buyer, for which we know the public key. It should be super simple and stupid to generate (server id is just the hash of the public address + port of the server) so it doesn't require the customer to hit our backend from their backend to generate it.
 
     2. The client passes the connect token to the client backend, which checks it and returns some "client state" (encrypted with backend private key) to be used on any other calls, plus enough information for the client to start pinging near relays.
@@ -25,6 +27,75 @@ DESIGN
     12. The client should also have a clean disconnect to the server, sent across relays whenever the route changes (to close down the old route...), and to the server in the end (sent across both routes together...), so the server knows that the client has disconnected clean, or 
 
     13. We might need to implement some fast reconnect logic when the same user hash tries to connect to the server again, while there is a timing out entry for that user hash (30 seconds+ timeout...)
+
+
+DETAIL
+
+    ----------
+
+	Client token is fixed size:
+
+        (nonce)
+        [timestamp]             8 bytes
+        [user_hash]             8 bytes
+        [session_id]            8 bytes
+        [server_id]             8 bytes
+        [buyer_id]              8 bytes
+        [client_backends]       (ipv6 address+port * n bytes, where n = number of backends, say 32...)
+        [ping_rate]             4 bytes (default 10 pings per-second, per-backend)
+        [ping_retries]          4 bytes (default 10)
+        (hmac)
+
+    The client needs access to some data in it, so it should be signed, but not encrypted.
+
+    We rely on the game backend transmitting it to the client securely over HTTPS or however they choose to do it.
+
+    ----------
+
+    The client reads the client token and extracts server backends and tries to init and ping each one in ||.
+
+    Each frame it stops and checks if it has a response with more than half the pings responded to (in the last second...)
+
+    If it finds one or more, then it randomly selects from the set with the most pings responded (tie break), and that's the backend it chooses to use.
+
+    If it doesn't find any client backend to talk to, it tries again n times (as per-connect token data)
+
+    This should connect to the best client backend for wherever the client is located (by latency), and by packet loss.
+
+    ----------
+
+    I'd like to implement the client backend as an XDP program
+
+    The client backend will check if the timestamp is not expired, and that the buyer is a known buyer id, and then checks the signature for the connect token, and ignores if it has expired.
+
+    The init should then respond with a "client state" which is a smaller encrypted block of state that is passed back and forth between the client and the backend.
+
+    ----------
+
+    At minimum the client state should be:
+
+        (nonce)
+        [timestamp]
+        [user_hash]
+        [session_id]
+        [server_id]
+        [client_relay_ids]
+        [client_relay_rtts]
+        [client_relay_jitter]
+        [client_relay_pl]
+        (hmac)
+
+    ----------
+
+    The client backend also supports a ping/pong, with the client state being passed in (to make the ping request packet larger than the pong response).
+
+    To reply with a pong the "client state" must not have expired (20 seconds?)
+
+    ----------
+
+    In order to do everything above, because we are fixed size (for both XDP and to avoid length extension attacks) we just need the SHA256 hash on client and backend.
+
+    ----------
 
 
 
