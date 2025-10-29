@@ -65,7 +65,11 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
 char _license[] SEC("license") = "GPL";
 
+#else // #ifdef __linux__
 
+#error not linux
+
+#endif // #ifdef __linux__
 
 
 
@@ -2863,5 +2867,3 @@ SEC("relay_xdp") int relay_xdp_filter( struct xdp_md *ctx )
 char _license[] SEC("license") = "GPL";
 
 #endif
-
-#endif // #ifdef __linux__
