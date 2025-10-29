@@ -16,7 +16,7 @@
 #define __u8 uint8_t
 #endif // #ifdef __linux__
 
-struct config
+struct client_backend_config
 {
     __u32 public_address;                 // big endian
     __u16 port;                           // big endian
