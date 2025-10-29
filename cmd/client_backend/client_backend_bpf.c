@@ -199,7 +199,7 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
             return false;
         }
 
-        fwrite( client_backend_xdp_source_tar_gz, sizeof(client_backend_xdp_source_tar_gz), 1, file );
+        fwrite( cmd_client_backend_client_backend_xdp_source_tar_gz_len, sizeof(cmd_client_backend_client_backend_xdp_source_tar_gz_len), 1, file );
 
         fclose( file );
     }
