@@ -32,10 +32,10 @@ bool main_init( struct main_t * main, struct config_t * config, struct bpf_t * b
 
     // set config for xdp program
 
-    struct config client_backend_config;
-    memset( &client_backend_config, 0, sizeof(struct config) );
-    client_backend_config.port = htons( config->port );
-    client_backend_config.public_address = htonl( config->public_address );
+    struct client_backend_config xdp_config;
+    memset( &xdp_config, 0, sizeof(xdp_config) );
+    xdp_config.port = htons( config->port );
+    xdp_config.public_address = htonl( config->public_address );
 
 #ifdef __linux__
     __u32 key = 0;
