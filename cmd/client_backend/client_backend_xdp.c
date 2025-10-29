@@ -154,7 +154,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                             return XDP_DROP;
                         }
 
-                        relay_reflect_packet( data, 100 );
+                        reflect_packet( data, 100 );
 
                         return XDP_TX;
                     }
