@@ -25,31 +25,11 @@ DONE
 
     Setup the next_client.cpp to send 100 byte packets to the client backend as a test while in connecting state
 
-TODO
-
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated_header.h
-        COMMAND ${CMAKE_COMMAND} -E echo "int generated_value = 42;" > ${CMAKE_CURRENT_BINARY_DIR}/generated_header.h
-        COMMENT "Generating custom header file"
-    )
-
-    add_library(MyLibrary src/mylibrary.cpp ${CMAKE_CURRENT_BINARY_DIR}/generated_header.h)
-    target_include_directories(MyLibrary PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
-
-
-
-
-
-
-
-    -----
-
     Setup hulk and ssh in, clone the git repo and build the client backend
 
-    -----
-
     Get the client backend built and running and verify that it loads the xdp program correctly
+
+TODO
 
     Update the xdp program so it supports reflect packet
 

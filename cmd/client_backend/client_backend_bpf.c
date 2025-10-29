@@ -183,7 +183,7 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
 
     // delete all bpf maps we use so stale data doesn't stick around
     {
-        const char * command = "rm -f /sys/fs/bpf/client_backend/config_map";
+        const char * command = "rm -f /sys/fs/bpf/client_backend_config_map";
         FILE * file = popen( command, "r" );
         char buffer[1024];
         while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
@@ -213,8 +213,6 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
         pclose( file );
     }
 
-    // todo
-    /*
     // clean up after ourselves
     {
         const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.tar.gz";
@@ -223,7 +221,6 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
         while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
         pclose( file );
     }
-    */
 
     // load the client_backend_xdp program and attach it to the network interface
 
