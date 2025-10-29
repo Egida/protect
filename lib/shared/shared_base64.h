@@ -3,14 +3,14 @@
     Licensed under the Network Next Source Available License 1.0
 */
 
-#ifndef CLIENT_BACKEND_BASE64_H
-#define CLIENT_BACKEND_BASE64_H
+#ifndef SHARED_BASE64_H
+#define SHARED_BASE64_H
 
 #include <stdint.h>
 #include <stddef.h>
 
-int client_backend_base64_decode_data( const char * input, uint8_t * output, size_t output_size );
+int shared_base64_decode_data( const char * input, uint8_t * output, size_t output_size );
 
-int client_backend_base64_decode_string( const char * input, char * output, size_t output_size );
+int shared_base64_decode_string( const char * input, char * output, size_t output_size );
 
-#endif // #ifndef CLIENT_BACKEND_BASE64_H
+#endif // #ifndef SHARED_BASE64_H
