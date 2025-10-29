@@ -25,6 +25,56 @@ DONE
 
 TODO
 
+    Setup the next_client.cpp to send 100 byte packets to the client backend as a test
+
+    Setup hulk and ssh in, clone the git repo and build the client backend
+
+    Verify that I can run the client backend on linux and it loads the client backend xdp program successfully
+
+    Verify that I can receive the packets
+
+    Reflect the 100 byte packet back to the client
+
+    Verify that the client sees the 100 byte packet
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     -------------
 
     Setup so the next_client.cpp wraps packets with the prefix header for packet filtering
