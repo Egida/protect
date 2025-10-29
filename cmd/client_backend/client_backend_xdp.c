@@ -20,6 +20,7 @@
 
 #include "client_backend_shared.h"
 
+/*
 #if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && \
     __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define bpf_ntohl(x)        __builtin_bswap32(x)
@@ -35,8 +36,6 @@
 #else
 # error "Endianness detection needs to be set up for your compiler?!"
 #endif
-
-char _license[] SEC("license") = "GPL";
 
 #define INCREMENT_COUNTER(counter_index)  __sync_fetch_and_add( &stats->counters[counter_index], 1 )
 
@@ -57,13 +56,14 @@ struct chacha20poly1305_crypto
 int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz ) __ksym;
 
 int bpf_next_xchacha20poly1305_decrypt( void * data, int data__sz, struct chacha20poly1305_crypto * crypto ) __ksym;
+*/
 
 SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx ) 
 { 
     return XDP_PASS;
 }
 
-
+char _license[] SEC("license") = "GPL";
 
 
 
