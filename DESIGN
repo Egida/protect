@@ -1,6 +1,7 @@
 DESIGN
 
-Client operation:
+
+Client operation (accelerated):
 
     1. Client generates a connect token (this would be given to it by the game's backend...). This connect token basically says "timestamp: the client user hash X from buyer Y wants to connect to server id Z", signed by some secret private key corresponding to the buyer, for which we know the public key. It should be super simple and stupid to generate (server id is just the hash of the public address + port of the server) so it doesn't require the customer to hit our backend from their backend to generate it.
 
@@ -27,6 +28,19 @@ Client operation:
     12. The client should also have a clean disconnect to the server, sent across relays whenever the route changes (to close down the old route...), and to the server in the end (sent across both routes together...), so the server knows that the client has disconnected clean, or 
 
     13. We might need to implement some fast reconnect logic when the same user hash tries to connect to the server again, while there is a timing out entry for that user hash (30 seconds+ timeout...)
+
+
+Client operation (non-accelerated):
+
+    The client is given an ip address + port as a string.
+
+    The client just opens a socket and sends packets (with prefix header etc...) to this address, with a packet type that just says, I'm direct.
+
+    The server responds, with the same prefix header and direct packet type.
+
+    This way we can bypass the backend entirely and just connect direct during development, local play etc.
+
+    During production we can lock servers down so they don't support direct connections, only connections through a connect token.
 
 
 DETAIL

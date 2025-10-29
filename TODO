@@ -19,38 +19,42 @@ DONE
 
     No, because libhydrogen does not support SHA256 hashinrg, and it only supports Gimli hash, which the linux kernel does not support
 
+    Sketch out the client_backend framework as a test of XDP
+
+    Split out helpful libraries and bits from the client_backend and relay into "shared" and "platform" libs
+
 TODO
 
-    Implement the client_backend as a test
+    -------------
 
-    After doing this, generalize the functionality so we can re-use code across multiple backend and the relay.
+    Setup so the next_client.cpp wraps packets with the prefix header for packet filtering
 
+    Implement the client_backend so it has packet filter stuff (advanced and basic), and it listens on a specific UDP port only.
 
+    Get to the point where the client sends packets to the client_backend and we see logs that we have actually received them from XDP
 
+    -------------
 
+    Define the connect token struct
 
+    Implement code for reading/writing this connect token in the SDK
 
+    Unit test reading/writing this connect token. It should be only signed, not encrypted using SHA 256.
 
+    -------------
 
+    Define the client init request and response packets (keep them simple, so they can be read in XDP)
 
+    Implement the client parsing the connect token and then sending the client init request packet to n backends until it receives a response per-backend
 
+    -------------
 
+    Implement the client_backend to the point where it can verify the client init request packet, and respond with the client init response packet
 
+    -------------
 
+    Extend the SDK client so it sends ping packets to the client backend and counts the number of pongs received per-backend in the connect token
 
+    Implement code that the first to n pongs is the backend that we pick
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    -------------
