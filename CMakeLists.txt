@@ -75,13 +75,6 @@ add_custom_command(
     DEPENDS cmd/client_backend/Makefile cmd/client_backend/client_backend_xdp.c cmd/client_backend/client_backend_shared.h cmd/client_backend/client_backend_constants.h
 )
 
-
-
-#      &&  && cp client_backend_xdp.c client_backend_xdp_source && cp client_backend_shared.h client_backend_xdp_source && cp client_backend_constants.h client_backend_xdp_source &&  && cd .. &&  && "
-
-
-
-
 project(client_backend)
 
 file(GLOB CLIENT_BACKEND_SOURCE cmd/client_backend/*.c)
@@ -93,4 +86,8 @@ add_dependencies(client_backend platform shared sodium)
 
 find_package(Threads REQUIRED)
 
-target_link_libraries(client_backend platform shared sodium Threads::Threads)
+if (APPLE)
+	target_link_libraries(client_backend platform shared sodium Threads::Threads)
+elseif (UNIX)
+	target_link_libraries(client_backend platform shared sodium bpf xdp Threads::Threads)
+endif()
