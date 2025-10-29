@@ -87,7 +87,7 @@ inline void shared_write_string( uint8_t ** p, const char * string_data, uint32_
 inline void shared_write_address( uint8_t ** p, uint32_t address, uint16_t port )
 {
     shared_write_uint8( p, PLATFORM_ADDRESS_IPV4 );
-    shared_write_uint32( p, htonl( address ) );
+    shared_write_uint32( p, platform_htonl( address ) );
     shared_write_uint16( p, port );
 }
 
@@ -188,7 +188,7 @@ inline bool shared_read_address( const uint8_t ** p, uint32_t * address, uint16_
     *address = shared_read_uint32( p );
     *port = shared_read_uint16( p );
 
-    *address = ntohl( *address );
+    *address = platform_ntohl( *address );
 
     return true;
 }

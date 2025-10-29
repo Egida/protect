@@ -29,20 +29,6 @@ bool main_init( struct main_t * main, struct config_t * config, struct bpf_t * b
     main->port = config->port;
     main->public_address = config->public_address;
 
-    /*
-    main->relay_backend_url = config->relay_backend_url;
-    main->relay_internal_address = config->relay_internal_address;
-    memcpy( main->relay_public_key, config->relay_public_key, sizeof(config->relay_public_key) );
-    memcpy( main->relay_private_key, config->relay_private_key, sizeof(config->relay_private_key) );
-    memcpy( main->relay_backend_public_key, config->relay_backend_public_key, sizeof(config->relay_backend_public_key) );
-#if COMPILE_WITH_BPF
-    main->stats_fd = bpf->stats_fd;
-    main->state_fd = bpf->state_fd;
-    main->session_map_fd = bpf->session_map_fd;
-    main->whitelist_map_fd = bpf->whitelist_map_fd;
-#endif // #if COMPILE_WITH_BPF
-    */
-
     // set config for xdp program
 
     struct config client_backend_config;
