@@ -1,7 +1,7 @@
 /*
     Network Next Linux kernel module
 
-    This module supports Ubuntu 22.04 LTS with Linux Kernel 6.5+
+    This module supports Ubuntu 24.04 LTS
 
     USAGE:
 
