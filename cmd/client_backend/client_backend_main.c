@@ -57,8 +57,6 @@ extern bool clean_shutdown;
 
 int main_run( struct main_t * main )
 {
-    printf( "Starting main thread\n" );
-
     fflush( stdout );
 
     while ( !quit )
