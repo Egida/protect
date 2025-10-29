@@ -153,7 +153,7 @@ void platform_random_bytes( uint8_t * buffer, int bytes );
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 
-int platform_parse_address( char * address_string, uint32_t * address, uint16_t * port );
+bool platform_parse_address( char * address_string, uint32_t * address, uint16_t * port );
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 

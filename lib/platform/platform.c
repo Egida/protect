@@ -50,7 +50,7 @@ void platform_random_bytes( uint8_t * buffer, int bytes )
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 
-int platform_parse_address( char * address_string, uint32_t * address, uint16_t * port )
+bool platform_parse_address( char * address_string, uint32_t * address, uint16_t * port )
 {
     assert( address_string );
     assert( address );
@@ -76,12 +76,12 @@ int platform_parse_address( char * address_string, uint32_t * address, uint16_t 
 
     if ( inet_pton( AF_INET, address_string, address ) != 1 ) 
     {
-        return PLATFORM_ERROR;
+        return false;
     }
 
     *address = htonl( *address );
 
-    return PLATFORM_OK;
+    return true;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
