@@ -43,7 +43,7 @@ bool main_init( struct main_t * main, struct config_t * config, struct bpf_t * b
     if ( err != 0 )
     {
         printf( "\nerror: failed to set config: %s\n\n", strerror(errno) );
-        return RELAY_ERROR;
+        return false;
     }
 #endif // #ifdef __linux__
 
