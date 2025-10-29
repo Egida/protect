@@ -268,7 +268,7 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
 
     // get file descriptors for maps so we can communicate with the client_backend_xdp program running in kernel space
 
-    bpf->config_fd = bpf_obj_get( "/sys/fs/bpf/client_backend/config_map" );
+    bpf->config_fd = bpf_obj_get( "/sys/fs/bpf/client_backend_config_map" );
     if ( bpf->config_fd <= 0 )
     {
         printf( "\nerror: could not get client backend config: %s\n\n", strerror(errno) );

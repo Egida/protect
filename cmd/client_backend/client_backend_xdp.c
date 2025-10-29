@@ -58,6 +58,14 @@ int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz ) 
 int bpf_next_xchacha20poly1305_decrypt( void * data, int data__sz, struct chacha20poly1305_crypto * crypto ) __ksym;
 */
 
+struct {
+    __uint( type, BPF_MAP_TYPE_ARRAY );
+    __type( key, __u32 );
+    __type( value, struct client_backend_config );
+    __uint( max_entries, 1 );
+    __uint( pinning, LIBBPF_PIN_BY_NAME );
+} client_backend_config_map SEC(".maps");
+
 SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx ) 
 { 
     return XDP_PASS;
@@ -73,13 +81,6 @@ char _license[] SEC("license") = "GPL";
 
 #if 0
 
-struct {
-    __uint( type, BPF_MAP_TYPE_ARRAY );
-    __type( key, __u32 );
-    __type( value, struct client_backend_config );
-    __uint( max_entries, 1 );
-    __uint( pinning, LIBBPF_PIN_BY_NAME );
-} config_map SEC(".maps");
 
 struct {
     __uint( type, BPF_MAP_TYPE_ARRAY );
