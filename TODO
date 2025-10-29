@@ -23,13 +23,25 @@ DONE
 
     Split out helpful libraries and bits from the client_backend and relay into "shared" and "platform" libs
 
+    Setup the next_client.cpp to send 100 byte packets to the client backend as a test while in connecting state
+
 TODO
 
-    Setup the next_client.cpp to send 100 byte packets to the client backend as a test
+    Debug why I can't link to platform_htons etc.
+
+    -----
 
     Setup hulk and ssh in, clone the git repo and build the client backend
 
-    Verify that I can run the client backend on linux and it loads the client backend xdp program successfully
+    -----
+
+    Get the client backend built and running and verify that it loads the xdp program correctly
+
+    Update the xdp program so it supports reflect packet
+
+    Modify the XDP program to reflect back any UDP packet received on the public address and port
+
+    -----
 
     Verify that I can receive the packets
 

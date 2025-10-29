@@ -3,13 +3,13 @@
     Licensed under the Network Next Source Available License 1.0
 */
 
+#include "platform/platform.h"
+#include "shared/shared_encoding.h"
+
 #include "client_backend_main.h"
 #include "client_backend_config.h"
 #include "client_backend_shared.h"
 #include "client_backend_bpf.h"
-
-#include "platform/platform.h"
-#include "shared/shared_encoding.h"
 
 #include <curl/curl.h>
 #include <sodium.h>
@@ -49,7 +49,7 @@ bool main_init( struct main_t * main, struct config_t * config, struct bpf_t * b
     return true;
 }
 
-int main_update( struct main_t * main );
+bool main_update( struct main_t * main );
 
 extern bool quit;
 extern bool clean_shutdown;
@@ -107,6 +107,12 @@ int main_run( struct main_t * main )
     return true;
 }
 
+bool main_update( struct main_t * main )
+{
+    // ...
+    return true;
+}
+
 void main_shutdown( struct main_t * main )
 {
 #if 0
@@ -114,31 +120,6 @@ void main_shutdown( struct main_t * main )
     if ( main->curl )
     {
         curl_easy_cleanup( main->curl );
-    }
-
-    if ( main->update_response_memory )
-    {
-        free( main->update_response_memory );
-    }
-
-    if ( main->stats_queue )
-    {
-        relay_queue_destroy( main->stats_queue );
-    }
-
-    if ( main->stats_mutex )
-    {
-        relay_platform_mutex_destroy( main->stats_mutex );
-    }
-
-    if ( main->control_queue )
-    {
-        relay_queue_destroy( main->control_queue );
-    }
-
-    if ( main->control_mutex )
-    {
-        relay_platform_mutex_destroy( main->control_mutex );
     }
 
 #endif // #if 0

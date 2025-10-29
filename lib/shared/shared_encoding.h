@@ -8,6 +8,7 @@
 
 #include "platform/platform.h"
 #include <memory.h>
+#include <assert.h>
 #include <stdio.h>
 
 inline void shared_write_uint8( uint8_t ** p, uint8_t value )

@@ -34,7 +34,7 @@ Client operation (non-accelerated):
 
     The client is given an ip address + port as a string.
 
-    The client just opens a socket and sends packets (with prefix header etc...) to this address, with a packet type that just says, I'm direct.
+    The client just opens a socket and sends packets (with prefix header etc...) to this address, with a packet type that says, I'm direct.
 
     The server responds, with the same prefix header and direct packet type.
 

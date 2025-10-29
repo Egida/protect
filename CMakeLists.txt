@@ -31,6 +31,19 @@ add_library(sodium ${SODIUM_SOURCE} ${SODIUM_ASSEMBLY} ${SODIUM_HEADERS})
 
 
 
+# platform
+
+project(platform)
+
+enable_language(C)
+
+file(GLOB PLATFORM_SOURCE lib/platform/*.c)
+file(GLOB PLATFORM_HEADERS lib/platform/*.h)
+
+add_library(platform ${PLATFORM_SOURCE} ${PLATFORM_HEADERS})
+
+
+
 # shared
 
 project(shared)
@@ -42,18 +55,7 @@ file(GLOB SHARED_HEADERS lib/shared/*.h)
 
 add_library(shared ${SHARED_SOURCE} ${SHARED_HEADERS})
 
-
-
-# platform
-
-project(platform)
-
-enable_language(C)
-
-file(GLOB PLATFORM_SOURCE lib/platform/*.c)
-file(GLOB PLATFORM_HEADERS lib/platform/*.h)
-
-add_library(platform ${PLATFORM_SOURCE} ${PLATFORM_HEADERS})
+add_dependencies(shared platform sodium)
 
 
 
