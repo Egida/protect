@@ -27,7 +27,21 @@ DONE
 
 TODO
 
-    Debug why I can't link to platform_htons etc.
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated_header.h
+        COMMAND ${CMAKE_COMMAND} -E echo "int generated_value = 42;" > ${CMAKE_CURRENT_BINARY_DIR}/generated_header.h
+        COMMENT "Generating custom header file"
+    )
+
+    add_library(MyLibrary src/mylibrary.cpp ${CMAKE_CURRENT_BINARY_DIR}/generated_header.h)
+    target_include_directories(MyLibrary PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+
+
+
+
+
+
 
     -----
 

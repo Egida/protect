@@ -61,12 +61,33 @@ add_dependencies(shared platform sodium)
 
 # client backend
 
+add_custom_command(
+    COMMENT "Generating client_backend_xdp_source.h"
+    OUTPUT cmd/client_backend/client_backend_xdp_source.h
+    COMMAND bash -c "mkdir -p cmd/client_backend/client_backend_xdp_source"
+    COMMAND bash -c "cp cmd/client_backend/Makefile cmd/client_backend/client_backend_xdp_source"
+    COMMAND bash -c "cp cmd/client_backend/client_backend_xdp.c cmd/client_backend/client_backend_xdp_source"
+    COMMAND bash -c "cp cmd/client_backend/client_backend_shared.h cmd/client_backend/client_backend_xdp_source"
+    COMMAND bash -c "cp cmd/client_backend/client_backend_constants.h cmd/client_backend/client_backend_xdp_source"
+    COMMAND bash -c "tar -zcvf cmd/client_backend/client_backend_xdp_source.tar.gz cmd/client_backend/client_backend_xdp_source"
+    COMMAND bash -c "rm -rf cmd/client_backend/client_backend_xdp_source"
+    COMMAND bash -c "xxd -i cmd/client_backend/client_backend_xdp_source.tar.gz" > cmd/client_backend/client_backend_xdp_source.h
+    DEPENDS cmd/client_backend/Makefile cmd/client_backend/client_backend_xdp.c cmd/client_backend/client_backend_shared.h cmd/client_backend/client_backend_constants.h
+)
+
+
+
+#      &&  && cp client_backend_xdp.c client_backend_xdp_source && cp client_backend_shared.h client_backend_xdp_source && cp client_backend_constants.h client_backend_xdp_source &&  && cd .. &&  && "
+
+
+
+
 project(client_backend)
 
 file(GLOB CLIENT_BACKEND_SOURCE cmd/client_backend/*.c)
 file(GLOB CLIENT_BACKEND_HEADERS cmd/client_backend/*.h)
 
-add_executable(client_backend ${CLIENT_BACKEND_SOURCE} ${CLIENT_BACKEND_HEADERS})
+add_executable(client_backend ${CLIENT_BACKEND_SOURCE} ${CLIENT_BACKEND_HEADERS} cmd/client_backend/client_backend_xdp_source.h)
 
 add_dependencies(client_backend platform shared sodium)
 
