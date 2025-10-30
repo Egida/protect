@@ -146,7 +146,17 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                 if ( (void*)udp + sizeof(struct udphdr) <= data_end )
                 {
-                    // debug_printf( "%x:%d", ip->daddr, udp->dest );
+                    debug_printf( "get config" );
+
+                    int key = 0;
+                    struct client_backend_config * config = (struct client_backend_config*) bpf_map_lookup_elem( &client_backend_config_map, &key );
+                    if ( config == NULL )
+                    {
+                        debug_printf( "config is null" );
+                        return XDP_PASS;
+                    }
+
+                    debug_printf( "config public address = %x:%d", config->public_address, config->port );
 
                     if ( ip->daddr == 0x7cb7a8c0 && udp->dest == 16540 )
                     {
@@ -166,16 +176,6 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                     }
 
                     /*
-                    debug_printf( "get config" );
-
-                    int key = 0;
-                    struct client_backend_config * config = (struct client_backend_config*) bpf_map_lookup_elem( &client_backend_config_map, &key );
-                    if ( config == NULL )
-                    {
-                        debug_printf( "config is null" );
-                        return XDP_PASS;
-                    }
-
                     if ( udp->dest == config->port )//&& ip->daddr == config->public_address ) // &&  )
                     {
                         debug_printf( "valid port" );

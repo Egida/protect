@@ -98,6 +98,15 @@ void next_client_update( next_client_t * client )
 {
     next_assert( client );
 
+    // todo
+    uint8_t packet_data[1024];
+    next_address_t from;
+    int packet_bytes = next_platform_socket_receive_packet( client->socket, &from, packet_data, sizeof(packet_data) );
+    if ( packet_bytes != 0 )
+    {
+        next_printf( NEXT_LOG_LEVEL_INFO, "client received %d byte packet\n", packet_bytes );
+    }
+
     // todo: mock connection
     client->num_updates++;
     if ( client->num_updates == 100 )

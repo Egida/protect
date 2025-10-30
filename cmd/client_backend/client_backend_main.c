@@ -37,6 +37,9 @@ bool main_init( struct main_t * main, struct config_t * config, struct bpf_t * b
     xdp_config.port = htons( config->port );
     xdp_config.public_address = htonl( config->public_address );
 
+    // todo
+    printf( "public address = %x:%d\n", xdp_config.public_address, xdp_config.port );
+
 #ifdef __linux__
     __u32 key = 0;
     int err = bpf_map_update_elem( bpf->config_fd, &key, &config, BPF_ANY );
