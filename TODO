@@ -71,6 +71,8 @@ TODO
 
     After this point we can switch over to secret key stuff using XChaCha20, which is already supported.
 
+    crypto_sign_ed25519
+
 
 
 

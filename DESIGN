@@ -49,7 +49,6 @@ DETAIL
 
 	Client token is fixed size:
 
-        (nonce)
         [timestamp]             8 bytes
         [user_hash]             8 bytes
         [session_id]            8 bytes
@@ -58,7 +57,7 @@ DETAIL
         [client_backends]       (ipv6 address+port * n bytes, where n = number of backends, say 32...)
         [ping_rate]             4 bytes (default 10 pings per-second, per-backend)
         [ping_retries]          4 bytes (default 10)
-        (hmac)
+        (signature)
 
     The client needs access to some data in it, so it should be signed, but not encrypted.
 
