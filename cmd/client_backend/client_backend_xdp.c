@@ -391,8 +391,6 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                         int passed = 0;
                         {
-                            __u8 * magic = state->current_magic;
-
                             __u64 hash = 0xCBF29CE484222325;
 
                             hash ^= magic[0];
