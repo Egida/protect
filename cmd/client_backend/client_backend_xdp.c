@@ -140,14 +140,10 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
             if ( ip->ihl == 5 && ip->protocol == IPPROTO_UDP ) // UDP only
             {
-                debug_printf( "udp packet" );
-
                 struct udphdr * udp = (void*) ip + sizeof(struct iphdr);
 
                 if ( (void*)udp + sizeof(struct udphdr) <= data_end )
                 {
-                    debug_printf( "get config" );
-
                     int key = 0;
                     struct client_backend_config * config = (struct client_backend_config*) bpf_map_lookup_elem( &client_backend_config_map, &key );
                     if ( config == NULL )
@@ -156,11 +152,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                         return XDP_PASS;
                     }
 
-                    debug_printf( "config public address = %x:%d", config->public_address, config->port );
-
-                    // 8818ecb8:21974 ?!
-
-                    if ( ip->daddr == 0x7cb7a8c0 && udp->dest == 16540 )
+                    if ( ip->daddr == config->public_address && udp->dest == config->port )
                     {
                         __u8 * packet_data = (unsigned char*) (void*)udp + sizeof(struct udphdr);
 
@@ -176,19 +168,6 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                         return XDP_TX;
                     }
-
-                    /*
-                    if ( udp->dest == config->port )//&& ip->daddr == config->public_address ) // &&  )
-                    {
-                        debug_printf( "valid port" );
-
-                        if ( ip->daddr == config->public_address )
-                        {
-                            debug_printf( "valid address" );
-
-                        }
-                    }
-                    */
                 }
             }
         }
