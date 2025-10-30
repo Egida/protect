@@ -140,6 +140,8 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
             if ( ip->protocol == IPPROTO_UDP ) // UDP only
             {
+                debug_printf( "udp packet" );
+
                 struct udphdr * udp = (void*) ip + sizeof(struct iphdr);
 
                 if ( (void*)udp + sizeof(struct udphdr) <= data_end )
@@ -147,7 +149,10 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                     int key = 0;
                     struct client_backend_config * config = (struct client_backend_config*) bpf_map_lookup_elem( &client_backend_config_map, &key );
                     if ( config == NULL )
+                    {
+                        debug_printf( "config is null" );
                         return XDP_PASS;
+                    }
 
                     if ( udp->dest == config->port && ip->daddr == config->public_address && ip->ihl == 5 )
                     {
@@ -158,6 +163,8 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                             debug_printf( "udp packet is not 100 bytes" );
                             return XDP_DROP;
                         }
+
+                        debug_printf( "reflect packet" );
 
                         reflect_packet( data, 100 );
 

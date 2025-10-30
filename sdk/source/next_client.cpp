@@ -117,8 +117,9 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
     // todo: mock packets for testing xdp client backend
     if ( client->state == NEXT_CLIENT_CONNECTING )
     {
+        next_printf( NEXT_LOG_LEVEL_INFO, "connecting..." );
         next_address_t server_address;
-        next_address_parse( &server_address, "192.168.1.40:40000" );    // hulk
+        next_address_parse( &server_address, "192.168.183.124:40000" );    // hulk
         next_platform_socket_send_packet( client->socket, &server_address, packet_data, packet_bytes );
     }
 
