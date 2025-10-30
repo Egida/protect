@@ -354,7 +354,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                         // Advanced packet filter
 
-                        // Advanced packet filter
+                        __u8 magic[8] = {0,0,0,0,0,0,0,0};
 
                         __u32 from = ip->saddr;
                         __u32 to   = config->public_address;
