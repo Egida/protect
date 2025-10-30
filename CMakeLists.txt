@@ -72,6 +72,7 @@ add_custom_command(
     COMMAND bash -c "tar -zcvf cmd/client_backend/client_backend_xdp_source.tar.gz -C cmd/client_backend/client_backend_xdp_source ."
     COMMAND bash -c "rm -rf cmd/client_backend/client_backend_xdp_source"
     COMMAND bash -c "xxd -i cmd/client_backend/client_backend_xdp_source.tar.gz" > cmd/client_backend/client_backend_xdp_source.h
+    COMMAND bash -c "rm -f cmd/client_backend/client_backend_xdp_source.tar.gz"
     DEPENDS cmd/client_backend/Makefile cmd/client_backend/client_backend_xdp.c cmd/client_backend/client_backend_shared.h cmd/client_backend/client_backend_constants.h
 )
 

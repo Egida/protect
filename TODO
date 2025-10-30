@@ -47,19 +47,21 @@ DONE
 
 TODO
 
-    -------------
-
     Define the connect token struct
 
-    Implement code for reading/writing this connect token in the SDK
+    Implement code for writing this connect token to a base64 string
 
-    Unit test reading/writing this connect token. It should be only signed, not encrypted using SHA 256.
+    Implement code to read the connect token from a base64 string
+
+    Mock up the client.cpp so it passes in a valid connect token as a string
 
     -------------
 
-    Define the client init request and response packets (keep them simple, so they can be read in XDP)
+    Define the client init request and response packets (keep them simple for XDP)
 
-    Implement the client parsing the connect token and then sending the client init request packet to n backends until it receives a response per-backend
+    -------------
+
+    Implement the client parsing the connect token then sending the client init request packet to n backends until it receives a response per-backend
 
     -------------
 
