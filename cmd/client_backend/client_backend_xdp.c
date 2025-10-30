@@ -316,6 +316,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                         if ( (void*)packet_data + 18 > data_end )
                         {
+                            debug_printf( "packet is too small" );
                             return XDP_DROP;
                         }
 
@@ -325,10 +326,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                         if ( packet_bytes > 1400 )
                         {
-                            relay_printf( "packet is too large" );
-                            INCREMENT_COUNTER( RELAY_COUNTER_PACKET_TOO_LARGE );
-                            INCREMENT_COUNTER( RELAY_COUNTER_DROPPED_PACKETS );
-                            ADD_COUNTER( RELAY_COUNTER_DROPPED_BYTES, data_end - data );
+                            debug_printf( "packet is too large" );
                             return XDP_DROP;
                         }
 
