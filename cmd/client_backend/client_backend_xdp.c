@@ -357,7 +357,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                         // Advanced packet filter
 
                         __u32 from = ip->saddr;
-                        __u32 to   = config->relay_public_address;
+                        __u32 to   = config->public_address;
 
                         unsigned short sum = 0;
 
@@ -385,40 +385,8 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                         if ( pittle[0] != packet_data[1] || pittle[1] != packet_data[2] )
                         {
-                            to = config->relay_internal_address;
-
-                            unsigned short sum = 0;
-
-                            sum += ( from       ) & 0xFF;
-                            sum += ( from >> 8  ) & 0xFF;
-                            sum += ( from >> 16 ) & 0xFF;
-                            sum += ( from >> 24 );
-
-                            sum += ( to       ) & 0xFF;
-                            sum += ( to >> 8  ) & 0xFF;
-                            sum += ( to >> 16 ) & 0xFF;
-                            sum += ( to >> 24 );
-
-                            sum += ( packet_bytes >> 8 );
-                            sum += ( packet_bytes      ) & 0xFF;
-
-                            char * sum_data = (char*) &sum;
-
-                            __u8 sum_0 = ( sum      ) & 0xFF;
-                            __u8 sum_1 = ( sum >> 8 );
-
-                            __u8 pittle[2];
-                            pittle[0] = 1 | ( sum_0 ^ sum_1 ^ 193 );
-                            pittle[1] = 1 | ( ( 255 - pittle[0] ) ^ 113 );
-
-                            if ( pittle[0] != packet_data[1] || pittle[1] != packet_data[2] )
-                            {
-                                relay_printf( "advanced packet filter dropped packet (a) [%d]", packet_data[0] );
-                                INCREMENT_COUNTER( RELAY_COUNTER_ADVANCED_PACKET_FILTER_DROPPED_PACKET );
-                                INCREMENT_COUNTER( RELAY_COUNTER_DROPPED_PACKETS );
-                                ADD_COUNTER( RELAY_COUNTER_DROPPED_BYTES, data_end - data );
-                                return XDP_DROP;
-                            }
+                            debug_printf( "advanced packet filter dropped packet (a)" );
+                            return XDP_DROP;
                         }
 
                         int passed = 0;
@@ -560,7 +528,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                         if ( !passed )
                         {
-                            debug_printf( "advanced packet filter dropped packet" );
+                            debug_printf( "advanced packet filter dropped packet (b)" );
                             return XDP_DROP;
                         }
 
