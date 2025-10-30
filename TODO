@@ -33,11 +33,13 @@ DONE
 
     Verify that the client sees the 100 byte reflected packet
 
-TODO
-
-    Extend the client backend XDP program so it checks packet filter before processing any UDP packet on the specified port
+    Extend the client backend XDP program so it checks basic packet filter before processing any UDP packet on the specified port
 
     Bring across the code for reflect packet that updates the header
+
+TODO
+
+    Extend backend so it checks advanced packet filter (with magic zero)
 
     -----
 
