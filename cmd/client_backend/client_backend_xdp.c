@@ -138,7 +138,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                 return XDP_DROP;
             }
 
-            if ( ip->protocol == IPPROTO_UDP ) // UDP only
+            if ( ip->ihl == 5 && ip->protocol == IPPROTO_UDP ) // UDP only
             {
                 debug_printf( "udp packet" );
 
@@ -146,21 +146,24 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                 if ( (void*)udp + sizeof(struct udphdr) <= data_end )
                 {
-                    debug_printf( "%x:%d", ip->daddr, udp->dest );
+                    // debug_printf( "%x:%d", ip->daddr, udp->dest );
 
-                    __u8 * packet_data = (unsigned char*) (void*)udp + sizeof(struct udphdr);
-
-                    if ( (void*)packet_data + 100 != data_end )
+                    if ( ip->daddr == 0x7cb7a8c0 && udp->dest == 16540 )
                     {
-                        debug_printf( "udp packet is not 100 bytes" );
-                        return XDP_DROP;
+                        __u8 * packet_data = (unsigned char*) (void*)udp + sizeof(struct udphdr);
+
+                        if ( (void*)packet_data + 100 != data_end )
+                        {
+                            debug_printf( "udp packet is not 100 bytes" );
+                            return XDP_DROP;
+                        }
+
+                        debug_printf( "reflect packet" );
+
+                        reflect_packet( data, 100 );
+
+                        return XDP_TX;
                     }
-
-                    debug_printf( "reflect packet" );
-
-                    reflect_packet( data, 100 );
-
-                    return XDP_TX;
 
                     /*
                     debug_printf( "get config" );
@@ -173,7 +176,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                         return XDP_PASS;
                     }
 
-                    if ( udp->dest == config->port )//&& ip->daddr == config->public_address ) // && ip->ihl == 5 )
+                    if ( udp->dest == config->port )//&& ip->daddr == config->public_address ) // &&  )
                     {
                         debug_printf( "valid port" );
 
