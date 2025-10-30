@@ -146,6 +146,8 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                 if ( (void*)udp + sizeof(struct udphdr) <= data_end )
                 {
+                    debug_printf( "get config" );
+
                     int key = 0;
                     struct client_backend_config * config = (struct client_backend_config*) bpf_map_lookup_elem( &client_backend_config_map, &key );
                     if ( config == NULL )
@@ -156,6 +158,8 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                     if ( udp->dest == config->port && ip->daddr == config->public_address && ip->ihl == 5 )
                     {
+                        debug_printf( "valid address and port" );
+
                         __u8 * packet_data = (unsigned char*) (void*)udp + sizeof(struct udphdr);
 
                         if ( (void*)packet_data + 100 != data_end )
