@@ -30,7 +30,7 @@ MODULE_DESCRIPTION( "Network Next kernel module" );
 
 __bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz );
 
-// __bpf_kfunc int bpf_next_ed25519( void * data, int data__sz, void * output, int output__sz, void * public_key, int public_key__sz );
+__bpf_kfunc int bpf_next_ed25519( void * data, int data__sz, void * output, int output__sz, void * public_key, int public_key__sz );
 
 // ----------------------------------------------------------------------------------------------------------------------
 
@@ -52,18 +52,15 @@ __bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int o
     return 0;
 }
 
-// todo: maybe too many args?
-/*
 __bpf_kfunc int bpf_next_ed25519( void * data, int data__sz, void * output, int output__sz, void * public_key, int public_key__sz )
 {
     // todo: hydrogen impl
     return 0;
 }
-*/
 
 BTF_SET8_START( bpf_task_set )
 BTF_ID_FLAGS( func, bpf_next_sha256 )
-//BTF_ID_FLAGS( func, bpf_next_ed25519 )
+BTF_ID_FLAGS( func, bpf_next_ed25519 )
 BTF_SET8_END( bpf_task_set )
 
 static const struct btf_kfunc_id_set bpf_task_kfunc_set = {
