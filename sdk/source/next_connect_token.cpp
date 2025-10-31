@@ -39,7 +39,12 @@ bool next_read_connect_token( next_connect_token_t * token, const char * input, 
     next_assert( input );
     next_assert( public_key );
 
-    // todo
+    if ( next_base64_decode_data( input, (uint8_t*) token, sizeof(next_connect_token_t) ) != sizeof(next_connect_token_t) )
+    {
+        return false;
+    }
+
+    // todo: verify signature
     
     return true;
 }
