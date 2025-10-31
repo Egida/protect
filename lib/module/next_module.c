@@ -154,6 +154,11 @@ struct crypto_akcipher * ed25519;
 
 static int ed25519_verify( const __u8 * data, __u32 data_len, const __u8 * signature, const __u8 * public_key )
 {
+    SYNC_SKCIPHER_REQUEST_ON_STACK( req, ed25519 );
+    struct crypto_akcipher * tfm = crypto_akcipher_reqtfm( req );
+    // ...
+    (void) tfm;
+    akcipher_request_free( req );
     return 1;
 }
 
