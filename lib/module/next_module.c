@@ -193,9 +193,10 @@ __bpf_kfunc int bpf_next_xchacha20poly1305_decrypt( void * data, int data__sz, s
 BTF_SET8_START( bpf_task_set )
 BTF_ID_FLAGS( func, bpf_next_sha256 )
 BTF_ID_FLAGS( func, bpf_next_ed25519 )
+BTF_SET8_END( bpf_task_set )
+
 // todo
 // BTF_ID_FLAGS( func, bpf_next_xchacha20poly1305_decrypt )
-BTF_SET8_END( bpf_task_set )
 
 static const struct btf_kfunc_id_set bpf_task_kfunc_set = {
     .owner = THIS_MODULE,
@@ -254,15 +255,12 @@ static int __init next_init( void )
         return -1;
     }
 
-    // todo: fails here
-    /*
     ed25519 = crypto_alloc_akcipher( "ed25519", 0, 0 );
     if ( IS_ERR( ed25519 ) ) 
     {
         pr_err( "can't create ed25519 cipher\n" );
         return PTR_ERR( ed25519 );
     }
-    */
 
     int result = register_btf_kfunc_id_set( BPF_PROG_TYPE_XDP, &bpf_task_kfunc_set );
     if ( result != 0 )
