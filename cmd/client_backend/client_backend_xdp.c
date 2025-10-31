@@ -23,7 +23,7 @@
 #include <linux/string.h>
 #include <bpf/bpf_helpers.h>
 
-#define CLIENT_BACKEND_ADVANCED_PACKET_FILTER 0
+#define ADVANCED_PACKET_FILTER 0
 
 #include "client_backend_shared.h"
 
@@ -43,21 +43,9 @@
 # error "Endianness detection needs to be set up for your compiler?!"
 #endif
 
-/*
-#define XCHACHA20POLY1305_NONCE_SIZE 24
-
-#define CHACHA20POLY1305_KEY_SIZE 32
-
-struct chacha20poly1305_crypto
-{
-    __u8 nonce[XCHACHA20POLY1305_NONCE_SIZE];
-    __u8 key[CHACHA20POLY1305_KEY_SIZE];
-};
-
 int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz ) __ksym;
 
-int bpf_next_xchacha20poly1305_decrypt( void * data, int data__sz, struct chacha20poly1305_crypto * crypto ) __ksym;
-*/
+int bpf_next_ed25519( void * data, int data__sz, void * output, int output__sz, void * public_key, int public_key__sz ) __ksym;
 
 struct {
     __uint( type, BPF_MAP_TYPE_ARRAY );
@@ -352,6 +340,8 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                             return XDP_DROP;
                         }
 
+#if ADVANCED_PACKET_FILTER
+
                         // Advanced packet filter
 
                         __u8 magic[8] = {0,0,0,0,0,0,0,0};
@@ -529,6 +519,8 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                             debug_printf( "advanced packet filter dropped packet (b)" );
                             return XDP_DROP;
                         }
+
+#endif // #if ADVANCED_PACKET_FILTER
 
                         // todo: temporary reflect 18 byte header + 100 byte payload below
 
