@@ -22,8 +22,8 @@
 #include <linux/btf.h>
 #include <crypto/hash.h>
 #include <crypto/kpp.h>
-#include <crypto/poly1305.h>
-#include <crypto/chacha.h>
+// #include <crypto/poly1305.h>
+// #include <crypto/chacha.h>
 #include <crypto/algapi.h>
 #include <crypto/akcipher.h>
 #include <linux/scatterlist.h>
@@ -33,6 +33,7 @@ MODULE_LICENSE( "GPL" );
 MODULE_AUTHOR( "Glenn Fiedler" ); 
 MODULE_DESCRIPTION( "Network Next kernel module" );
 
+/*
 #define XCHACHA20POLY1305_NONCE_SIZE 24
 
 #define CHACHA20POLY1305_KEY_SIZE 32
@@ -42,12 +43,13 @@ struct chacha20poly1305_crypto
     __u8 nonce[XCHACHA20POLY1305_NONCE_SIZE];
     __u8 key[CHACHA20POLY1305_KEY_SIZE];
 };
+*/
 
 __bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz );
 
 __bpf_kfunc int bpf_next_ed25519( void * data, int data__sz, void * output, int output__sz, void * public_key, int public_key__sz );
 
-__bpf_kfunc int bpf_next_xchacha20poly1305_decrypt( void * data, int data__sz, struct chacha20poly1305_crypto * crypto );
+// __bpf_kfunc int bpf_next_xchacha20poly1305_decrypt( void * data, int data__sz, struct chacha20poly1305_crypto * crypto );
 
 // ----------------------------------------------------------------------------------------------------------------------
 
@@ -179,17 +181,20 @@ __bpf_kfunc int bpf_next_ed25519( void * data, int data__sz, void * output, int 
     return 0;
 }
 
+/*
 __bpf_kfunc int bpf_next_xchacha20poly1305_decrypt( void * data, int data__sz, struct chacha20poly1305_crypto * crypto )
 {
     // todo: disabled for the moment
     // return xchacha20poly1305_decrypt( data, data, data__sz, NULL, 0, crypto->nonce, crypto->key ) == true;
     return 0;
 }
+*/
 
 BTF_SET8_START( bpf_task_set )
 BTF_ID_FLAGS( func, bpf_next_sha256 )
 BTF_ID_FLAGS( func, bpf_next_ed25519 )
-BTF_ID_FLAGS( func, bpf_next_xchacha20poly1305_decrypt )
+// todo
+// BTF_ID_FLAGS( func, bpf_next_xchacha20poly1305_decrypt )
 BTF_SET8_END( bpf_task_set )
 
 static const struct btf_kfunc_id_set bpf_task_kfunc_set = {
