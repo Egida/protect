@@ -12,7 +12,6 @@
 #include "client_backend_bpf.h"
 
 #include <curl/curl.h>
-#include <sodium.h>
 #include <time.h>
 #include <errno.h>
 #include <inttypes.h>

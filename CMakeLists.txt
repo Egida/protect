@@ -13,21 +13,21 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include_directories(
 	"." 
 	"lib"
-	"sdk/sodium"
+    "sdk/include"
+	"sdk/hydrogen"
 )
 
 
-# sodium
+# hydrogen
 
-project(sodium)
+project(hydrogen)
 
 enable_language(C)
 
-file(GLOB SODIUM_SOURCE sdk/sodium/*.c)
-file(GLOB SODIUM_ASSEMBLY sdk/sodium/*.s)
-file(GLOB SODIUM_HEADERS sdk/sodium/*.h)
+file(GLOB HYDROGEN_SOURCE sdk/hydrogen/*.c)
+file(GLOB HYDROGEN_HEADERS sdk/hygrogen/*.h)
 
-add_library(sodium ${SODIUM_SOURCE} ${SODIUM_ASSEMBLY} ${SODIUM_HEADERS})
+add_library(hydrogen ${HYDROGEN_SOURCE} ${HYDROGEN_HEADERS})
 
 
 
@@ -55,8 +55,42 @@ file(GLOB SHARED_HEADERS lib/shared/*.h)
 
 add_library(shared ${SHARED_SOURCE} ${SHARED_HEADERS})
 
-add_dependencies(shared platform sodium)
+add_dependencies(shared platform hydrogen)
 
+
+
+# next
+
+project(next)
+
+enable_language(CXX)
+
+file(GLOB NEXT_SOURCE sdk/source/*.cpp)
+file(GLOB NEXT_HEADERS sdk/include/*.h)
+
+add_library(next ${NEXT_SOURCE} ${NEXT_HEADERS})
+
+add_dependencies(next platform hydrogen)
+
+
+
+# client
+
+project(client)
+
+enable_language(CXX)
+
+add_executable(client cmd/client/client.cpp)
+
+add_dependencies(client platform shared hydrogen next)
+
+find_package(Threads REQUIRED)
+
+if (APPLE)
+    target_link_libraries(client platform shared hydrogen next Threads::Threads "-framework CoreFoundation" "-framework SystemConfiguration")
+else()
+    target_link_libraries(client platform shared hydrogen next Threads::Threads)
+endif()
 
 
 # client backend
@@ -83,12 +117,12 @@ file(GLOB CLIENT_BACKEND_HEADERS cmd/client_backend/*.h)
 
 add_executable(client_backend ${CLIENT_BACKEND_SOURCE} ${CLIENT_BACKEND_HEADERS} cmd/client_backend/client_backend_xdp_source.h)
 
-add_dependencies(client_backend platform shared sodium)
+add_dependencies(client_backend platform shared hydrogen)
 
 find_package(Threads REQUIRED)
 
 if (APPLE)
-	target_link_libraries(client_backend platform shared sodium Threads::Threads)
+	target_link_libraries(client_backend platform shared hydrogen Threads::Threads)
 elseif (UNIX)
-	target_link_libraries(client_backend platform shared sodium bpf xdp Threads::Threads)
+	target_link_libraries(client_backend platform shared hydrogen bpf xdp Threads::Threads)
 endif()

@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sodium.h>
 
 bool read_config( struct config_t * config )
 {

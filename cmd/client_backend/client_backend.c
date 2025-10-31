@@ -12,7 +12,6 @@
 
 #include <memory.h>
 #include <stdio.h>
-#include <sodium.h>
 #include <signal.h>
 
 static struct config_t config;

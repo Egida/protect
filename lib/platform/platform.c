@@ -7,8 +7,9 @@
 
 #include <assert.h>
 #include <time.h>
-#include <sodium.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -23,8 +24,6 @@ int platform_init()
     struct timespec ts;
     clock_gettime( CLOCK_MONOTONIC_RAW, &ts );
     time_start = ts.tv_sec + ( (double) ( ts.tv_nsec ) ) / 1000000000.0;
-    int result = sodium_init();
-    (void) result;
     return PLATFORM_OK;
 }
 
@@ -45,7 +44,8 @@ void platform_sleep( double time )
 
 void platform_random_bytes( uint8_t * buffer, int bytes )
 {
-    randombytes_buf( buffer, bytes );
+    // todo
+    // randombytes_buf( buffer, bytes );
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
