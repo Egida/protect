@@ -44,7 +44,14 @@ bool next_read_connect_token( next_connect_token_t * token, const char * input, 
         return false;
     }
 
-    // todo: verify signature
+    next_crypto_sign_state_t state;
+    next_crypto_sign_init( &state );
+    next_crypto_sign_update( &state, (uint8_t*) token, sizeof(next_connect_token_t) - sizeof(token->signature) );
+    int result = next_crypto_sign_final_verify( &state, &token->signature[0], public_key );
+    if ( result != 0 )
+    {
+        return false;
+    }
     
     return true;
 }
