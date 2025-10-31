@@ -300,6 +300,8 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                     {
                         __u8 * packet_data = (unsigned char*) (void*)udp + sizeof(struct udphdr);
 
+                        __u8 magic[8] = {0,0,0,0,0,0,0,0};
+
                         // Drop packets that are too small to be valid
 
                         if ( (void*)packet_data + 18 > data_end )
@@ -343,8 +345,6 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 #if ADVANCED_PACKET_FILTER
 
                         // Advanced packet filter
-
-                        __u8 magic[8] = {0,0,0,0,0,0,0,0};
 
                         __u32 from = ip->saddr;
                         __u32 to   = config->public_address;
