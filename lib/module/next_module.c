@@ -167,7 +167,7 @@ __bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int o
 
 __bpf_kfunc int bpf_next_ed25519( void * data, int data__sz, void * output, int output__sz )
 {
-    ed25519_hash( data, data__sz, output );
+    ed25519_verify( data, data__sz, output );
     return 0;
 }
 
