@@ -4,10 +4,9 @@
 */
 
 #include "next_connect_token.h"
-
-int connect_token_dummy = 0;
-
 #include "next_base64.h"
+#include "hydrogen.h"
+#include <memory.h>
 
 bool next_write_connect_token( next_connect_token_t * token, char * output, const uint8_t * private_key )
 {
@@ -15,17 +14,17 @@ bool next_write_connect_token( next_connect_token_t * token, char * output, cons
     next_assert( output );
     next_assert( private_key );
 
-    /*
-    next_crypto_sign_state_t state;
-    next_crypto_sign_init( &state );
-    next_crypto_sign_update( &state, (uint8_t*) token, sizeof(next_connect_token_t) - sizeof(token->signature) );
-    int result = next_crypto_sign_final_create( &state, &token->signature[0], NULL, private_key );
+    hydro_sign_state state;
+    char context[hydro_sign_CONTEXTBYTES];
+    memset( context, 0, sizeof(context) );
+    hydro_sign_init( &state, context );
+    hydro_sign_update( &state, (uint8_t*) token, sizeof(next_connect_token_t) - sizeof(token->signature) );
+    int result = hydro_sign_final_create( &state, &token->signature[0], private_key );
     if ( result != 0 )
     {
         output[0] = '\0';
         return false;
     }
-    */
 
     int bytes = next_base64_encode_data( (uint8_t*) token, sizeof(next_connect_token_t), output, NEXT_MAX_CONNECT_TOKEN_BYTES );
     if ( bytes <= 0 )
@@ -48,16 +47,16 @@ bool next_read_connect_token( next_connect_token_t * token, const char * input, 
         return false;
     }
 
-    /*
-    next_crypto_sign_state_t state;
-    next_crypto_sign_init( &state );
-    next_crypto_sign_update( &state, (uint8_t*) token, sizeof(next_connect_token_t) - sizeof(token->signature) );
-    int result = next_crypto_sign_final_verify( &state, &token->signature[0], public_key );
+    hydro_sign_state state;
+    char context[hydro_sign_CONTEXTBYTES];
+    memset( context, 0, sizeof(context) );
+    hydro_sign_init( &state, context );
+    hydro_sign_update( &state, (uint8_t*) token, sizeof(next_connect_token_t) - sizeof(token->signature) );
+    int result = hydro_sign_final_verify( &state, &token->signature[0], public_key );
     if ( result != 0 )
     {
         return false;
     }
-    */
     
     return true;
 }

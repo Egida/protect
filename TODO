@@ -6,57 +6,15 @@ DONE
 
     Setup a test linux server with 10G NIC with latitude.sh
 
+    Verify that I get reflected UDP packets back from the client backend running on latitude.sh
+
 TODO
-
-    S
-
-    ----------
-
-    Add a unit test for connect token. Lock it in.
-
-    ----------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
+    Update the write_connect_token and read_connect_token so they work with libhydrogen
 
     -------------
 
+    Add a unit test for connect token. Lock it in.
 
     -------------
 
