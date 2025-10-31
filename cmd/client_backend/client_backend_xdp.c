@@ -301,9 +301,9 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                     // todo
                     debug_printf( "ip->daddr = %x", ip->daddr );
-                    debug_printf( "udp->dest = %d", udp->dest );
+                    debug_printf( "udp->dest = %d", (int) udp->dest );
                     debug_printf( "config->public_address = %x", config->public_address );
-                    debug_printf( "config->port = %d", config->port );
+                    debug_printf( "config->port = %d", (int) config->port );
 
                     if ( ip->daddr == config->public_address && udp->dest == config->port )
                     {

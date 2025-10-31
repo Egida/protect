@@ -142,7 +142,7 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
         next_printf( NEXT_LOG_LEVEL_INFO, "connecting..." );
 
         next_address_t from_address;
-        next_address_parse( &from_address, "104.28.57.218" );            // home IP address
+        next_address_parse( &from_address, "45.79.157.168" );            // home IP address
 
         next_address_t to_address;
         next_address_parse( &to_address, "45.250.253.243:40000" );       // latitude.newyork
