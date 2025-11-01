@@ -1359,6 +1359,14 @@ void test_connect_token()
     next_check( memcmp( &input_token, &output_token, sizeof(next_connect_token_t) - sizeof(input_token.signature) ) == 0 );
 }
 
+void test_client_backend_token()
+{
+    uint8_t key[hydro_secretbox_KEYBYTES];
+    hydro_secretbox_keygen( key );
+
+    // ...
+}
+
 #define RUN_TEST( test_function )                                           \
     do                                                                      \
     {                                                                       \
@@ -1405,6 +1413,7 @@ void next_run_tests()
         RUN_TEST( test_out_of_order_tracker );
         RUN_TEST( test_jitter_tracker );
         RUN_TEST( test_connect_token );
+        RUN_TEST( test_client_backend_token );
     }
 }
 

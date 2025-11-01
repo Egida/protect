@@ -11,14 +11,13 @@
 #pragma pack(push,1)
 struct next_client_backend_token_t
 {
-    uint8_t nonce[16];
+    uint8_t crypto_header[hydro_secretbox_HEADERBYTES];
     uint64_t version;
     uint64_t expire_timestamp;
     uint64_t buyer_id;
     uint64_t server_id;
     uint64_t session_id;
     uint64_t user_hash;
-    uint8_t hmac[64];
 };
 #pragma pack(pop)
 
