@@ -10,10 +10,12 @@ DONE
 
     Update the write_connect_token and read_connect_token so they work with libhydrogen
 
-TODO
-
     Generate a new keypair with hydrogen, because it's not compatible with sodium keypairs
     
+TODO
+
+    Setup to unit test again
+
     -------------
 
     Add a unit test for connect token. Lock it in.

@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+add_compile_definitions(NEXT_DEVELOPMENT=1)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -72,6 +74,8 @@ add_library(next ${NEXT_SOURCE} ${NEXT_HEADERS})
 
 add_dependencies(next platform hydrogen)
 
+find_package(Threads REQUIRED)
+
 if (APPLE)
     target_link_libraries(next platform shared hydrogen Threads::Threads "-framework CoreFoundation" "-framework SystemConfiguration")
 else()
@@ -90,8 +94,6 @@ add_executable(client cmd/client/client.cpp)
 
 add_dependencies(client next)
 
-find_package(Threads REQUIRED)
-
 target_link_libraries(client next)
 
 
@@ -105,9 +107,21 @@ add_executable(server cmd/server/server.cpp)
 
 add_dependencies(server next)
 
-find_package(Threads REQUIRED)
-
 target_link_libraries(server next)
+
+
+
+# test
+
+project(test)
+
+enable_language(CXX)
+
+add_executable(test cmd/test/test.cpp)
+
+add_dependencies(test next)
+
+target_link_libraries(test next)
 
 
 
