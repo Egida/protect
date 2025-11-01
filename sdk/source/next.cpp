@@ -35,6 +35,8 @@
 #include <time.h>
 #include <atomic>
 
+#include "hydrogen.h"
+
 #if defined( _MSC_VER )
 #pragma warning(push)
 #pragma warning(disable:4996)
@@ -344,14 +346,11 @@ int next_init( void * context, next_config_t * config_in )
 
     next_printf( NEXT_LOG_LEVEL_INFO, "platform is %s (%s)", platform_string, connection_string );
 
-    // todo
-    /*
-    if ( next_crypto_init() == -1 )
+    if ( hydro_init() != 0 ) 
     {
-        next_printf( NEXT_LOG_LEVEL_ERROR, "failed to initialize sodium" );
+        next_printf( NEXT_LOG_LEVEL_ERROR, "failed to initialize hydrogen" );
         return NEXT_ERROR;
     }
-    */
 
     const char * log_level_override = next_platform_getenv( "NEXT_LOG_LEVEL" );
     if ( log_level_override )
