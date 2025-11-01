@@ -5,7 +5,7 @@
 
 #include "next_connect_token.h"
 #include "next_base64.h"
-#include "hydrogen.h"
+#include "next_hydrogen.h"
 #include <memory.h>
 
 bool next_write_connect_token( next_connect_token_t * token, char * output, const uint8_t * private_key )

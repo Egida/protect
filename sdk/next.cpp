@@ -20,6 +20,7 @@
 #include "next_jitter_tracker.h"
 #include "next_route_manager.h"
 #include "next_internal_config.h"
+#include "next_hydrogen.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -34,8 +35,6 @@
 #endif // #if defined( _MSC_VER )
 #include <time.h>
 #include <atomic>
-
-#include "hydrogen.h"
 
 #if defined( _MSC_VER )
 #pragma warning(push)

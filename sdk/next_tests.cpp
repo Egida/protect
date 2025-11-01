@@ -25,8 +25,7 @@
 #include "next_internal_config.h"
 #include "next_value_tracker.h"
 #include "next_connect_token.h"
-
-#include "hydrogen.h"
+#include "next_hydrogen.h"
 
 #include <math.h>
 #include <stdio.h>

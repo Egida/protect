@@ -15,22 +15,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include_directories(
 	"." 
 	"lib"
-    "sdk/include"
-	"sdk/hydrogen"
+    "sdk"
 )
-
-
-# hydrogen
-
-project(hydrogen)
-
-enable_language(C)
-
-file(GLOB HYDROGEN_SOURCE sdk/hydrogen/*.c)
-file(GLOB HYDROGEN_HEADERS sdk/hygrogen/*.h)
-
-add_library(hydrogen ${HYDROGEN_SOURCE} ${HYDROGEN_HEADERS})
-
 
 
 # platform
@@ -57,7 +43,7 @@ file(GLOB SHARED_HEADERS lib/shared/*.h)
 
 add_library(shared ${SHARED_SOURCE} ${SHARED_HEADERS})
 
-add_dependencies(shared platform hydrogen)
+add_dependencies(shared platform)
 
 
 
@@ -67,19 +53,19 @@ project(next)
 
 enable_language(CXX)
 
-file(GLOB NEXT_SOURCE sdk/source/*.cpp)
-file(GLOB NEXT_HEADERS sdk/include/*.h)
+file(GLOB NEXT_SOURCE sdk/*.cpp)
+file(GLOB NEXT_HEADERS sdk/*.h)
 
 add_library(next ${NEXT_SOURCE} ${NEXT_HEADERS})
 
-add_dependencies(next platform hydrogen)
+add_dependencies(next platform)
 
 find_package(Threads REQUIRED)
 
 if (APPLE)
-    target_link_libraries(next platform shared hydrogen Threads::Threads "-framework CoreFoundation" "-framework SystemConfiguration")
+    target_link_libraries(next platform shared Threads::Threads "-framework CoreFoundation" "-framework SystemConfiguration")
 else()
-    target_link_libraries(next platform shared hydrogen Threads::Threads)
+    target_link_libraries(next platform shared Threads::Threads)
 endif()
 
 
@@ -149,12 +135,12 @@ file(GLOB CLIENT_BACKEND_HEADERS cmd/client_backend/*.h)
 
 add_executable(client_backend ${CLIENT_BACKEND_SOURCE} ${CLIENT_BACKEND_HEADERS} cmd/client_backend/client_backend_xdp_source.h)
 
-add_dependencies(client_backend platform shared hydrogen)
+add_dependencies(client_backend platform shared)
 
 find_package(Threads REQUIRED)
 
 if (APPLE)
-	target_link_libraries(client_backend platform shared hydrogen Threads::Threads)
+	target_link_libraries(client_backend platform shared Threads::Threads)
 elseif (UNIX)
-	target_link_libraries(client_backend platform shared hydrogen bpf xdp Threads::Threads)
+	target_link_libraries(client_backend platform shared bpf xdp Threads::Threads)
 endif()
