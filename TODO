@@ -70,11 +70,7 @@ DONE
 
     nonce is automatically generated (random) and is secure. it's included in the header part.
 
-TODO
-
     Define the client backend token including crypto parts
-
-    -------------
 
     Implement next_write_client_backend_token
 
@@ -82,21 +78,38 @@ TODO
 
     Unit test client backend token
 
-    -------------
-
     Define the client init request and response packets (keep them simple for XDP)
 
-    -------------
+    Should just be:
 
-    Implement the client sending the client init request packet to n backends until it receives m responses from a backend and picks that client backend.
+        [0] (17 byte header) (connect token)
+        [1] (17 byte header) (client backend token)
 
-    -------------
+TODO
 
-    Implement client backend XDP program verifying client init request packet using hydrogen, and responding with a client backend token (symmetric encrypted).
-
-    -------------
-
-    Generalize connect token and client backend token so they know to do the bswap fixup for big endian machines
+    Implement the client sending the client init request packet to n backends until it receives a response. For any zero client backend address, do nothing.
 
     -------------
-¡
+
+    Implement client backend XDP program verifying client init request packet using hydrogen, and responding with an encrypted client backend token
+
+    -------------
+
+    Verify that we get a client backend init response back on the client
+
+    -------------
+
+    Now transition per-client backend from sending client init packets to sending client backend pings once the client init response is received:
+
+    Client backend ping packet:
+
+        [2] (17 byte header) (client backend token) (uint64 request_id)
+        [3] (17 byte header) (uint64 request id)
+
+    -------------
+
+    Generalize everything so it works across big and little endian machines.
+
+    Do it by byte swapping so we don't have to do per-field serialiazation. Keep it simple.
+
+    -------------

@@ -25,6 +25,7 @@
 #include "next_internal_config.h"
 #include "next_value_tracker.h"
 #include "next_connect_token.h"
+#include "next_client_backend_token.h"
 #include "next_hydrogen.h"
 
 #include <math.h>
@@ -1364,7 +1365,24 @@ void test_client_backend_token()
     uint8_t key[hydro_secretbox_KEYBYTES];
     hydro_secretbox_keygen( key );
 
-    // ...
+    uint8_t buffer[1024];
+
+    next_client_backend_token_t input_token;
+    memset( &input_token, 0, sizeof(input_token) );
+    input_token.expire_timestamp = next_random_uint64();
+    input_token.buyer_id = next_random_uint64();
+    input_token.server_id = next_random_uint64();
+    input_token.session_id = next_random_uint64();
+    input_token.user_hash = next_random_uint64();
+
+    next_check( next_write_client_backend_token( &input_token, buffer, key ) == sizeof(next_client_backend_token_t) );
+
+    next_client_backend_token_t output_token;
+    memset( &output_token, 0, sizeof(output_token) );
+
+    next_check( next_read_client_backend_token( &output_token, buffer, sizeof(next_client_backend_token_t), key ) );
+
+    next_check( memcmp( &input_token, &output_token, sizeof(next_client_backend_token_t) ) == 0 );
 }
 
 #define RUN_TEST( test_function )                                           \
