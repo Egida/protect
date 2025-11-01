@@ -249,6 +249,11 @@ uint64_t next_random_uint64()
     return value;
 }
 
+void next_random_bytes( uint8_t * data, size_t bytes )
+{
+    hydro_random_buf( (uint8_t*)&data, bytes );
+}
+
 // -------------------------------------------------------------
 
 size_t next_copy_string( char * dest, const char * source, size_t dest_size )

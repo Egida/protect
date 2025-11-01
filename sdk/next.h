@@ -332,6 +332,8 @@ NEXT_EXPORT_FUNC uint32_t next_random_uint32();
 
 NEXT_EXPORT_FUNC uint64_t next_random_uint64();
 
+NEXT_EXPORT_FUNC void next_random_bytes( uint8_t * data, size_t bytes );
+
 NEXT_EXPORT_FUNC uint64_t next_protocol_version();
 
 // -----------------------------------------

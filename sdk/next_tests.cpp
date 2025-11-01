@@ -985,6 +985,89 @@ void test_value_tracker()
     }
 }
 
+void test_packet_filter()
+{
+    uint8_t output[NEXT_MAX_PACKET_BYTES];
+    memset( output, 0, sizeof(output) );
+    output[0] = 1;
+
+    for ( int i = 0; i < 10000; ++i )
+    {
+        uint8_t magic[8];
+        uint8_t from_address[4];
+        uint8_t to_address[4];
+
+        next_random_bytes( magic, 8 );
+        next_random_bytes( from_address, 4 );
+        next_random_bytes( to_address, 4 );
+
+        int packet_length = 18 + ( i % ( sizeof(output) - 18 ) );
+        
+        next_generate_pittle( output + 1, from_address, to_address, packet_length );
+
+        next_generate_chonkle( output + 3, magic, from_address, to_address, packet_length );
+
+        next_check( next_basic_packet_filter( output, packet_length ) );
+
+#if NEXT_ADVANCED_PACKET_FILTER
+        next_check( next_advanced_packet_filter( output, magic, from_address, to_address, packet_length ) );
+#endif // #if NEXT_ADVANCED_PACKET_FILTER
+    }
+}
+
+void test_basic_packet_filter()
+{
+    uint8_t output[256];
+    memset( output, 0, sizeof(output) );
+    uint64_t pass = 0;
+    uint64_t iterations = 100;
+    srand( 100 );
+    for ( int i = 0; i < int(iterations); ++i )
+    {
+        for ( int j = 0; j < int(sizeof(output)); ++j )
+        {
+            output[j] = uint8_t( rand() % 256 );
+        }
+        if ( next_basic_packet_filter( output, rand() % sizeof(output) ) )
+        {
+            pass++;
+        }
+    }
+    next_check( pass == 0 );
+}
+
+#if NEXT_ADVANCED_PACKET_FILTER
+
+void test_advanced_packet_filter()
+{
+    uint8_t output[256];
+    memset( output, 0, sizeof(output) );
+    uint64_t pass = 0;
+    uint64_t iterations = 100;
+    srand( 100 );
+    for ( int i = 0; i < int(iterations); ++i )
+    {
+        uint8_t magic[8];
+        uint8_t from_address[4];
+        uint8_t to_address[4];
+        next_crypto_random_bytes( magic, 8 );
+        next_crypto_random_bytes( from_address, 4 );
+        next_crypto_random_bytes( to_address, 4 );
+        int packet_length = 18 + ( i % ( sizeof(output) - 18 ) );
+        for ( int j = 0; j < int(sizeof(output)); ++j )
+        {
+            output[j] = uint8_t( rand() % 256 );
+        }
+        if ( next_advanced_packet_filter( output, magic, from_address, to_address, packet_length ) )
+        {
+            pass++;
+        }
+    }
+    next_check( pass == 0 );
+}
+
+#endif // #if NEXT_ADVANCED_PACKET_FILTER
+
 void test_connect_token()
 {
     hydro_sign_keypair keypair;
@@ -1049,6 +1132,11 @@ void next_run_tests()
         RUN_TEST( test_platform_thread );
         RUN_TEST( test_platform_mutex );
         RUN_TEST( test_value_tracker );
+        RUN_TEST( test_packet_filter );
+        RUN_TEST( test_basic_packet_filter );
+#if NEXT_ADVANCED_PACKET_FILTER
+        RUN_TEST( test_advanced_packet_filter );
+#endif // #if NEXT_ADVANCED_PACKET_FILTER
         RUN_TEST( test_connect_token );
     }
 }
