@@ -16,9 +16,9 @@ DONE
 
     Add a unit test for connect token. Lock it in.
 
-TODO
-
     Bring back other unit tests that are not related to client/server.
+
+TODO
 
     -------------
 
