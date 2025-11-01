@@ -72,6 +72,8 @@ add_library(next ${NEXT_SOURCE} ${NEXT_HEADERS})
 
 add_dependencies(next platform hydrogen)
 
+target_link_libraries(client platform shared hydrogen)
+
 
 
 # client
