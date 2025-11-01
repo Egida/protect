@@ -12,11 +12,9 @@ DONE
 
     Generate a new keypair with hydrogen, because it's not compatible with sodium keypairs
     
-TODO
-
     Setup to unit test again
 
-    -------------
+TODO
 
     Add a unit test for connect token. Lock it in.
 
