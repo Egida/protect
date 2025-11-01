@@ -90,6 +90,8 @@ func main() {
 		server()
 	} else if command == "test" {
 		test()
+	} else if command == "keygen" {
+		keygen()
 	} else if command == "client-backend" {
 		client_backend()
 	} else {
@@ -115,4 +117,8 @@ func server() {
 
 func test() {
 	bash("./dist/test")
+}
+
+func keygen() {
+	bash("./dist/keygen")
 }

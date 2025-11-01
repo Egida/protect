@@ -111,6 +111,20 @@ target_link_libraries(test next)
 
 
 
+# keygen
+
+project(keygen)
+
+enable_language(CXX)
+
+add_executable(keygen cmd/keygen/keygen.cpp)
+
+add_dependencies(keygen next)
+
+target_link_libraries(keygen next)
+
+
+
 # client backend
 
 add_custom_command(
