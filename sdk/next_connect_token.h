@@ -15,6 +15,7 @@
 #pragma pack(push,1)
 struct next_connect_token_t
 {
+    uint64_t version;
     uint64_t expire_timestamp;
     uint64_t buyer_id;
     uint64_t server_id;
@@ -24,7 +25,7 @@ struct next_connect_token_t
     uint16_t client_backend_ports[MAX_CONNECT_TOKEN_BACKENDS];           // big endian port. 0 if not provided.
     uint8_t pings_per_second;
     uint8_t max_connect_seconds;
-    uint8_t signature[64];                                               // crypto_sign (Ed25519)
+    uint8_t signature[64];                                               // hydro_crypto_sign
 };
 #pragma pack(pop)
 
