@@ -45,6 +45,21 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
         return NULL;
     }
 
+    int num_backends_found = 0;
+    for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
+    {
+        if ( connect_token.backend_addresses[i] != 0 )
+        {
+            num_backends_found++;
+        }
+    }
+
+    if ( num_backends_found == 0 )
+    {
+        next_printf( NEXT_LOG_LEVEL_ERROR, "no backends found in connect token" );
+        return NULL;
+    }
+
     next_client_t * client = (next_client_t*) next_malloc( context, sizeof(next_client_t) );
     if ( !client )
     {
@@ -56,7 +71,7 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
     
     client->context = context;
     client->connect_token = connect_token;
-    client->state = NEXT_CLIENT_CONNECTING;
+    client->state = NEXT_CLIENT_INITIALIZING;
     client->packet_received_callback = packet_received_callback;
 
     next_address_t bind_address;

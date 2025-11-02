@@ -10,7 +10,7 @@
 
 #define NEXT_MAX_CONNECT_TOKEN_BYTES 500
 
-#define MAX_CONNECT_TOKEN_BACKENDS 32
+#define NEXT_MAX_CONNECT_TOKEN_BACKENDS 32
 
 #pragma pack(push,1)
 struct next_connect_token_t
@@ -21,11 +21,11 @@ struct next_connect_token_t
     uint64_t server_id;
     uint64_t session_id;
     uint64_t user_hash;
-    uint32_t client_backend_addresses[MAX_CONNECT_TOKEN_BACKENDS];       // big endian ipv4. 0 if not provided.
-    uint16_t client_backend_ports[MAX_CONNECT_TOKEN_BACKENDS];           // big endian port. 0 if not provided.
+    uint32_t backend_addresses[NEXT_MAX_CONNECT_TOKEN_BACKENDS];             // big endian ipv4. 0 if not provided.
+    uint16_t backend_ports[NEXT_MAX_CONNECT_TOKEN_BACKENDS];                 // big endian port. 0 if not provided.
     uint8_t pings_per_second;
     uint8_t max_connect_seconds;
-    uint8_t signature[64];                                               // hydro_crypto_sign
+    uint8_t signature[64];                                                   // hydro_crypto_sign
 };
 #pragma pack(pop)
 

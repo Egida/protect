@@ -1340,10 +1340,10 @@ void test_connect_token()
     input_token.server_id = next_random_uint64();
     input_token.session_id = next_random_uint64();
     input_token.user_hash = next_random_uint64();
-    for ( int i = 0; i < MAX_CONNECT_TOKEN_BACKENDS; i++ )
+    for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
     {
-        input_token.client_backend_addresses[i] = next_random_uint32();
-        input_token.client_backend_ports[i] = next_random_uint32();
+        input_token.backend_addresses[i] = next_random_uint32();
+        input_token.backend_ports[i] = (uint16_t) next_random_uint32();
     }        
     input_token.pings_per_second = 10;
     input_token.max_connect_seconds = 30;
