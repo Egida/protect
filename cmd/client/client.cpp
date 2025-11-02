@@ -52,6 +52,18 @@ int main()
     {
         next_connect_token_t token;
         memset( &token, 0, sizeof(token) );
+        token.expire_timestamp = next_random_uint64();
+        token.buyer_id = next_random_uint64();
+        token.server_id = next_random_uint64();
+        token.session_id = next_random_uint64();
+        token.user_hash = next_random_uint64();
+        for ( int i = 0; i < MAX_CONNECT_TOKEN_BACKENDS; i++ )
+        {
+            token.client_backend_addresses[i] = next_random_uint32();
+            token.client_backend_ports[i] = next_random_uint32();
+        }        
+        token.pings_per_second = 10;
+        token.max_connect_seconds = 30;
         if ( !next_write_connect_token( &token, connect_token_string, buyer_private_key ) )
         {
             next_printf( NEXT_LOG_LEVEL_ERROR, "failed to write connect token" );
@@ -59,14 +71,7 @@ int main()
         }
     }
 
-    next_connect_token_t token;
-    if ( !next_read_connect_token( &token, connect_token_string, buyer_public_key ) )
-    {
-        next_printf( NEXT_LOG_LEVEL_ERROR, "failed to read connect token" );
-        return 1;        
-    }
-
-    next_client_t * client = next_client_create( NULL, connect_token_string, packet_received_callback );
+    next_client_t * client = next_client_create( NULL, connect_token_string, buyer_public_key, packet_received_callback );
     if ( !client )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "could not create client" );

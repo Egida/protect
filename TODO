@@ -85,7 +85,13 @@ DONE
         [0] (17 byte header) (connect token)
         [1] (17 byte header) (client backend token)
 
+    Extend the client state machine so it has initializing as a state
+
 TODO
+
+    Parse the connect token and extract the data needed to initialize
+
+    -------------
 
     Implement the client sending the client init request packet to n backends until it receives a response. For any zero client backend address, do nothing.
 

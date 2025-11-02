@@ -11,10 +11,11 @@
 struct next_client_t;
 
 #define NEXT_CLIENT_DISCONNECTED      0
-#define NEXT_CLIENT_CONNECTING        1
-#define NEXT_CLIENT_CONNECTED         2
+#define NEXT_CLIENT_INITIALIZING      1
+#define NEXT_CLIENT_CONNECTING        2
+#define NEXT_CLIENT_CONNECTED         3
 
-next_client_t * next_client_create( void * context, const char * connect_token, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) );
+next_client_t * next_client_create( void * context, const char * connect_token, const uint8_t * buyer_public_key, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) );
 
 void next_client_destroy( next_client_t * client );
 

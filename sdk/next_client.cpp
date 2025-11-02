@@ -9,6 +9,7 @@
 #include "next_constants.h"
 #include "next_platform.h"
 #include "next_packet_filter.h"
+#include "next_connect_token.h"
 
 #include <memory.h>
 
@@ -20,6 +21,7 @@ struct next_client_t
     void * context;
     int state;
     uint16_t bound_port;
+    next_connect_token_t connect_token;
     int num_updates;
     uint64_t session_id;
     uint64_t server_id;
@@ -30,24 +32,30 @@ struct next_client_t
 // todo
 // extern next_internal_config_t next_global_config;
 
-next_client_t * next_client_create( void * context, const char * connect_token, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) )
+next_client_t * next_client_create( void * context, const char * connect_token_string, const uint8_t * buyer_public_key, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) )
 {
     next_assert( connect_token );
+    next_assert( buyer_public_key );
     next_assert( packet_received_callback );
 
-    // todo
-    (void) connect_token;
-    printf( "connect token: '%s'\n", connect_token );
-
-    next_assert( packet_received_callback );
+    next_connect_token_t connect_token;
+    if ( !next_read_connect_token( &connect_token, connect_token_string, buyer_public_key ) )
+    {
+        next_printf( NEXT_LOG_LEVEL_ERROR, "connect token is invalid" );
+        return NULL;
+    }
 
     next_client_t * client = (next_client_t*) next_malloc( context, sizeof(next_client_t) );
     if ( !client )
+    {
+        next_printf( NEXT_LOG_LEVEL_ERROR, "could not allocate next_client_t" );
         return NULL;
+    }
 
     memset( client, 0, sizeof( next_client_t) );
     
     client->context = context;
+    client->connect_token = connect_token;
     client->state = NEXT_CLIENT_CONNECTING;
     client->packet_received_callback = packet_received_callback;
 
@@ -133,10 +141,9 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
 {
     next_assert( client );
 
-    // todo: mock packets for testing xdp client backend
-    if ( client->state == NEXT_CLIENT_CONNECTING )
+    if ( client->state == NEXT_CLIENT_INITIALIZING )
     {
-        next_printf( NEXT_LOG_LEVEL_INFO, "connecting..." );
+        next_printf( NEXT_LOG_LEVEL_INFO, "initializing..." );
 
         next_address_t from_address;
         next_address_parse( &from_address, "45.79.157.168" );            // home IP address
