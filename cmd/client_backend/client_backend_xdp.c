@@ -23,6 +23,12 @@
 #include <linux/string.h>
 #include <bpf/bpf_helpers.h>
 
+#define NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST         0
+#define NEXT_CLIENT_BACKEND_PACKET_INIT_RESPONSE        1
+#define NEXT_CLIENT_BACKEND_PACKET_PING                 2
+#define NEXT_CLIENT_BACKEND_PACKET_PONG                 3
+#define NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN        4
+
 #define ADVANCED_PACKET_FILTER 0
 
 #include "client_backend_shared.h"
@@ -520,17 +526,36 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
 #endif // #if ADVANCED_PACKET_FILTER
 
-                        // todo: temporary reflect 18 byte header + 100 byte payload below
-
-                        if ( (void*)packet_data + 118 != data_end )
+                        switch ( packet_data[0] )
                         {
-                            debug_printf( "udp packet is not 118 bytes" );
-                            return XDP_DROP;
+                            case NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST:
+                            {
+                                if ( (void*)packet_data + 336 != data_end )
+                                {
+                                    debug_printf( "client backend init request packet is wrong size" );
+                                    return XDP_DROP;
+                                }
+
+                                debug_printf( "reflect packet" );
+
+                                reflect_packet( data, 336, magic );
+                            }
+                            break;
+
+                            case NEXT_CLIENT_BACKEND_PACKET_PING:
+                            {
+                                // ...
+                            }
+                            break;
+                            
+                            case NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN:
+                            {
+                                // ...
+                            }
+
+                            default:
+                                return XDP_DROP;
                         }
-
-                        debug_printf( "reflect packet" );
-
-                        reflect_packet( data, 118, magic );
 
                         return XDP_TX;
                     }
