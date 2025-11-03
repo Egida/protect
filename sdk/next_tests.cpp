@@ -1340,6 +1340,7 @@ void test_connect_token()
     input_token.server_id = next_random_uint64();
     input_token.session_id = next_random_uint64();
     input_token.user_hash = next_random_uint64();
+    input_token.client_public_address = next_random_uint32();
     for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
     {
         input_token.backend_addresses[i] = next_random_uint32();

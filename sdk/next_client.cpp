@@ -10,11 +10,19 @@
 #include "next_platform.h"
 #include "next_packet_filter.h"
 #include "next_connect_token.h"
+#include "next_client_backend_token.h"
 
 #include <memory.h>
 
 // todo
 #include <stdio.h>
+
+struct next_client_backend_init_data_t
+{
+    bool initializing;
+    int num_pongs_received;
+    next_client_backend_token_t backend_token;
+};
 
 struct next_client_t
 {
@@ -22,6 +30,7 @@ struct next_client_t
     int state;
     uint16_t bound_port;
     next_connect_token_t connect_token;
+    next_client_backend_init_data_t client_backend_init_data;
     int num_updates;
     uint64_t session_id;
     uint64_t server_id;
@@ -127,10 +136,53 @@ void next_client_destroy( next_client_t * client )
     next_clear_and_free( client->context, client, sizeof(next_client_t) );
 }
 
-void next_client_update( next_client_t * client )
+void next_client_update_initialize( next_client_t * client )
 {
-    next_assert( client );
+    next_printf( NEXT_LOG_LEVEL_INFO, "initializing..." );
 
+    for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
+    {
+        if ( client->connect_token.backend_addresses[i] == 0 )
+            continue;
+
+        // ...
+    }
+
+    // todo
+    /*
+    next_address_t from_address;
+    next_address_parse( &from_address, "45.79.157.168" );            // home IP address
+
+    next_address_t to_address;
+    next_address_parse( &to_address, "45.250.253.243:40000" );       // latitude.newyork
+
+    uint8_t from_address_data[32];
+    next_address_data( &from_address, from_address_data );
+
+    uint8_t to_address_data[32];
+    next_address_data( &to_address, to_address_data );
+
+    uint8_t test_packet_data[18+100];
+    memset( test_packet_data, 0, sizeof(test_packet_data) );
+
+    uint8_t * a = test_packet_data + 1;
+    uint8_t * b = test_packet_data + 3;
+
+    uint8_t magic[8];
+    memset( magic, 0, sizeof(magic) );
+
+    int test_packet_length = 118;
+    next_generate_pittle( a, from_address_data, to_address_data, test_packet_length );
+    next_generate_chonkle( b, magic, from_address_data, to_address_data, test_packet_length );
+
+    test_packet_data[0] = 0;
+
+    next_platform_socket_send_packet( client->socket, &to_address, test_packet_data, test_packet_length );
+    */
+}
+
+void next_client_update_receive_packets( next_client_t * client )
+{
     // todo
     uint8_t packet_data[1024];
     next_address_t from;
@@ -139,6 +191,18 @@ void next_client_update( next_client_t * client )
     {
         next_printf( NEXT_LOG_LEVEL_INFO, "client received %d byte packet\n", packet_bytes );
     }
+}
+
+void next_client_update( next_client_t * client )
+{
+    next_assert( client );
+
+    if ( client->state == NEXT_CLIENT_INITIALIZING )
+    {
+        next_client_update_initialize( client );
+    }
+
+    next_client_update_receive_packets( client );
 
     // todo: mock connection
     client->num_updates++;
@@ -155,40 +219,6 @@ void next_client_update( next_client_t * client )
 void next_client_send_packet( next_client_t * client, const uint8_t * packet_data, int packet_bytes )
 {
     next_assert( client );
-
-    if ( client->state == NEXT_CLIENT_INITIALIZING )
-    {
-        next_printf( NEXT_LOG_LEVEL_INFO, "initializing..." );
-
-        next_address_t from_address;
-        next_address_parse( &from_address, "45.79.157.168" );            // home IP address
-
-        next_address_t to_address;
-        next_address_parse( &to_address, "45.250.253.243:40000" );       // latitude.newyork
-
-        uint8_t from_address_data[32];
-        next_address_data( &from_address, from_address_data );
-
-        uint8_t to_address_data[32];
-        next_address_data( &to_address, to_address_data );
-
-        uint8_t test_packet_data[18+100];
-        memset( test_packet_data, 0, sizeof(test_packet_data) );
-
-        uint8_t * a = test_packet_data + 1;
-        uint8_t * b = test_packet_data + 3;
-
-        uint8_t magic[8];
-        memset( magic, 0, sizeof(magic) );
-
-        int test_packet_length = 118;
-        next_generate_pittle( a, from_address_data, to_address_data, test_packet_length );
-        next_generate_chonkle( b, magic, from_address_data, to_address_data, test_packet_length );
-
-        test_packet_data[0] = 0;
-
-        next_platform_socket_send_packet( client->socket, &to_address, test_packet_data, test_packet_length );
-    }
 
     if ( client->state != NEXT_CLIENT_CONNECTED )
         return;

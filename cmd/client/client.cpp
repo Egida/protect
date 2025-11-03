@@ -87,9 +87,9 @@ int main()
 
     while ( !quit )
     {
-        next_client_send_packet( client, packet_data, (int) sizeof(packet_data) );
-
         next_client_update( client );
+
+        next_client_send_packet( client, packet_data, (int) sizeof(packet_data) );
 
         if ( !previous_connected )
         {
