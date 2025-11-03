@@ -53,9 +53,9 @@ struct ed25519_args
     __u8 signature[64];
 };
 
-int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz ) __ksym;
+extern int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz ) __ksym;
 
-int bpf_next_ed25519( void * data, int data__sz, struct ed25519_args * args ) __ksym;
+extern int bpf_next_ed25519( void * data, int data__sz, struct ed25519_args * args ) __ksym;
 
 struct {
     __uint( type, BPF_MAP_TYPE_ARRAY );
