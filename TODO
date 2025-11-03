@@ -2,13 +2,13 @@ DONE
 
     Implement the client sending the client init request packet to n backends until it receives a response. For any zero client backend address, do nothing.
 
-TODO
-
     Uhoh. We can't just send the connect token to the client backend because it contains the user hash (personal data)
 
     So we have to extend the connect token so it has an encrypted part, and this will require asymmetric encryption, since the buyer creates the connect token.
 
-    *sigh*
+TODO
+
+    Implement part where we send the client backend init request packet to the client backend during init
 
     -------------
 
@@ -31,6 +31,10 @@ TODO
 
     Generalize everything so it works across big and little endian machines.
 
-    Do it by byte swapping so we don't have to do per-field serialiazation. Keep it simple.
+    Do it by byte swapping so we don't have to do per-field serialization. Keep it simple.
+
+    -------------
+
+    Fix the connect token so we never send the user hash over un-encrypted channels
 
     -------------

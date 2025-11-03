@@ -158,25 +158,32 @@ void next_client_send_backend_init_request_packet( next_client_t * client, next_
     uint8_t from_address_data[32];
     next_address_data( &from_address, from_address_data );
 
-    uint8_t test_packet_data[18+100];
-    memset( test_packet_data, 0, sizeof(test_packet_data) );
+    uint8_t packet_data[NEXT_MAX_PACKET_BYTES];
+    memset( packet_data, 0, sizeof(packet_data) );
 
-    uint8_t * a = test_packet_data + 1;
-    uint8_t * b = test_packet_data + 3;
+    uint8_t * a = packet_data + 1;
+    uint8_t * b = packet_data + 3;
 
     uint8_t magic[8];
     memset( magic, 0, sizeof(magic) );
 
-    int test_packet_length = 118;
-    next_generate_pittle( a, from_address_data, to_address_data, test_packet_length );
-    next_generate_chonkle( b, magic, from_address_data, to_address_data, test_packet_length );
+    uint8_t * p = packet_data;
 
-    test_packet_data[0] = NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST;
+    *p = NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST;
+    p += 18;
 
-    // todo
-    (void) request_id;
+    memcpy( p, &client->connect_token, sizeof(next_connect_token_t) );               // todo: endian
+    p += sizeof(next_connect_token_t);
 
-    next_platform_socket_send_packet( client->socket, to_address, test_packet_data, test_packet_length );
+    memcpy( p, &request_id, 8 );                                                                 // todo: endian
+    p += 8;
+
+    int packet_length = (int) ( p - packet_data );
+
+    next_generate_pittle( a, from_address_data, to_address_data, packet_length );
+    next_generate_chonkle( b, magic, from_address_data, to_address_data, packet_length );
+
+    next_platform_socket_send_packet( client->socket, to_address, packet_data, packet_length );
 }
 
 void next_client_update_initialize( next_client_t * client )
