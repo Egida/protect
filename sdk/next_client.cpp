@@ -21,6 +21,7 @@
 struct next_client_backend_init_data_t
 {
     double next_update_time;
+    uint64_t request_id;
     bool initialized;
     int num_pongs_received;
     next_client_backend_token_t backend_token;
