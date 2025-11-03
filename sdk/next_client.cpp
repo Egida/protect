@@ -12,6 +12,8 @@
 #include "next_connect_token.h"
 #include "next_client_backend_token.h"
 
+#include "platform/platform.h"
+
 #include <memory.h>
 
 // todo
@@ -151,7 +153,9 @@ void next_client_update_initialize( next_client_t * client )
         next_address_parse( &from_address, "45.79.157.168" );            // home IP address
 
         next_address_t to_address;
-        next_address_parse( &to_address, "45.250.253.243:40000" );       // latitude.newyork
+        to_address.type = NEXT_ADDRESS_IPV4;
+        memcpy( to_address.data.ipv4, (uint8_t*) &client->connect_token.backend_addresses[i], 4 );
+        to_address.port = platform_ntohs( client->connect_token.backend_ports[i] );
 
         uint8_t from_address_data[32];
         next_address_data( &from_address, from_address_data );

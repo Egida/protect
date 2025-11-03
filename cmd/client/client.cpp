@@ -8,6 +8,7 @@
 #include "next_base64.h"
 #include "next_connect_token.h"
 #include "next_hydrogen.h"
+#include "platform/platform.h"
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
@@ -57,11 +58,8 @@ int main()
         token.server_id = next_random_uint64();
         token.session_id = next_random_uint64();
         token.user_hash = next_random_uint64();
-        for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
-        {
-            token.backend_addresses[i] = next_random_uint32();
-            token.backend_ports[i] = (uint16_t) next_random_uint32();
-        }        
+        token.backend_addresses[0] = 0xf3fdfa2d;
+        token.backend_ports[0] = platform_htons( 40000 );
         token.pings_per_second = 10;
         token.max_connect_seconds = 30;
         if ( !next_write_connect_token( &token, connect_token_string, buyer_private_key ) )
