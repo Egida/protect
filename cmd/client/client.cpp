@@ -58,7 +58,8 @@ int main()
         token.server_id = next_random_uint64();
         token.session_id = next_random_uint64();
         token.user_hash = next_random_uint64();
-        token.backend_addresses[0] = 0xf3fdfa2d;
+        token.client_public_address = 0xa89d4f2d;               // 45.79.157.168  (home isp address)
+        token.backend_addresses[0] = 0xf3fdfa2d;                // 45.250.253.243 (latitude.newyork)
         token.backend_ports[0] = platform_htons( 40000 );
         token.pings_per_second = 10;
         token.max_connect_seconds = 30;

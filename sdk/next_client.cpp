@@ -21,7 +21,8 @@
 
 struct next_client_backend_init_data_t
 {
-    bool initializing;
+    double next_update_time;
+    bool initialized;
     int num_pongs_received;
     next_client_backend_token_t backend_token;
 };
@@ -32,7 +33,7 @@ struct next_client_t
     int state;
     uint16_t bound_port;
     next_connect_token_t connect_token;
-    next_client_backend_init_data_t client_backend_init_data;
+    next_client_backend_init_data_t backend_init_data;
     int num_updates;
     uint64_t session_id;
     uint64_t server_id;
@@ -142,23 +143,27 @@ void next_client_update_initialize( next_client_t * client )
 {
     next_printf( NEXT_LOG_LEVEL_INFO, "initializing..." );
 
+    next_address_t from_address;
+    memset( &from_address, 0, sizeof(from_address) );
+    from_address.type = NEXT_ADDRESS_IPV4;
+    memcpy( from_address.data.ipv4, (uint8_t*) &client->connect_token.client_public_address, 4 );
+
+    uint8_t from_address_data[32];
+    next_address_data( &from_address, from_address_data );
+
     for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
     {
         if ( client->connect_token.backend_addresses[i] == 0 )
             continue;
 
         // todo: distribute packet sends 10 times per-second
-
-        next_address_t from_address;
-        next_address_parse( &from_address, "45.79.157.168" );            // home IP address
+        // if ( client->backend_init_data[i].next
 
         next_address_t to_address;
+        memset( &to_address, 0, sizeof(to_address) );
         to_address.type = NEXT_ADDRESS_IPV4;
         memcpy( to_address.data.ipv4, (uint8_t*) &client->connect_token.backend_addresses[i], 4 );
         to_address.port = platform_ntohs( client->connect_token.backend_ports[i] );
-
-        uint8_t from_address_data[32];
-        next_address_data( &from_address, from_address_data );
 
         uint8_t to_address_data[32];
         next_address_data( &to_address, to_address_data );
