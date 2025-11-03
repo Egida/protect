@@ -539,10 +539,10 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                 // todo: look up buyer public key by buyer_id in map
 
                                 // todo: move to buyer map
-                                const __u8 buyer_public_key[] = { 0x9d, 0x59, 0x40, 0xa4, 0xe2, 0x4a, 0xa3, 0x0a, 0xf2, 0x30, 0xb6, 0x1b, 0x49, 0x7d, 0x60, 0xe8, 0x6d, 0xf9, 0x03, 0x28, 0x5c, 0x96, 0x83, 0x06, 0x89, 0xf5, 0xdd, 0x62, 0x8a, 0x25, 0x95, 0x16 };
+                                __u8 buyer_public_key[] = { 0x9d, 0x59, 0x40, 0xa4, 0xe2, 0x4a, 0xa3, 0x0a, 0xf2, 0x30, 0xb6, 0x1b, 0x49, 0x7d, 0x60, 0xe8, 0x6d, 0xf9, 0x03, 0x28, 0x5c, 0x96, 0x83, 0x06, 0x89, 0xf5, 0xdd, 0x62, 0x8a, 0x25, 0x95, 0x16 };
 
                                 __u8 signature[64];
-                                if ( bpf_next_ed25519( packet_data + 18, 310, signature, sizeof(signature), buyer_public_key, sizeof(public_key__sz) ) != 0 )
+                                if ( bpf_next_ed25519( packet_data + 18, 310, signature, sizeof(signature), buyer_public_key, sizeof(buyer_public_key) ) != 0 )
                                 {
                                     debug_printf( "could not create ed25519 signature" );
                                     return XDP_DROP;
