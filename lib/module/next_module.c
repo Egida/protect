@@ -33,7 +33,7 @@ __bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int o
 
 struct ed25519_args
 {
-    __u8 public_key[64];
+    __u8 public_key[32];
     __u8 signature[64];
 };
 
