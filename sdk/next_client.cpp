@@ -33,7 +33,7 @@ struct next_client_t
     int state;
     uint16_t bound_port;
     next_connect_token_t connect_token;
-    next_client_backend_init_data_t backend_init_data;
+    next_client_backend_init_data_t backend_init_data[NEXT_MAX_CONNECT_TOKEN_BACKENDS];
     int num_updates;
     uint64_t session_id;
     uint64_t server_id;
@@ -69,6 +69,12 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
     if ( num_backends_found == 0 )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "no backends found in connect token" );
+        return NULL;
+    }
+
+    if ( connect_token.pings_per_second == 0 )
+    {
+        next_printf( NEXT_LOG_LEVEL_ERROR, "pings per-second is zero in connect token" );
         return NULL;
     }
 
@@ -151,13 +157,25 @@ void next_client_update_initialize( next_client_t * client )
     uint8_t from_address_data[32];
     next_address_data( &from_address, from_address_data );
 
+    double current_time = platform_time();
+
     for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
     {
         if ( client->connect_token.backend_addresses[i] == 0 )
             continue;
 
-        // todo: distribute packet sends 10 times per-second
-        // if ( client->backend_init_data[i].next
+        if ( client->backend_init_data[i].next_update_time == 0.0 )
+        {
+            client->backend_init_data[i].next_update_time = current_time + next_random_float() * ( 1.0 / client->connect_token.pings_per_second );
+        }
+        else if ( client->backend_init_data[i].next_update_time >= current_time )
+        {
+            client->backend_init_data[i].next_update_time += ( 1.0 / client->connect_token.pings_per_second );
+        }
+        else
+        {
+            continue;
+        }
 
         next_address_t to_address;
         memset( &to_address, 0, sizeof(to_address) );
@@ -184,6 +202,9 @@ void next_client_update_initialize( next_client_t * client )
         test_packet_data[0] = 0;
 
         next_platform_socket_send_packet( client->socket, &to_address, test_packet_data, test_packet_length );
+
+        // todo
+        printf( "sent init packet\n" );
     }
 }
 

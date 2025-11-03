@@ -10,6 +10,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define PLATFORM_OK             1
 #define PLATFORM_ERROR          0
 
@@ -186,5 +191,9 @@ void platform_mutex_release( struct platform_mutex_t * mutex );
 void platform_mutex_destroy( struct platform_mutex_t * mutex );
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // #ifndef PLATFORM_H
