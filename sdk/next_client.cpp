@@ -145,40 +145,37 @@ void next_client_update_initialize( next_client_t * client )
         if ( client->connect_token.backend_addresses[i] == 0 )
             continue;
 
-        // ...
+        // todo: distribute packet sends 10 times per-second
+
+        next_address_t from_address;
+        next_address_parse( &from_address, "45.79.157.168" );            // home IP address
+
+        next_address_t to_address;
+        next_address_parse( &to_address, "45.250.253.243:40000" );       // latitude.newyork
+
+        uint8_t from_address_data[32];
+        next_address_data( &from_address, from_address_data );
+
+        uint8_t to_address_data[32];
+        next_address_data( &to_address, to_address_data );
+
+        uint8_t test_packet_data[18+100];
+        memset( test_packet_data, 0, sizeof(test_packet_data) );
+
+        uint8_t * a = test_packet_data + 1;
+        uint8_t * b = test_packet_data + 3;
+
+        uint8_t magic[8];
+        memset( magic, 0, sizeof(magic) );
+
+        int test_packet_length = 118;
+        next_generate_pittle( a, from_address_data, to_address_data, test_packet_length );
+        next_generate_chonkle( b, magic, from_address_data, to_address_data, test_packet_length );
+
+        test_packet_data[0] = 0;
+
+        next_platform_socket_send_packet( client->socket, &to_address, test_packet_data, test_packet_length );
     }
-
-    // todo
-    /*
-    next_address_t from_address;
-    next_address_parse( &from_address, "45.79.157.168" );            // home IP address
-
-    next_address_t to_address;
-    next_address_parse( &to_address, "45.250.253.243:40000" );       // latitude.newyork
-
-    uint8_t from_address_data[32];
-    next_address_data( &from_address, from_address_data );
-
-    uint8_t to_address_data[32];
-    next_address_data( &to_address, to_address_data );
-
-    uint8_t test_packet_data[18+100];
-    memset( test_packet_data, 0, sizeof(test_packet_data) );
-
-    uint8_t * a = test_packet_data + 1;
-    uint8_t * b = test_packet_data + 3;
-
-    uint8_t magic[8];
-    memset( magic, 0, sizeof(magic) );
-
-    int test_packet_length = 118;
-    next_generate_pittle( a, from_address_data, to_address_data, test_packet_length );
-    next_generate_chonkle( b, magic, from_address_data, to_address_data, test_packet_length );
-
-    test_packet_data[0] = 0;
-
-    next_platform_socket_send_packet( client->socket, &to_address, test_packet_data, test_packet_length );
-    */
 }
 
 void next_client_update_receive_packets( next_client_t * client )
