@@ -145,7 +145,7 @@ void next_client_destroy( next_client_t * client )
     next_clear_and_free( client->context, client, sizeof(next_client_t) );
 }
 
-void next_client_send_backend_init_request_packet( next_client_t * client, next_address_t * to_address )
+void next_client_send_backend_init_request_packet( next_client_t * client, next_address_t * to_address, uint64_t request_id )
 {
     uint8_t to_address_data[32];
     next_address_data( to_address, to_address_data );
@@ -173,10 +173,10 @@ void next_client_send_backend_init_request_packet( next_client_t * client, next_
 
     test_packet_data[0] = NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST;
 
-    next_platform_socket_send_packet( client->socket, to_address, test_packet_data, test_packet_length );
-
     // todo
-    printf( "sent init packet\n" );
+    (void) request_id;
+
+    next_platform_socket_send_packet( client->socket, to_address, test_packet_data, test_packet_length );
 }
 
 void next_client_update_initialize( next_client_t * client )
@@ -185,8 +185,6 @@ void next_client_update_initialize( next_client_t * client )
         Our strategy is to ping n client backends and accept the first backend that we init with and receive n pongs from
         This biases us towards selecting the client backend with the lowest latency lowest packet loss for the client
     */
-
-    next_printf( NEXT_LOG_LEVEL_INFO, "initializing..." );
 
     double current_time = next_platform_time();
 
@@ -197,37 +195,51 @@ void next_client_update_initialize( next_client_t * client )
     {
         if ( client->connect_token.backend_addresses[i] == 0 )
         {
+            client->backend_init_data[i].request_id = next_random_uint64();
             continue;
         }
 
         if ( client->backend_init_data[i].next_update_time == 0.0 )
         {
             client->backend_init_data[i].next_update_time = current_time + next_random_float() * ( 1.0 / client->connect_token.pings_per_second );
-        }
-        else if ( client->backend_init_data[i].next_update_time >= current_time )
-        {
-            client->backend_init_data[i].next_update_time += ( 1.0 / client->connect_token.pings_per_second );
-        }
-        else
-        {
             continue;
         }
 
+        if ( client->backend_init_data[i].next_update_time > current_time )
+        {
+            continue;
+        }
+        
+        client->backend_init_data[i].next_update_time += ( 1.0 / client->connect_token.pings_per_second );            
+
         next_address_t to;
         next_address_load_ipv4( &to, client->connect_token.backend_addresses[i], client->connect_token.backend_ports[i] );
-        next_client_send_backend_init_request_packet( client, &to );
+
+        next_client_send_backend_init_request_packet( client, &to, client->backend_init_data[i].request_id );
     }
 }
 
 void next_client_update_receive_packets( next_client_t * client )
 {
-    // todo
-    uint8_t packet_data[1024];
+    next_assert( client );
+
+    uint8_t packet_data[NEXT_MAX_PACKET_BYTES];
     next_address_t from;
     int packet_bytes = next_platform_socket_receive_packet( client->socket, &from, packet_data, sizeof(packet_data) );
-    if ( packet_bytes != 0 )
+    if ( packet_bytes == 0 )
+        return;
+
+    if ( client->state == NEXT_CLIENT_CONNECTED )
     {
-        next_printf( NEXT_LOG_LEVEL_INFO, "client received %d byte packet\n", packet_bytes );
+        // common case: client is connected
+    }
+    else if ( client->state == NEXT_CLIENT_INITIALIZING )
+    {
+        // client is initializing
+
+        next_printf( NEXT_LOG_LEVEL_INFO, "client received %d byte packet while initializing", packet_bytes );
+
+        // ...
     }
 }
 
