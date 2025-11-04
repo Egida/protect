@@ -21,9 +21,9 @@ struct next_sign_verify_args
     __u8 public_key[NEXT_SIGN_PUBLIC_KEY_BYTES];
 };
 
-int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz );
+extern int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz );
 
 
-int bpf_next_sign_create( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_create_args * args );
+extern int bpf_next_sign_create( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_create_args * args );
 
-int bpf_next_sign_verify( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_verify_args * args );
+extern int bpf_next_sign_verify( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_verify_args * args );
