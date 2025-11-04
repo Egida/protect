@@ -24,11 +24,6 @@
 #include <crypto/kpp.h>
 #include "hydrogen.h"
 
-MODULE_VERSION( "1.0.0" );
-MODULE_LICENSE( "GPL" ); 
-MODULE_AUTHOR( "Glenn Fiedler" ); 
-MODULE_DESCRIPTION( "Network Next kernel module" );
-
 __bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz );
 
 struct next_sign_args
@@ -156,3 +151,8 @@ static void __exit next_exit( void )
 
 module_init( next_init );
 module_exit( next_exit );
+
+MODULE_VERSION( "1.0.0" );
+MODULE_LICENSE( "GPL" ); 
+MODULE_AUTHOR( "Glenn Fiedler" ); 
+MODULE_DESCRIPTION( "Network Next kernel module" );
