@@ -10,7 +10,7 @@
         sudo ip link set dev enp4s0 xdp off
 */
 
-#ifdef __linux__
+#if defined(__linux__) && defined(__KERNEL__)
 
 #include <linux/in.h>
 #include <linux/if_ether.h>
@@ -665,4 +665,4 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
 char _license[] SEC("license") = "GPL";
 
-#endif // #ifdef __linux__
+#endif // #if defined(__linux__) && defined(__KERNEL__)

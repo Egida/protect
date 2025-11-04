@@ -7,7 +7,7 @@ build: build/Makefile
 .PHONY: clean
 clean: build/Makefile
 	cd build && make clean
-	rm -rf dist
+	rm -rf dist/*
 
 build/Makefile: build/CMakeLists.txt
 	cd build && cmake -DCMAKE_BUILD_TYPE=Release .
