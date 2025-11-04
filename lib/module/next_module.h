@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <linux/types.h>
+
 #define NEXT_SIGN_PUBLIC_KEY_BYTES  32
 #define NEXT_SIGN_PRIVATE_KEY_BYTES 64
 
