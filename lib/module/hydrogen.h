@@ -31,7 +31,7 @@ typedef __u64 uint64_t;
 typedef __u32 uint32_t;
 typedef __u16 uint16_t;
 typedef __u8  uint8_t;
-typedef unsigned long long size_t;
+typedef long long unsigned int size_t;
 #define NULL 0
 #endif
 
