@@ -65,7 +65,7 @@ __bpf_kfunc int bpf_next_sign_verify( void * data, int data__sz, void * signatur
 
 BTF_SET8_START( bpf_task_set )
 BTF_ID_FLAGS( func, bpf_next_sha256 )
-BTF_ID_FLAGS( func, bpf_next_ed25519 )
+BTF_ID_FLAGS( func, bpf_next_sign_verify )
 BTF_SET8_END( bpf_task_set )
 
 static const struct btf_kfunc_id_set bpf_task_kfunc_set = {
