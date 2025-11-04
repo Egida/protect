@@ -61,7 +61,12 @@ __bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int o
 
 __bpf_kfunc int bpf_next_ed25519( void * data, int data__sz, struct ed25519_args * args )
 {
+    kernel_fpu_begin();
+
     // todo: hydrogen impl
+
+    kernel_fpu_end();
+
     return 0;
 }
 
