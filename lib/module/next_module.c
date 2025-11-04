@@ -59,6 +59,14 @@ __bpf_kfunc int bpf_next_sign_verify( void * data, int data__sz, void * signatur
     char context[hydro_sign_CONTEXTBYTES];
     memset( context, 0, sizeof(context) );
     int result = hydro_sign_verify( signature, data, data__sz, context, args->public_key );
+    if ( result == 0 )
+    {
+        pr_info( "hydro_sign_verify OK\n" );
+    }
+    else
+    {
+        pr_info( "hydro_sign_verify FAIL\n" );
+    }
     kernel_fpu_end();
     return result;
 }
