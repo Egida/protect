@@ -1,7 +1,7 @@
 
 obj-m += next_module.o
 
-mymodule-y := hydrogen.o
+next_module-y := hydrogen.o
 
 module: next_module.c hydrogen.c hydrogen.h
 	@echo building network next kernel module
