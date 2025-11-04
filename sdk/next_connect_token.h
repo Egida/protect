@@ -12,6 +12,8 @@
 
 #define NEXT_MAX_CONNECT_TOKEN_BACKENDS 32
 
+#define NEXT_CONNECT_TOKEN_SIGNATURE_BYTES 64
+
 #pragma pack(push,1)
 struct next_connect_token_t
 {
@@ -26,7 +28,7 @@ struct next_connect_token_t
     uint16_t backend_ports[NEXT_MAX_CONNECT_TOKEN_BACKENDS];                 // big endian port. 0 if not provided.
     uint8_t pings_per_second;
     uint8_t max_connect_seconds;
-    uint8_t signature[64];                                                   // hydro_crypto_sign
+    uint8_t signature[NEXT_CONNECT_TOKEN_SIGNATURE_BYTES];
 };
 #pragma pack(pop)
 

@@ -16,6 +16,7 @@
         sudo bpftool btf dump id <id>
 */
 
+#include "next_module.h"
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/bpf.h>
@@ -24,52 +25,44 @@
 #include <crypto/kpp.h>
 #include "hydrogen.h"
 
+// ----------------------------------------------------------------------------------------------------------------------
+
+#define NEXT_SIGN_PUBLIC_KEY_BYTES 32
+
 __bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz );
 
-struct next_sign_args
+struct next_sign_verify_args
 {
-    __u8 public_key[32];
+    __u8 public_key[NEXT_SIGN_PUBLIC_KEY_BYTES];
 };
 
-__bpf_kfunc int bpf_next_sign_verify( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_args * args );
+__bpf_kfunc int bpf_next_sign_verify( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_verify_args * args );
 
 // ----------------------------------------------------------------------------------------------------------------------
 
 struct crypto_shash * sha256;
 
-static int sha256_hash( const __u8 * data, __u32 data_len, __u8 * out_digest )
+__bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz )
 {
     SHASH_DESC_ON_STACK( shash, tfm );
     shash->tfm = sha256;
-    crypto_shash_digest( shash, data, data_len, out_digest );
+    crypto_shash_digest( shash, data, data__sz, output );
     return 0;
 }
 
 // ----------------------------------------------------------------------------------------------------------------------
 
-__bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz )
-{
-    sha256_hash( data, data__sz, output );
-    return 0;
-}
-
-__bpf_kfunc int bpf_next_sign_verify( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_args * args )
+__bpf_kfunc int bpf_next_sign_verify( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_verify_args * args )
 {
     kernel_fpu_begin();
     char context[hydro_sign_CONTEXTBYTES];
     memset( context, 0, sizeof(context) );
     int result = hydro_sign_verify( signature, data, data__sz, context, args->public_key );
-    if ( result == 0 )
-    {
-        pr_info( "hydro_sign_verify OK\n" );
-    }
-    else
-    {
-        pr_info( "hydro_sign_verify FAIL\n" );
-    }
     kernel_fpu_end();
     return result;
 }
+
+// ----------------------------------------------------------------------------------------------------------------------
 
 BTF_SET8_START( bpf_task_set )
 BTF_ID_FLAGS( func, bpf_next_sha256 )

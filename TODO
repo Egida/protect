@@ -14,9 +14,11 @@ DONE
 
     I have some work to do to get hydro compiling in the kernel module
 
+    Work through it until we get the connect token verifying in the XDP module and responding with a reflected packet
+
 TODO
 
-    Work through it until we get the connect token verifying in the XDP module and responding with a reflected packet
+    Now I have to work out how to encrypt the client backend token in XDP as well as doing the key exchange
 
     -------------
 
