@@ -31,7 +31,6 @@ typedef __u64 uint64_t;
 typedef __u32 uint32_t;
 typedef __u16 uint16_t;
 typedef __u8  uint8_t;
-typedef __u64 size_t;
 #endif
 
 #if !defined(__cplusplus) && defined(__GNUC__)
