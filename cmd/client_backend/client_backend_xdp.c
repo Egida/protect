@@ -536,7 +536,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                         {
                             case NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST:
                             {
-                                if ( (void*)packet_data + 336 < data_end )
+                                if ( (void*)packet_data + 336 > data_end )
                                 {
                                     debug_printf( "client backend init request packet is too small" );
                                     return XDP_DROP;
