@@ -62,7 +62,7 @@ struct next_sign_verify_args
 
 extern int bpf_next_sha256( void * data, int data__sz, void * output, int output__sz ) __ksym;
 
-extern int bpf_next_sign_verify( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_create_args * args ) __ksym;
+extern int bpf_next_sign_create( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_create_args * args ) __ksym;
 
 extern int bpf_next_sign_verify( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_verify_args * args ) __ksym;
 
