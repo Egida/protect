@@ -39,6 +39,18 @@ __bpf_kfunc int bpf_next_sha256( void * data, int data__sz, void * output, int o
 
 // ----------------------------------------------------------------------------------------------------------------------
 
+__bpf_kfunc int bpf_next_sign_create( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_create_args * args )
+{
+    kernel_fpu_begin();
+    char context[hydro_sign_CONTEXTBYTES];
+    memset( context, 0, sizeof(context) );
+    int result = hydro_sign_create( signature, data, data__sz, context, args->private_key );
+    kernel_fpu_end();
+    return result;
+}
+
+// ----------------------------------------------------------------------------------------------------------------------
+
 __bpf_kfunc int bpf_next_sign_verify( void * data, int data__sz, void * signature, int signature__sz, struct next_sign_verify_args * args )
 {
     kernel_fpu_begin();
