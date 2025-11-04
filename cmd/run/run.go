@@ -92,6 +92,8 @@ func main() {
 		test()
 	} else if command == "keygen" {
 		keygen()
+	} else if command == "module" {
+		module()
 	} else if command == "client-backend" {
 		client_backend()
 	} else {
@@ -121,4 +123,8 @@ func test() {
 
 func keygen() {
 	bash("./dist/keygen")
+}
+
+func module() {
+	bash("cd lib/module && make")	
 }
