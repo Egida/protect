@@ -17,15 +17,9 @@ bool next_write_connect_token( next_connect_token_t * token, char * output, cons
     next_assert( output );
     next_assert( private_key );
 
-    // todo
-    printf( "connect token is %d bytes\n", (int) sizeof(next_connect_token_t) );
-
-    hydro_sign_state state;
     char context[hydro_sign_CONTEXTBYTES];
     memset( context, 0, sizeof(context) );
-    hydro_sign_init( &state, context );
-    hydro_sign_update( &state, (uint8_t*) token, sizeof(next_connect_token_t) - sizeof(token->signature) );
-    int result = hydro_sign_final_create( &state, &token->signature[0], private_key );
+    int result = hydro_sign_create(&token->signature[0], (uint8_t*) token, sizeof(next_connect_token_t) - sizeof(token->signature), context, private_key );
     if ( result != 0 )
     {
         output[0] = '\0';
@@ -53,12 +47,9 @@ bool next_read_connect_token( next_connect_token_t * token, const char * input, 
         return false;
     }
 
-    hydro_sign_state state;
     char context[hydro_sign_CONTEXTBYTES];
     memset( context, 0, sizeof(context) );
-    hydro_sign_init( &state, context );
-    hydro_sign_update( &state, (uint8_t*) token, sizeof(next_connect_token_t) - sizeof(token->signature) );
-    int result = hydro_sign_final_verify( &state, &token->signature[0], public_key );
+    int result = hydro_sign_verify( &token->signature[0], (uint8_t*) token, sizeof(next_connect_token_t) - sizeof(token->signature), context, public_key );
     if ( result != 0 )
     {
         return false;
