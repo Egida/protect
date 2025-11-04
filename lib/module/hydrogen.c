@@ -35,10 +35,6 @@ static int errno;
 #    include <stdint.h>
 #    include <stdlib.h>
 #    include <string.h>
-MODULE_VERSION( "1.0.0" );
-MODULE_LICENSE( "GPL" ); 
-MODULE_AUTHOR( "Glenn Fiedler" ); 
-MODULE_DESCRIPTION( "Network Next kernel module" );
 #endif
 
 #if defined (__CHERIOT__)
