@@ -13,7 +13,7 @@
 
 struct next_sign_create_args
 {
-    __u8 public_key[NEXT_SIGN_PRIVATE_KEY_BYTES];
+    __u8 private_key[NEXT_SIGN_PRIVATE_KEY_BYTES];
 };
 
 struct next_sign_verify_args
