@@ -8,11 +8,17 @@
 #include "next_hydrogen.h"
 #include <memory.h>
 
+// todo
+#include <stdio.h>
+
 bool next_write_connect_token( next_connect_token_t * token, char * output, const uint8_t * private_key )
 {
     next_assert( token );
     next_assert( output );
     next_assert( private_key );
+
+    // todo
+    printf( "connect token is %d bytes\n", (int) sizeof(next_connect_token_t) );
 
     hydro_sign_state state;
     char context[hydro_sign_CONTEXTBYTES];
