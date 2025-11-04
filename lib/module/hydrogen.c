@@ -3096,9 +3096,7 @@ hydro_sign_verify(const uint8_t csig[hydro_sign_BYTES], const void *m_, size_t m
 
 // ----------------------------------------------------------------------------------------------------------
 
-void warnings_fuck_off();   // strict prototypes in linux kernel module
-
-void warnings_fuck_off()
+void warnings_fuck_off(void)
 {
     (void) load16_le;
     (void) store16_le;
