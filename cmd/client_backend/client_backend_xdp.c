@@ -605,7 +605,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                         {
                             case NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST:
                             {
-                                if ( (void*)packet_data + sizeof(next_client_init_request_packet_t) > data_end )
+                                if ( (void*)packet_data + sizeof(struct next_client_init_request_packet_t) > data_end )
                                 {
                                     debug_printf( "client backend init request packet is too small" );
                                     return XDP_DROP;
@@ -618,7 +618,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                                 __u8 * connect_token = (__u8*) &request->connect_token;
                                 __u8 * signature = (__u8*) &request->connect_token.signature;
-                                if ( bpf_next_sign_verify( connect_token, sizeof(next_connect_token_t) - NEXT_SIGNATURE_BYTES, signature, NEXT_SIGNATURE_BYTES, &args ) != 0 )
+                                if ( bpf_next_sign_verify( connect_token, sizeof(struct next_connect_token_t) - NEXT_SIGNATURE_BYTES, signature, NEXT_SIGNATURE_BYTES, &args ) != 0 )
                                 {
                                     debug_printf( "connect token did not verify" );
                                     return XDP_DROP;
