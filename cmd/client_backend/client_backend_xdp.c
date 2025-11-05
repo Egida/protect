@@ -81,31 +81,31 @@ extern int bpf_next_secretbox_decrypt( void * data, int data__sz, void * key, in
 #pragma pack(push,1)
 struct next_connect_token_t
 {
-    uint64_t version;
-    uint64_t expire_timestamp;
-    uint64_t buyer_id;
-    uint64_t server_id;
-    uint64_t session_id;
-    uint64_t user_hash;
-    uint32_t client_public_address;
-    uint32_t backend_addresses[NEXT_MAX_CONNECT_TOKEN_BACKENDS];             // big endian ipv4. 0 if not provided.
-    uint16_t backend_ports[NEXT_MAX_CONNECT_TOKEN_BACKENDS];                 // big endian port. 0 if not provided.
-    uint8_t pings_per_second;
-    uint8_t max_connect_seconds;
-    uint8_t signature[NEXT_CONNECT_TOKEN_SIGNATURE_BYTES];
+    __u64 version;
+    __u64 expire_timestamp;
+    __u64 buyer_id;
+    __u64 server_id;
+    __u64 session_id;
+    __u64 user_hash;
+    __u32 client_public_address;
+    __u32 backend_addresses[NEXT_MAX_CONNECT_TOKEN_BACKENDS];             // big endian ipv4. 0 if not provided.
+    __u16 backend_ports[NEXT_MAX_CONNECT_TOKEN_BACKENDS];                 // big endian port. 0 if not provided.
+    __u8 pings_per_second;
+    __u8 max_connect_seconds;
+    __u8 signature[NEXT_CONNECT_TOKEN_SIGNATURE_BYTES];
 };
 #pragma pack(pop)
 
 #pragma pack(push,1)
 struct next_client_backend_token_t
 {
-    uint8_t crypto_header[NEXT_CLIENT_BACKEND_TOKEN_CRYPTO_HEADER_BYTES];
-    uint64_t version;
-    uint64_t expire_timestamp;
-    uint64_t buyer_id;
-    uint64_t server_id;
-    uint64_t session_id;
-    uint64_t user_hash;
+    __u8 crypto_header[NEXT_CLIENT_BACKEND_TOKEN_CRYPTO_HEADER_BYTES];
+    __u64 version;
+    __u64 expire_timestamp;
+    __u64 buyer_id;
+    __u64 server_id;
+    __u64 session_id;
+    __u64 user_hash;
 };
 #pragma pack(pop)
 
