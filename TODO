@@ -18,17 +18,21 @@ DONE
 
     Extend the kernel module so we have access to secretbox encrypt/decrypt
 
-TODO
-
-    Extend keygen so the client backend has its own symmetric key for secretbox
-
-    -------------
-
     We need definitions of the next_connect_token_t and the next_backend_token_t inside the XDP program and the client backend
 
+    Build a next_backend_token_t in response to the client init request and send it back to the client
+
+TODO
+
+    Verify the client still gets the response
+
     -------------
 
-    Build a next_backend_token_t in response to the client init request and send it back to the client
+    Encrypt the backend token
+
+    -------------
+
+    Resize the response packet
 
     -------------
 
@@ -37,6 +41,14 @@ TODO
     -------------
 
     The client must check the request id vs. the request and ignore if it doesn't match
+
+    -------------
+
+    Add client backend state and put current_timestamp in it once per-second
+
+    -------------
+
+    Check for connect token expiry in client init request handler
 
     -------------
 

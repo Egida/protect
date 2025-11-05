@@ -40,6 +40,7 @@
 #define NEXT_CONNECT_TOKEN_SIGNATURE_BYTES                  64
 
 #define NEXT_CLIENT_BACKEND_TOKEN_CRYPTO_HEADER_BYTES       36
+#define NEXT_CLIENT_BACKEND_TOKEN_EXPIRE_SECONDS            60
 
 #define ADVANCED_PACKET_FILTER                               0
 
@@ -632,21 +633,29 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                                 // todo: connect token expired -- we need the current timestamp in the client_backend_state map
 
-                                __u64 request_id = request->request_id;
-                                __u64 buyer_id = request->connect_token.buyer_id;
-                                __u64 server_id = request->connect_token.server_id;
-                                __u64 session_id = request->connect_token.session_id;
-                                __u64 user_hash = request->connect_token.user_hash;
+                                const __u64 request_id = request->request_id;
+                                const __u64 buyer_id = request->connect_token.buyer_id;
+                                const __u64 server_id = request->connect_token.server_id;
+                                const __u64 session_id = request->connect_token.session_id;
+                                const __u64 user_hash = request->connect_token.user_hash;
 
-                                debug_printf( "reflect packet" );
+                                struct next_client_init_response_packet_t * response = (struct next_client_init_response_packet_t*) packet_data;
 
-                                (void) request_id;
-                                (void) buyer_id;
-                                (void) server_id;
-                                (void) session_id;
-                                (void) user_hash;
+                                response->packet_type = NEXT_CLIENT_BACKEND_PACKET_INIT_RESPONSE;
+                                response->request_id = request_id;
+                                response->backend_token.expire_timestamp = current_timestamp + NEXT_CLIENT_BACKEND_TOKEN_EXPIRE_SECONDS;
+                                response->backend_token.buyer_id = buyer_id;
+                                response->backend_token.server_id = server_id;
+                                response->backend_token.session_id = session_id;
+                                response->backend_token.user_hash = user_hash;
+
+                                // todo: encrypt backend token
+
+                                // todo: adjust packet size down
 
                                 reflect_packet( data, 336, magic );
+
+                                debug_printf( "sent response" );
                             }
                             break;
 
