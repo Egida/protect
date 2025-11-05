@@ -29,6 +29,7 @@
 #define NEXT_CLIENT_BACKEND_PACKET_PONG                      3
 #define NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN             4
 
+#define NEXT_SIGNATURE_BYTES                                64
 #define NEXT_SIGN_PUBLIC_KEY_BYTES                          32
 #define NEXT_SIGN_PRIVATE_KEY_BYTES                         64
 
@@ -79,6 +80,7 @@ extern int bpf_next_secretbox_encrypt( void * data, int data__sz, void * key, in
 extern int bpf_next_secretbox_decrypt( void * data, int data__sz, void * key, int key__sz ) __ksym;
 
 #pragma pack(push,1)
+
 struct next_connect_token_t
 {
     __u64 version;
@@ -94,9 +96,7 @@ struct next_connect_token_t
     __u8 max_connect_seconds;
     __u8 signature[NEXT_CONNECT_TOKEN_SIGNATURE_BYTES];
 };
-#pragma pack(pop)
 
-#pragma pack(push,1)
 struct next_client_backend_token_t
 {
     __u8 crypto_header[NEXT_CLIENT_BACKEND_TOKEN_CRYPTO_HEADER_BYTES];
@@ -107,6 +107,23 @@ struct next_client_backend_token_t
     __u64 session_id;
     __u64 user_hash;
 };
+
+struct next_client_init_request_packet_t
+{
+    __u8 packet_type;
+    __u8 prefix[17];
+    next_connect_token_t connect_token;
+    __u64 request_id;
+};
+
+struct next_client_init_response_packet_t
+{
+    __u8 packet_type;
+    __u8 prefix[17];
+    __u64 request_id;
+    next_client_backend_token_t backend_token;
+};
+
 #pragma pack(pop)
 
 struct {
@@ -588,22 +605,59 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                         {
                             case NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST:
                             {
-                                if ( (void*)packet_data + 336 > data_end )
+                                if ( (void*)packet_data + sizeof(next_client_init_request_packet_t) > data_end )
                                 {
                                     debug_printf( "client backend init request packet is too small" );
                                     return XDP_DROP;
                                 }
 
+                                struct next_client_init_request_packet_t * request = (struct next_client_init_request_packet_*) request;
+
+                                // todo: buyer public key should come from a map indexed by buyer id
                                 struct next_sign_verify_args args = { { 0x9d, 0x59, 0x40, 0xa4, 0xe2, 0x4a, 0xa3, 0x0a, 0xf2, 0x30, 0xb6, 0x1b, 0x49, 0x7d, 0x60, 0xe8, 0x6d, 0xf9, 0x03, 0x28, 0x5c, 0x96, 0x83, 0x06, 0x89, 0xf5, 0xdd, 0x62, 0x8a, 0x25, 0x95, 0x16 } };
-                                __u8 * connect_token = packet_data + 18;
-                                __u8 * signature = packet_data + 18 + 310 - 64;
-                                if ( bpf_next_sign_verify( connect_token, 310 - 64, signature, 64, &args ) != 0 )
+
+                                __u8 * connect_token = (__u8*) &request->connect_token;
+                                __u8 * signature = (__u8*) &request->connect_token.signature;
+                                if ( bpf_next_sign_verify( connect_token, sizeof(next_connect_token_t) - NEXT_SIGNATURE_BYTES, signature, NEXT_SIGNATURE_BYTES, &args ) != 0 )
                                 {
                                     debug_printf( "connect token did not verify" );
                                     return XDP_DROP;
                                 }
 
+                                if ( request->version != 0 )
+                                {
+                                    debug_printf( "connect token has wrong version" );
+                                    return XDP_DROP;
+                                }
+
+                                // todo: connect token expired -- we need the current timestamp in the client_backend_state map
+
+                                /*
+                                struct next_client_backend_token_t
+                                {
+                                    __u8 crypto_header[NEXT_CLIENT_BACKEND_TOKEN_CRYPTO_HEADER_BYTES];
+                                    __u64 version;
+                                    __u64 expire_timestamp;
+                                    __u64 buyer_id;
+                                    __u64 server_id;
+                                    __u64 session_id;
+                                    __u64 user_hash;
+                                };
+                                */
+
+                                __u64 request_id = 
+                                __u64 buyer_id = request->connect_token.buyer_id;
+                                __u64 server_id = request->connect_token.server_id;
+                                __u64 session_id = request->connect_token.session_id;
+                                __u64 user_hash = request->connect_token.user_hash;
+
                                 debug_printf( "reflect packet" );
+
+                                (void) request_id;
+                                (void) buyer_id;
+                                (void) server_id;
+                                (void) session_id;
+                                (void) user_hash;
 
                                 reflect_packet( data, 336, magic );
                             }
