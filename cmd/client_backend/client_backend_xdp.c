@@ -624,7 +624,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                     return XDP_DROP;
                                 }
 
-                                if ( request->version != 0 )
+                                if ( request->connect_token.version != 0 )
                                 {
                                     debug_printf( "connect token has wrong version" );
                                     return XDP_DROP;
@@ -632,20 +632,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                                 // todo: connect token expired -- we need the current timestamp in the client_backend_state map
 
-                                /*
-                                struct next_client_backend_token_t
-                                {
-                                    __u8 crypto_header[NEXT_CLIENT_BACKEND_TOKEN_CRYPTO_HEADER_BYTES];
-                                    __u64 version;
-                                    __u64 expire_timestamp;
-                                    __u64 buyer_id;
-                                    __u64 server_id;
-                                    __u64 session_id;
-                                    __u64 user_hash;
-                                };
-                                */
-
-                                __u64 request_id = 
+                                __u64 request_id = request->request_id;
                                 __u64 buyer_id = request->connect_token.buyer_id;
                                 __u64 server_id = request->connect_token.server_id;
                                 __u64 session_id = request->connect_token.session_id;
