@@ -28,6 +28,7 @@
 #define PROTON_FUNC 
 #endif // #ifdef __BPF__
 
+#define PROTON_SIGNATURE_BYTES                    64
 #define PROTON_SIGN_PUBLIC_KEY_BYTES              32
 #define PROTON_SIGN_PRIVATE_KEY_BYTES             64
 
