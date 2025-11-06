@@ -34,6 +34,8 @@ DONE
 
     Verify the client gets the client init response packet and it's a smaller size
 
+    Promote the linux kernel module to its own open source project "proton"
+
 TODO
 
     Check the request id is the correct value
