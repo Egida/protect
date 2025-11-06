@@ -1,6 +1,7 @@
 /*
     Network Next. Copyright 2017 - 2025 Network Next, Inc.  
-    Licensed under the Network Next Source Available License 2.0
+
+    Licensed under the GNU General Public License 3.0
 */
 
 #include "client_backend.h"

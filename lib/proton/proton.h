@@ -1,9 +1,9 @@
 /*
-    Proton Linux kernel module. Copyright 2017 - 2025 Network Next, Inc.
-
-    Licensed under the GNU General Public License 3.0
+    Proton Linux kernel module
 
     Tested on Ubuntu 22.04 LTS and Ubuntu 24.04 LTS
+
+    Licensed under the GNU General Public License 3.0
 
     USAGE:
 
