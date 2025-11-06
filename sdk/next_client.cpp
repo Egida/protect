@@ -15,9 +15,6 @@
 
 #include <memory.h>
 
-// todo
-#include <stdio.h>
-
 struct next_client_backend_init_data_t
 {
     double next_update_time;
@@ -226,19 +223,13 @@ void next_client_update_initialize( next_client_t * client )
     }
 }
 
-void next_client_update_receive_packets( next_client_t * client )
+void next_client_process_packet( next_client_t * client, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {
-    next_assert( client );
-
-    uint8_t packet_data[NEXT_MAX_PACKET_BYTES];
-    next_address_t from;
-    int packet_bytes = next_platform_socket_receive_packet( client->socket, &from, packet_data, sizeof(packet_data) );
-    if ( packet_bytes == 0 )
-        return;
-
     if ( client->state == NEXT_CLIENT_CONNECTED )
     {
         // common case: client is connected
+
+        // todo: look for payload packets and call the packet received callback
     }
     else if ( client->state == NEXT_CLIENT_INITIALIZING )
     {
@@ -247,6 +238,22 @@ void next_client_update_receive_packets( next_client_t * client )
         next_printf( NEXT_LOG_LEVEL_INFO, "client received %d byte packet while initializing", packet_bytes );
 
         // ...
+    }
+}
+
+void next_client_update_receive_packets( next_client_t * client )
+{
+    next_assert( client );
+
+    while ( true )
+    {
+        uint8_t packet_data[NEXT_MAX_PACKET_BYTES];
+        next_address_t from;
+        int packet_bytes = next_platform_socket_receive_packet( client->socket, &from, packet_data, sizeof(packet_data) );
+        if ( packet_bytes == 0 )
+            return;
+
+        next_client_process_packet( client, &from, packet_data, packet_bytes );
     }
 }
 

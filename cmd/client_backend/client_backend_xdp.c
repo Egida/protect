@@ -34,6 +34,12 @@
 
 #define ADVANCED_PACKET_FILTER                               0
 
+#define NEXT_MAX_CONNECT_TOKEN_BYTES                       500
+#define NEXT_MAX_CONNECT_TOKEN_BACKENDS                     32
+#define NEXT_CONNECT_TOKEN_SIGNATURE_BYTES                  64
+
+#define NEXT_CLIENT_BACKEND_TOKEN_CRYPTO_HEADER_BYTES       36
+
 #include "client_backend_shared.h"
 
 #if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__

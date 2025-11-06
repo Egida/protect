@@ -38,17 +38,13 @@ DONE
 
 TODO
 
-    Check the request id is the correct value
+    On the client process packets and check against the basic packet filter.
 
-    Check that we can actually decrypt the backend token
+    When a client init response packet is received, look up the client backend by address and port then check if the client backend is not initialized yet, and that the request id is the correct value
 
-    -------------
+    If it is the correct request id value and not initialized yet, try to decrypt the connect token, otherwise ignore the packet.
 
-    Add client backend state and put current_timestamp in it once per-second
-
-    -------------
-
-    Now transition per-client backend from sending client init packets to sending client backend pings once the client init response is received:
+    If the connect token decrypts then transition the client to sending ping packets
 
     Client backend ping packet:
 
