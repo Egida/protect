@@ -39,6 +39,7 @@
 #define NEXT_CONNECT_TOKEN_SIGNATURE_BYTES                  64
 
 #define NEXT_CLIENT_BACKEND_TOKEN_CRYPTO_HEADER_BYTES       36
+#define NEXT_CLIENT_BACKEND_TOKEN_EXPIRE_SECONDS            60
 
 #include "client_backend_shared.h"
 
