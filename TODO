@@ -30,25 +30,19 @@ DONE
 
     Verify the encrypt succeeds and the client backend responds
 
-TODO
-
     Resize the response packet
-
-    -------------
 
     Verify the client gets the client init response packet and it's a smaller size
 
-    -------------
+TODO
 
     Check the request id is the correct value
+
+    Check that we can actually decrypt the backend token
 
     -------------
 
     Add client backend state and put current_timestamp in it once per-second
-
-    -------------
-
-    Pass in current_timestamp via state once per-second
 
     -------------
 
