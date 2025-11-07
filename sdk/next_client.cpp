@@ -322,6 +322,9 @@ void next_client_update_initialize( next_client_t * client )
 
 void next_client_process_packet( next_client_t * client, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {
+    // todo
+    next_printf( NEXT_LOG_LEVEL_INFO, "client received %d byte packet", packet_bytes );
+
     // we only support ipv4 at the moment
 
     if ( from->type != NEXT_ADDRESS_IPV4 )
