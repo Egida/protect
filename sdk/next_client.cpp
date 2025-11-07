@@ -225,6 +225,15 @@ void next_client_update_initialize( next_client_t * client )
 
 void next_client_process_packet( next_client_t * client, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {
+    // packet filter
+
+    if ( packet_bytes < 18 )
+        return;
+
+    
+
+    // process packet type
+
     if ( client->state == NEXT_CLIENT_CONNECTED )
     {
         // common case: client is connected
@@ -237,7 +246,7 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
 
         next_printf( NEXT_LOG_LEVEL_INFO, "client received %d byte packet while initializing", packet_bytes );
 
-        // ...
+        
     }
 }
 
