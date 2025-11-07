@@ -694,6 +694,15 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                     return XDP_DROP;
                                 }
 
+                                // todo: we need to get this value from the client_backend_state map
+                                const __u64 current_timestamp = 0;
+                                
+                                if ( request->backend_token.expire_timestamp < current_timestamp )
+                                {
+                                    debug_printf( "backend token expired" );
+                                    return XDP_DROP;
+                                }                                
+
                                 // todo: send pong
 
                                 debug_printf( "send pong" );

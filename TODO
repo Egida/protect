@@ -48,13 +48,15 @@ DONE
 
     Remove serialize and read/write functions. We're going to go with structs this time.
 
-TODO
-
     Fill version info from SDK in client -> client backend packets
 
-    -------------
+    Implement XDP program to process ping packet
 
-    Implement XDP program to process ping packet, verify backend token has not expired, verify backend token decrypts
+    Verify backend token decrypts
+
+TODO
+
+    Verify backend token has not expired
 
     -------------
 

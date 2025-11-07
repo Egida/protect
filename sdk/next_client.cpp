@@ -46,7 +46,7 @@ struct next_client_t
 
 struct next_client_backend_init_request_packet_t
 {
-    uint8_t packet_type;
+    uint8_t type;
     uint8_t prefix[17];
     uint8_t sdk_version_major;
     uint8_t sdk_version_minor;
@@ -57,7 +57,7 @@ struct next_client_backend_init_request_packet_t
 
 struct next_client_backend_init_response_packet_t
 {
-    uint8_t packet_type;
+    uint8_t type;
     uint8_t prefix[17];
     uint64_t request_id;
     struct next_client_backend_token_t backend_token;
@@ -65,7 +65,7 @@ struct next_client_backend_init_response_packet_t
 
 struct next_client_backend_ping_packet_t
 {
-    uint8_t packet_type;
+    uint8_t type;
     uint8_t prefix[17];
     uint8_t sdk_version_major;
     uint8_t sdk_version_minor;
@@ -77,7 +77,7 @@ struct next_client_backend_ping_packet_t
 
 struct next_client_backend_pong_packet_t
 {
-    uint8_t packet_type;
+    uint8_t type;
     uint8_t prefix[17];
     uint64_t request_id;
     uint64_t ping_sequence;
@@ -307,6 +307,7 @@ void next_client_update_initialize( next_client_t * client )
             next_printf( NEXT_LOG_LEVEL_INFO, "sent ping packet to client backend %d", i );
 
             next_client_backend_ping_packet_t packet;
+            packet.type = NEXT_CLIENT_BACKEND_PACKET_PING; 
             packet.sdk_version_major = NEXT_VERSION_MAJOR_INT;
             packet.sdk_version_major = NEXT_VERSION_MINOR_INT;
             packet.sdk_version_major = NEXT_VERSION_PATCH_INT;
