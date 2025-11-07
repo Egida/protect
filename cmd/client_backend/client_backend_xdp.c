@@ -107,22 +107,22 @@ struct next_client_backend_init_response_packet_t
 
 struct next_client_backend_ping_packet_t
 {
-    uint8_t packet_type;
-    uint8_t prefix[17];
-    uint8_t sdk_version_major;
-    uint8_t sdk_version_minor;
-    uint8_t sdk_version_patch;
-    uint64_t request_id;
-    uint64_t ping_sequence;
+    __u8 packet_type;
+    __u8 prefix[17];
+    __u8 sdk_version_major;
+    __u8 sdk_version_minor;
+    __u8 sdk_version_patch;
+    __u64 request_id;
+    __u64 ping_sequence;
     struct next_client_backend_token_t backend_token;
 };
 
 struct next_client_backend_pong_packet_t
 {
-    uint8_t packet_type;
-    uint8_t prefix[17];
-    uint64_t request_id;
-    uint64_t ping_sequence;
+    __u8 packet_type;
+    __u8 prefix[17];
+    __u64 request_id;
+    __u64 ping_sequence;
 };
 
 #pragma pack(pop)
