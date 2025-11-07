@@ -38,6 +38,28 @@ struct next_client_t
     void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes );
 };
 
+#pragma pack(push,1)
+
+// todo: gotta build some versioning in to these
+
+struct next_client_init_request_packet_t
+{
+    uint8_t packet_type;
+    uint8_t prefix[17];
+    struct next_connect_token_t connect_token;
+    uint64_t request_id;
+};
+
+struct next_client_init_response_packet_t
+{
+    uint8_t packet_type;
+    uint8_t prefix[17];
+    uint64_t request_id;
+    struct next_client_backend_token_t backend_token;
+};
+
+#pragma pack(pop)
+
 // todo
 // extern next_internal_config_t next_global_config;
 
@@ -166,6 +188,8 @@ void next_client_send_backend_init_request_packet( next_client_t * client, next_
 
     uint8_t * p = packet_data;
 
+    // todo: switch to using packet struct. easier to read
+
     *p = NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST;
     p += 18;
 
@@ -199,13 +223,13 @@ void next_client_update_initialize( next_client_t * client )
     {
         if ( client->connect_token.backend_addresses[i] == 0 )
         {
-            client->backend_init_data[i].request_id = next_random_uint64();
             continue;
         }
 
         if ( client->backend_init_data[i].next_update_time == 0.0 )
         {
             client->backend_init_data[i].next_update_time = current_time + next_random_float() * ( 1.0 / client->connect_token.pings_per_second );
+            client->backend_init_data[i].request_id = next_random_uint64();
             continue;
         }
 
@@ -225,10 +249,27 @@ void next_client_update_initialize( next_client_t * client )
 
 void next_client_process_packet( next_client_t * client, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {
+    // we only support ipv4 at the moment
+
+    if ( from->type != NEXT_ADDRESS_IPV4 )
+    {
+        next_printf( NEXT_LOG_LEVEL_DEBUG, "ignored packet from non-ipv4 address" );
+        return;
+    }
+
     // basic packet filter
 
     if ( !next_basic_packet_filter( packet_data, packet_bytes ) )
+    {
+        next_printf( NEXT_LOG_LEVEL_DEBUG, "basic packet filter dropped packet" );
         return;
+    }
+
+#if NEXT_ADVANCED_PACKET_FILTER
+
+    // todo: advanced packet filter
+
+#endif // #if NEXT_ADVANCED_PACKET_FILTER
 
     // process packet type
 
@@ -244,11 +285,14 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
     {
         // client is initializing
 
-        if ( packet_type == NEXT_CLIENT_BACKEND_PACKET_INIT_RESPONSE && packet_bytes == 110 )
+        if ( packet_type == NEXT_CLIENT_BACKEND_PACKET_INIT_RESPONSE && packet_bytes == sizeof(next_client_init_response_packet_t) )
         {
-            next_printf( NEXT_LOG_LEVEL_INFO, "client received init response packet (%d bytes)", packet_bytes );
+            next_printf( NEXT_LOG_LEVEL_INFO, "client received init response packet" );
 
-            // ...
+            for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
+            {
+                // if ( client->connect_token.backend_addresses[i] != from->data.ipv4 )
+            }
         }
     }
 }
