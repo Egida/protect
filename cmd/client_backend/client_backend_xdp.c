@@ -101,7 +101,7 @@ struct next_client_backend_init_response_packet_t
 {
     __u8 packet_type;
     __u8 prefix[17];
-    __u64 request_id;
+    __u64 request_id
     struct next_client_backend_token_t backend_token;
 };
 
@@ -646,7 +646,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                 const __u64 session_id = request->connect_token.session_id;
                                 const __u64 user_hash = request->connect_token.user_hash;
 
-                                struct next_client_backend_init_response_packet_t * response = (struct next_client_init_response_packet_t*) packet_data;
+                                struct next_client_backend_init_response_packet_t * response = (struct next_client_backend_init_response_packet_t*) packet_data;
 
                                 response->packet_type = NEXT_CLIENT_BACKEND_PACKET_INIT_RESPONSE;
                                 response->request_id = request_id;
@@ -668,7 +668,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                                 reflect_packet( data, sizeof(struct next_client_backend_init_response_packet_t), magic );
 
-                                bpf_xdp_adjust_tail( ctx, -( (int) sizeof(struct next_client_backend_init_request_packet_t) - (int) sizeof(struct next_client_init_response_packet_t) ) );
+                                bpf_xdp_adjust_tail( ctx, -( (int) sizeof(struct next_client_backend_init_request_packet_t) - (int) sizeof(struct next_client_backend_init_response_packet_t) ) );
 
                                 debug_printf( "sent response" );
                             }
