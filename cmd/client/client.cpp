@@ -31,7 +31,6 @@ void packet_received_callback( next_client_t * client, void * context, const uin
     (void) packet_data;
     (void) packet_bytes;
 
-    // todo
     next_printf( NEXT_LOG_LEVEL_INFO, "client received %d byte packet", packet_bytes );
 }
 

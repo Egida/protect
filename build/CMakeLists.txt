@@ -14,8 +14,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(
 	"." 
-	"../lib"
-    "../sdk"
 )
 
 
@@ -30,6 +28,8 @@ file(GLOB PLATFORM_HEADERS ../lib/platform/*.h)
 
 add_library(platform ${PLATFORM_SOURCE} ${PLATFORM_HEADERS})
 
+target_include_directories(platform PRIVATE ../lib)
+
 
 
 # shared
@@ -42,6 +42,8 @@ file(GLOB SHARED_SOURCE ../lib/shared/*.c)
 file(GLOB SHARED_HEADERS ../lib/shared/*.h)
 
 add_library(shared ${SHARED_SOURCE} ${SHARED_HEADERS})
+
+target_include_directories(shared PRIVATE ../lib)
 
 add_dependencies(shared platform)
 
@@ -78,6 +80,8 @@ enable_language(CXX)
 
 add_executable(client ../cmd/client/client.cpp)
 
+target_include_directories(client PRIVATE ../sdk)
+
 add_dependencies(client next)
 
 target_link_libraries(client next)
@@ -90,6 +94,8 @@ project(server)
 enable_language(CXX)
 
 add_executable(server ../cmd/server/server.cpp)
+
+target_include_directories(server PRIVATE ../sdk)
 
 add_dependencies(server next)
 
@@ -105,6 +111,8 @@ enable_language(CXX)
 
 add_executable(test ../cmd/test/test.cpp)
 
+target_include_directories(test PRIVATE ../sdk)
+
 add_dependencies(test next)
 
 target_link_libraries(test next)
@@ -118,6 +126,8 @@ project(keygen)
 enable_language(CXX)
 
 add_executable(keygen ../cmd/keygen/keygen.cpp)
+
+target_include_directories(keygen PRIVATE ../sdk)
 
 add_dependencies(keygen next)
 
@@ -156,6 +166,8 @@ file(GLOB CLIENT_BACKEND_SOURCE ../cmd/client_backend/*.c)
 file(GLOB CLIENT_BACKEND_HEADERS ../cmd/client_backend/*.h)
 
 add_executable(client_backend ${CLIENT_BACKEND_SOURCE} ${CLIENT_BACKEND_HEADERS} ../cmd/client_backend/client_backend_xdp_source.h ../cmd/client_backend/proton.h)
+
+target_include_directories(client_backend PRIVATE ../lib)
 
 add_dependencies(client_backend platform shared)
 

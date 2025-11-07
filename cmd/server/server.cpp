@@ -50,8 +50,7 @@ int main()
 
     while ( !quit )
     {
-        // todo: rework to send to all connected clients, also max clients?
-        // next_server_send_packet( server, 0, packet_data, (int) sizeof(packet_data) );
+        // todo: rework to send packets to all connected clients with new zero copy interface
 
         next_server_update( server );
     }

@@ -66,9 +66,41 @@ DONE
 
 TODO
 
+    Number of pings should be in connect token (10)
+
+    -------------
+
     Implement the request to refresh the backend token
 
     Call the refresh once every 30 seconds
+
+    This will need to include retries (once per-second until we get a response...)
+
+    -------------
+
+    Stick the client backend private key in the client backend config map
+
+    -------------
+
+    Implement the client backend state map
+
+    Set the current time in the client backend state map once per-second
+
+    Get the current time in XDP from the state map
+
+    -------------
+
+    Verify that the client can connect and refresh backend tokens without having them expire for 5 minutes+
+
+    -------------
+
+    Implement the client backend buyer map
+
+    This map will map from buyer id to data for the buyer
+
+    In the buyer struct, we will have the buyer public key
+
+    Then, we can update the XDP program to get the buyer public key from the buyer map
 
     -------------
 
