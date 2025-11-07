@@ -322,9 +322,6 @@ void next_client_update_initialize( next_client_t * client )
 
 void next_client_process_packet( next_client_t * client, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {
-    // todo
-    next_printf( NEXT_LOG_LEVEL_INFO, "client received %d byte packet", packet_bytes );
-
     // we only support ipv4 at the moment
 
     if ( from->type != NEXT_ADDRESS_IPV4 )
@@ -397,7 +394,7 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
                 if ( client->connect_token.backend_addresses[i] != from_ipv4 || client->connect_token.backend_ports[i] != from_port )
                     continue;
 
-                if ( client->backend_init_data[i].initialized )
+                if ( !client->backend_init_data[i].initialized )
                     break;
 
                 if ( client->backend_init_data[i].request_id != packet->request_id )
