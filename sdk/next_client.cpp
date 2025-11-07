@@ -218,7 +218,10 @@ void next_client_send_backend_init_request_packet( next_client_t * client, next_
     *p = NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST;
     p += 18;
 
-    // todo: sdk version major, minor, patch
+    p[0] = NEXT_VERSION_MAJOR_INT;
+    p[1] = NEXT_VERSION_MINOR_INT;
+    p[2] = NEXT_VERSION_PATCH_INT;
+    p += 3;
 
     memcpy( p, &client->connect_token, sizeof(next_connect_token_t) );               // todo: endian
     p += sizeof(next_connect_token_t);
@@ -304,7 +307,9 @@ void next_client_update_initialize( next_client_t * client )
             next_printf( NEXT_LOG_LEVEL_INFO, "sent ping packet to client backend %d", i );
 
             next_client_backend_ping_packet_t packet;
-            // todo: sdk version major, minor, patch
+            packet.sdk_version_major = NEXT_VERSION_MAJOR_INT;
+            packet.sdk_version_major = NEXT_VERSION_MINOR_INT;
+            packet.sdk_version_major = NEXT_VERSION_PATCH_INT;
             packet.request_id = client->backend_init_data[i].request_id;
             packet.ping_sequence = client->backend_init_data[i].ping_sequence++;
             packet.backend_token = client->backend_init_data[i].backend_token;
