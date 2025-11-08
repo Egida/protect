@@ -32,6 +32,7 @@ struct next_client_t
     uint16_t bound_port;
     double init_start_time;
     double last_refresh_backend_token_time;
+    double last_request_backend_token_refresh_time;
     next_connect_token_t connect_token;
     next_client_backend_init_data_t backend_init_data[NEXT_MAX_CONNECT_TOKEN_BACKENDS];
     next_address_t client_backend_address;
@@ -421,9 +422,12 @@ void next_client_update_refresh_backend_token( next_client_t * client )
     if ( client->last_refresh_backend_token_time + client->connect_token.backend_token_refresh_seconds > current_time )
         return;
 
-    // todo
+    if ( client->last_request_backend_token_refresh_time + 1.0 > current_time )
+        return;
 
-    next_printf( NEXT_LOG_LEVEL_INFO, "want to refresh backend token" );
+    next_printf( NEXT_LOG_LEVEL_INFO, "request refresh backend token" );
+
+    client->last_request_backend_token_refresh_time = current_time;
 }
 
 void next_client_update( next_client_t * client )
