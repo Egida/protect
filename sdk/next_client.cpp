@@ -14,35 +14,6 @@
 
 #include <memory.h>
 
-struct next_client_backend_init_data_t
-{
-    double next_update_time;
-    uint64_t request_id;
-    uint64_t ping_sequence;
-    uint64_t pong_sequence;
-    bool initialized;
-    int num_pongs_received;
-    next_client_backend_token_t backend_token;
-};
-
-struct next_client_t
-{
-    void * context;
-    int state;
-    uint16_t bound_port;
-    double init_start_time;
-    double last_refresh_backend_token_time;
-    double last_request_backend_token_refresh_time;
-    next_connect_token_t connect_token;
-    next_client_backend_init_data_t backend_init_data[NEXT_MAX_CONNECT_TOKEN_BACKENDS];
-    next_address_t client_backend_address;
-    next_client_backend_token_t backend_token;
-    uint64_t session_id;
-    uint64_t server_id;
-    next_platform_socket_t * socket;
-    void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes );
-};
-
 #pragma pack(push,1)
 
 struct next_client_backend_init_request_packet_t
@@ -84,7 +55,63 @@ struct next_client_backend_pong_packet_t
     uint64_t ping_sequence;
 };
 
+struct next_client_backend_refresh_token_request_packet_t
+{
+    uint8_t type;
+    uint8_t prefix[17];
+    uint8_t sdk_version_major;
+    uint8_t sdk_version_minor;
+    uint8_t sdk_version_patch;
+    uint64_t request_id;
+    struct next_client_backend_token_t backend_token;
+};
+
+struct next_client_backend_refresh_token_response_packet_t
+{
+    uint8_t type;
+    uint8_t prefix[17];
+    uint64_t request_id;
+    struct next_client_backend_token_t backend_token;
+};
+
 #pragma pack(pop)
+
+struct next_client_backend_init_data_t
+{
+    double next_update_time;
+    uint64_t request_id;
+    uint64_t ping_sequence;
+    uint64_t pong_sequence;
+    bool initialized;
+    int num_pongs_received;
+    next_client_backend_token_t backend_token;
+};
+
+struct next_client_t
+{
+    void * context;
+
+    int state;
+
+    uint16_t bound_port;
+
+    double init_start_time;
+    next_connect_token_t connect_token;
+    next_client_backend_init_data_t backend_init_data[NEXT_MAX_CONNECT_TOKEN_BACKENDS];
+
+    double last_refresh_backend_token_time;
+    double last_request_backend_token_refresh_time;
+    uint64_t refresh_backend_token_request_id;
+
+    next_address_t client_backend_address;
+    next_client_backend_token_t backend_token;
+    uint64_t session_id;
+    uint64_t server_id;
+
+    next_platform_socket_t * socket;
+
+    void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes );
+};
 
 next_client_t * next_client_create( void * context, const char * connect_token_string, const uint8_t * buyer_public_key, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) )
 {
@@ -136,6 +163,7 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
     client->state = NEXT_CLIENT_INITIALIZING;
     client->init_start_time = current_time;
     client->last_refresh_backend_token_time = current_time;
+    client->refresh_backend_token_request_id = next_random_uint64();
     client->packet_received_callback = packet_received_callback;
 
     next_address_t bind_address;
@@ -426,6 +454,16 @@ void next_client_update_refresh_backend_token( next_client_t * client )
         return;
 
     next_printf( NEXT_LOG_LEVEL_INFO, "request refresh backend token" );
+
+    next_client_backend_refresh_token_request_packet_t packet;
+    packet.type = NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN_REQUEST;
+    packet.sdk_version_major = NEXT_VERSION_MAJOR_INT;
+    packet.sdk_version_major = NEXT_VERSION_MINOR_INT;
+    packet.sdk_version_major = NEXT_VERSION_PATCH_INT;
+    packet.request_id = client->refresh_backend_token_request_id;
+    packet.backend_token = client->backend_token;
+    // todo: endian fixup
+    next_client_send_packet_internal( client, &client->client_backend_address, (uint8_t*) &packet, sizeof(next_client_backend_refresh_token_request_packet_t) );
 
     client->last_request_backend_token_refresh_time = current_time;
 }

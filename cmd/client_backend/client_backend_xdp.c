@@ -26,20 +26,22 @@
 
 #include "proton.h"
 
-#define NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST              0
-#define NEXT_CLIENT_BACKEND_PACKET_INIT_RESPONSE             1
-#define NEXT_CLIENT_BACKEND_PACKET_PING                      2
-#define NEXT_CLIENT_BACKEND_PACKET_PONG                      3
-#define NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN             4
+#define NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST                 0
+#define NEXT_CLIENT_BACKEND_PACKET_INIT_RESPONSE                1
+#define NEXT_CLIENT_BACKEND_PACKET_PING                         2
+#define NEXT_CLIENT_BACKEND_PACKET_PONG                         3
+#define NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN_REQUEST        4
+#define NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN_RESPONSE       5
 
-#define ADVANCED_PACKET_FILTER                               0
+#define ADVANCED_PACKET_FILTER                                  0
 
-#define NEXT_MAX_CONNECT_TOKEN_BYTES                       500
-#define NEXT_MAX_CONNECT_TOKEN_BACKENDS                     32
-#define NEXT_CONNECT_TOKEN_SIGNATURE_BYTES                  64
+#define NEXT_MAX_CONNECT_TOKEN_BYTES                          500
+#define NEXT_MAX_CONNECT_TOKEN_BACKENDS                        32
+#define NEXT_CONNECT_TOKEN_SIGNATURE_BYTES                     64
 
-#define NEXT_CLIENT_BACKEND_TOKEN_CRYPTO_HEADER_BYTES       36
-#define NEXT_CLIENT_BACKEND_TOKEN_EXPIRE_SECONDS            60
+#define NEXT_CLIENT_BACKEND_TOKEN_VERSION                       0
+#define NEXT_CLIENT_BACKEND_TOKEN_CRYPTO_HEADER_BYTES          36
+#define NEXT_CLIENT_BACKEND_TOKEN_EXPIRE_SECONDS               60
 
 #include "client_backend_shared.h"
 
@@ -125,6 +127,25 @@ struct next_client_backend_pong_packet_t
     __u8 prefix[17];
     __u64 request_id;
     __u64 ping_sequence;
+};
+
+struct next_client_backend_refresh_token_request_packet_t
+{
+    __u8 type;
+    __u8 prefix[17];
+    __u8 sdk_version_major;
+    __u8 sdk_version_minor;
+    __u8 sdk_version_patch;
+    __u64 request_id;
+    struct next_client_backend_token_t backend_token;
+};
+
+struct next_client_backend_refresh_token_response_packet_t
+{
+    __u8 type;
+    __u8 prefix[17];
+    __u64 request_id;
+    struct next_client_backend_token_t backend_token;
 };
 
 #pragma pack(pop)
@@ -640,7 +661,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                 {
                                     debug_printf( "connect token expired" );
                                     return XDP_DROP;
-                                }                                
+                                }         
 
                                 const __u64 request_id = request->request_id;
                                 const __u64 buyer_id = request->connect_token.buyer_id;
@@ -652,6 +673,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                                 response->type = NEXT_CLIENT_BACKEND_PACKET_INIT_RESPONSE;
                                 response->request_id = request_id;
+                                response->backend_token.version = NEXT_CLIENT_BACKEND_TOKEN_VERSION;
                                 response->backend_token.expire_timestamp = current_timestamp + NEXT_CLIENT_BACKEND_TOKEN_EXPIRE_SECONDS;
                                 response->backend_token.buyer_id = buyer_id;
                                 response->backend_token.server_id = server_id;
@@ -692,7 +714,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                 int result = proton_secretbox_decrypt( (__u8*) &request->backend_token, sizeof(struct next_client_backend_token_t), 0, client_backend_private_key, PROTON_SECRETBOX_KEY_BYTES );
                                 if ( result != 0 )
                                 {
-                                    debug_printf( "could not encrypt backend token" );
+                                    debug_printf( "could not decrypt backend token" );
                                     return XDP_DROP;
                                 }
 
@@ -724,9 +746,60 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                             
                             case NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN:
                             {
-                                // ...
+                                if ( (void*)packet_data + sizeof(struct next_client_backend_refresh_token_request_packet_t) > data_end )
+                                {
+                                    debug_printf( "client backend refresh token request packet is too small" );
+                                    return XDP_DROP;
+                                }
 
-                                return XDP_DROP;            // todo: respond and tx
+                                struct next_client_backend_refresh_token_request_packet_t * request = (struct next_client_backend_refresh_token_request_packet_t*) packet_data;
+
+                                // todo: we should get the client backend private key from the config map
+                                __u8 client_backend_private_key[] = { 0x7a, 0xb9, 0x48, 0x82, 0x18, 0xc1, 0xee, 0xcb, 0x06, 0xa7, 0xbb, 0x08, 0x0d, 0xa9, 0x75, 0x81, 0xe7, 0xdc, 0xe0, 0xb7, 0xa1, 0xbf, 0x58, 0x47, 0x29, 0xe2, 0xb8, 0x84, 0xd9, 0xf9, 0x3c, 0x23 };                                
+
+                                int result = proton_secretbox_decrypt( (__u8*) &request->backend_token, sizeof(struct next_client_backend_token_t), 0, client_backend_private_key, PROTON_SECRETBOX_KEY_BYTES );
+                                if ( result != 0 )
+                                {
+                                    debug_printf( "could not decrypt backend token" );
+                                    return XDP_DROP;
+                                }
+
+                                // todo: we need to get this value from the client_backend_state map
+                                const __u64 current_timestamp = 0;
+                                
+                                if ( request->backend_token.expire_timestamp < current_timestamp )
+                                {
+                                    debug_printf( "backend token expired" );
+                                    return XDP_DROP;
+                                }
+
+                                const __u64 request_id = request->request_id;
+                                const __u64 buyer_id = request->connect_token.buyer_id;
+                                const __u64 server_id = request->connect_token.server_id;
+                                const __u64 session_id = request->connect_token.session_id;
+                                const __u64 user_hash = request->connect_token.user_hash;
+
+                                response->type = NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN_RESPONSE;
+                                response->request_id = request_id;
+                                response->backend_token.version = NEXT_CLIENT_BACKEND_TOKEN_VERSION;
+                                response->backend_token.expire_timestamp = current_timestamp + NEXT_CLIENT_BACKEND_TOKEN_EXPIRE_SECONDS;
+                                response->backend_token.buyer_id = buyer_id;
+                                response->backend_token.server_id = server_id;
+                                response->backend_token.session_id = session_id;
+                                response->backend_token.user_hash = user_hash;
+
+                                int result = proton_secretbox_encrypt( (__u8*) &response->backend_token, sizeof(struct next_client_backend_token_t), 0, client_backend_private_key, PROTON_SECRETBOX_KEY_BYTES );
+                                if ( result != 0 )
+                                {
+                                    debug_printf( "could not encrypt backend token" );
+                                    return XDP_DROP;
+                                }
+
+                                reflect_packet( data, sizeof(struct next_client_backend_refresh_token_response_packet_t), magic );
+
+                                bpf_xdp_adjust_tail( ctx, -( (int) sizeof(struct next_client_backend_refresh_token_request_packet_t) - (int) sizeof(struct next_client_backend_refresh_token_response_packet_t) ) );
+
+                                return XDP_TX;
                             }
                             break;
 

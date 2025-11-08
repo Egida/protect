@@ -12,11 +12,21 @@ DONE
 
     Extend the connect token so it has the backend token refresh rate in it (30 seconds...)
 
-TODO
-
     Implement the code on the client to request to refresh the backend token
 
     This will need to include retries (once per-second until we get a response...)
+
+TODO
+
+    Implement the backend responding to the refresh backend token request with a new encrypted backend token
+
+    -------------
+
+    Implement the client processing the refresh token response, stashing the updated backend token and setting the next refresh to n seconds in future
+
+    -------------
+
+    Verify that the client sits and refreshes backend token post-init every 30 seconds
 
     -------------
 
