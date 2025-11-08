@@ -4,25 +4,23 @@ DONE
 
     Remove config. We really don't need it. Client can configure fully with connect token, and the server can just read env vars or do its own config if it needs to.
 
-TODO
-
     Implement the code that fails to connect after the connect timeout is reached
 
     The connect timeout should be specified in the connect token so the client is zero configuration
 
     Verify that we can have the client backend shut down, and the client will give up after a while and go to error state
 
-    -------------
+TODO
 
-    Implement the request to refresh the backend token
+    Extend the connect token so it has the backend token refresh rate in it (30 seconds...)
 
-    Call the refresh once every 30 seconds (this refresh rate should be specified in the connect token)
+    Implement the code on the client to request to refresh the backend token
 
     This will need to include retries (once per-second until we get a response...)
 
     -------------
 
-    Read the client backend private key in config when the client backend starts up
+    Read the client backend private key from env var when the client backend starts up
 
     Stick the client backend private key in the client backend config map
 

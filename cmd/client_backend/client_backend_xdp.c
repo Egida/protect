@@ -73,6 +73,7 @@ struct next_connect_token_t
     __u8 pings_per_second;
     __u8 pongs_before_select;
     __u8 max_connect_seconds;
+    __u8 backend_token_refresh_seconds;
     __u8 signature[NEXT_CONNECT_TOKEN_SIGNATURE_BYTES];
 };
 
