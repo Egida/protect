@@ -355,11 +355,13 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
         {
             const next_client_backend_refresh_token_response_packet_t * packet = (const next_client_backend_refresh_token_response_packet_t*) packet_data;
 
-            // todo: endian fixup
+            if ( packet->request_id != client->refresh_backend_token_request_id )
+                return;
 
             next_printf( NEXT_LOG_LEVEL_INFO, "client received refresh token response packet" );
 
-            // ...
+            client->backend_token = packet->backend_token;
+            client->last_refresh_backend_token_time = next_platform_time();
         }
     }
     else if ( client->state == NEXT_CLIENT_INITIALIZING )
