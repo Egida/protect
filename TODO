@@ -10,9 +10,9 @@ DONE
 
     Verify that we can have the client backend shut down, and the client will give up after a while and go to error state
 
-TODO
-
     Extend the connect token so it has the backend token refresh rate in it (30 seconds...)
+
+TODO
 
     Implement the code on the client to request to refresh the backend token
 

@@ -31,6 +31,7 @@ struct next_client_t
     int state;
     uint16_t bound_port;
     double init_start_time;
+    double last_refresh_backend_token_time;
     next_connect_token_t connect_token;
     next_client_backend_init_data_t backend_init_data[NEXT_MAX_CONNECT_TOKEN_BACKENDS];
     next_address_t client_backend_address;
@@ -127,10 +128,13 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
 
     memset( client, 0, sizeof( next_client_t) );
     
+    const uint64_t current_time = next_platform_time();
+
     client->context = context;
     client->connect_token = connect_token;
     client->state = NEXT_CLIENT_INITIALIZING;
-    client->init_start_time = next_platform_time();
+    client->init_start_time = current_time;
+    client->last_refresh_backend_token_time = current_time;
     client->packet_received_callback = packet_received_callback;
 
     next_address_t bind_address;
@@ -216,6 +220,9 @@ void next_client_update_initialize( next_client_t * client )
         Our strategy is to ping n client backends and accept the first backend that we init with and receive n pongs from
         This biases us towards selecting the client backend with the lowest latency lowest packet loss for the client
     */
+
+    if ( client->state != NEXT_CLIENT_INITIALIZING )
+        return;
 
     double current_time = next_platform_time();
 
@@ -392,8 +399,6 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
 
 void next_client_update_receive_packets( next_client_t * client )
 {
-    next_assert( client );
-
     while ( true )
     {
         uint8_t packet_data[NEXT_MAX_PACKET_BYTES];
@@ -406,14 +411,28 @@ void next_client_update_receive_packets( next_client_t * client )
     }
 }
 
+void next_client_update_refresh_backend_token( next_client_t * client )
+{
+    if ( client->state <= NEXT_CLIENT_INITIALIZING )
+        return;
+
+    const uint64_t current_time = next_platform_time();
+
+    if ( client->last_refresh_backend_token_time + client->connect_token.backend_token_refresh_seconds > current_time )
+        return;
+
+    // todo
+
+    next_printf( NEXT_LOG_LEVEL_INFO, "want to refresh backend token" );
+}
+
 void next_client_update( next_client_t * client )
 {
     next_assert( client );
 
-    if ( client->state == NEXT_CLIENT_INITIALIZING )
-    {
-        next_client_update_initialize( client );
-    }
+    next_client_update_initialize( client );
+
+    next_client_update_refresh_backend_token( client );
 
     next_client_update_receive_packets( client );
 
