@@ -744,7 +744,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                             }
                             break;
                             
-                            case NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN:
+                            case NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN_REQUEST:
                             {
                                 if ( (void*)packet_data + sizeof(struct next_client_backend_refresh_token_request_packet_t) > data_end )
                                 {
@@ -774,10 +774,10 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                 }
 
                                 const __u64 request_id = request->request_id;
-                                const __u64 buyer_id = request->connect_token.buyer_id;
-                                const __u64 server_id = request->connect_token.server_id;
-                                const __u64 session_id = request->connect_token.session_id;
-                                const __u64 user_hash = request->connect_token.user_hash;
+                                const __u64 buyer_id = request->backend_token.buyer_id;
+                                const __u64 server_id = request->backend_token.server_id;
+                                const __u64 session_id = request->backend_token.session_id;
+                                const __u64 user_hash = request->backend_token.user_hash;
 
                                 response->type = NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN_RESPONSE;
                                 response->request_id = request_id;
