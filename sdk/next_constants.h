@@ -16,8 +16,8 @@
 #define NEXT_ADDRESS_BYTES_IPV4                                         6
 #define NEXT_ADDRESS_BYTES                                             19
 #define NEXT_ADDRESS_BUFFER_SAFETY                                     32
-#define NEXT_DEFAULT_SOCKET_SEND_BUFFER_SIZE                      1000000
-#define NEXT_DEFAULT_SOCKET_RECEIVE_BUFFER_SIZE                   1000000
+#define NEXT_SOCKET_SEND_BUFFER_SIZE                              1000000
+#define NEXT_SOCKET_RECEIVE_BUFFER_SIZE                           1000000
 #define NEXT_REPLAY_PROTECTION_BUFFER_SIZE                           1024
 #define NEXT_PING_HISTORY_ENTRY_COUNT                                1024
 #define NEXT_PING_STATS_WINDOW                                       10.0

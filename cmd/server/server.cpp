@@ -29,10 +29,7 @@ int main()
 {
     signal( SIGINT, interrupt_handler ); signal( SIGTERM, interrupt_handler );
 
-    next_config_t config;
-    next_default_config( &config );
-
-    if ( next_init( NULL, &config ) != NEXT_OK )
+    if ( next_init() != NEXT_OK )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "could not initialize network next" );
         return 1;        

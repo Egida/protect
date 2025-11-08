@@ -5,7 +5,6 @@
 
 #include "next_client.h"
 #include "next_config.h"
-#include "next_internal_config.h"
 #include "next_constants.h"
 #include "next_platform.h"
 #include "next_packet_filter.h"
@@ -84,9 +83,6 @@ struct next_client_backend_pong_packet_t
 
 #pragma pack(pop)
 
-// todo
-// extern next_internal_config_t next_global_config;
-
 next_client_t * next_client_create( void * context, const char * connect_token_string, const uint8_t * buyer_public_key, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) )
 {
     next_assert( connect_token );
@@ -158,8 +154,7 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
         }
     }
 
-    client->socket = next_platform_socket_create( client->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, NEXT_DEFAULT_SOCKET_SEND_BUFFER_SIZE, NEXT_DEFAULT_SOCKET_RECEIVE_BUFFER_SIZE );
-    // client->socket = next_platform_socket_create( client->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, next_global_config.socket_send_buffer_size, next_global_config.socket_receive_buffer_size );
+    client->socket = next_platform_socket_create( client->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, NEXT_SOCKET_SEND_BUFFER_SIZE, NEXT_SOCKET_RECEIVE_BUFFER_SIZE );
     if ( client->socket == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create socket" );
@@ -177,7 +172,7 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
 
 void next_client_destroy( next_client_t * client )
 {
-    // IMPORTANT: Please disconnect and wait for the client to disconnect before destroying the client
+    // IMPORTANT: Please call disconnect and wait for the client to disconnect before destroying the client
     next_assert( client->state == NEXT_CLIENT_DISCONNECTED );
 
     if ( client->socket )
@@ -188,57 +183,7 @@ void next_client_destroy( next_client_t * client )
     next_clear_and_free( client->context, client, sizeof(next_client_t) );
 }
 
-void next_client_send_backend_init_request_packet( next_client_t * client, next_address_t * to_address, uint64_t request_id )
-{
-    uint8_t to_address_data[32];
-    next_address_data( to_address, to_address_data );
-
-    next_address_t from_address;
-    memset( &from_address, 0, sizeof(from_address) );
-    from_address.type = NEXT_ADDRESS_IPV4;
-    memcpy( from_address.data.ipv4, (uint8_t*) &client->connect_token.client_public_address, 4 );
-
-    uint8_t from_address_data[32];
-    next_address_data( &from_address, from_address_data );
-
-    uint8_t packet_data[NEXT_MAX_PACKET_BYTES];
-    memset( packet_data, 0, sizeof(packet_data) );
-
-    uint8_t * a = packet_data + 1;
-    uint8_t * b = packet_data + 3;
-
-    uint8_t magic[8];
-    memset( magic, 0, sizeof(magic) );
-
-    uint8_t * p = packet_data;
-
-    // todo: switch to using packet struct. easier to read
-
-    *p = NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST;
-    p += 18;
-
-    p[0] = NEXT_VERSION_MAJOR_INT;
-    p[1] = NEXT_VERSION_MINOR_INT;
-    p[2] = NEXT_VERSION_PATCH_INT;
-    p += 3;
-
-    memcpy( p, &client->connect_token, sizeof(next_connect_token_t) );               // todo: endian
-    p += sizeof(next_connect_token_t);
-
-    memcpy( p, &request_id, 8 );                                                     // todo: endian
-    p += 8;
-
-    int packet_length = (int) ( p - packet_data );
-
-    next_generate_pittle( a, from_address_data, to_address_data, packet_length );
-    next_generate_chonkle( b, magic, from_address_data, to_address_data, packet_length );
-
-    // todo: endian fixup
-
-    next_platform_socket_send_packet( client->socket, to_address, packet_data, packet_length );
-}
-
-void next_client_send_packet( next_client_t * client, next_address_t * to_address, uint8_t * packet_data, int packet_bytes )
+void next_client_send_packet_internal( next_client_t * client, next_address_t * to_address, uint8_t * packet_data, int packet_bytes )
 {
     uint8_t to_address_data[32];
     next_address_data( to_address, to_address_data );
@@ -301,7 +246,15 @@ void next_client_update_initialize( next_client_t * client )
 
         if ( !client->backend_init_data[i].initialized )
         {
-            next_client_send_backend_init_request_packet( client, &to, client->backend_init_data[i].request_id );
+            next_client_backend_init_request_packet_t packet;
+            packet.type = NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST;
+            packet.sdk_version_major = NEXT_VERSION_MAJOR_INT;
+            packet.sdk_version_major = NEXT_VERSION_MINOR_INT;
+            packet.sdk_version_major = NEXT_VERSION_PATCH_INT;
+            packet.connect_token = client->connect_token;
+            packet.request_id = client->backend_init_data[i].request_id;
+            // todo: endian fixup
+            next_client_send_packet_internal( client, &to, (uint8_t*) &packet, sizeof(next_client_backend_init_request_packet_t) );
         }
         else
         {
@@ -316,7 +269,7 @@ void next_client_update_initialize( next_client_t * client )
             packet.ping_sequence = client->backend_init_data[i].ping_sequence++;
             packet.backend_token = client->backend_init_data[i].backend_token;
             // todo: endian fixup
-            next_client_send_packet( client, &to, (uint8_t*) &packet, sizeof(next_client_backend_ping_packet_t) );
+            next_client_send_packet_internal( client, &to, (uint8_t*) &packet, sizeof(next_client_backend_ping_packet_t) );
         }
     }
 }

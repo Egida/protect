@@ -1,76 +1,8 @@
 DONE
 
-    Implement the client sending the client init request packet to n backends until it receives a response. For any zero client backend address, do nothing.
-
-    Uhoh. We can't just send the connect token to the client backend because it contains the user hash (personal data)
-
-    So we have to extend the connect token so it has an encrypted part, and this will require asymmetric encryption, since the buyer creates the connect token.
-
-    Implement part where we send the client backend init request packet to the client backend during init
-
-    Implement client backend XDP program verifying client init request packet using hydrogen, and responding with an encrypted client backend token
-
-    Hook up hydro_sign_verify in next_module
-
-    I have some work to do to get hydro compiling in the kernel module
-
-    Work through it until we get the connect token verifying in the XDP module and responding with a reflected packet
-
-    Extend the kernel module so we have access to secretbox encrypt/decrypt
-
-    We need definitions of the next_connect_token_t and the next_backend_token_t inside the XDP program and the client backend
-
-    Build a next_backend_token_t in response to the client init request and send it back to the client
-
-    Verify the client still gets the response
-
-    Encrypt the backend token
-
-    Implement the secretbox_encrypt function in the kernel module
-
-    Verify the encrypt succeeds and the client backend responds
-
-    Resize the response packet
-
-    Verify the client gets the client init response packet and it's a smaller size
-
-    Promote the linux kernel module to its own open source project "proton"
-
-    On the client process packets and check against the basic packet filter.
-
-    When a client init response packet is received, look up the client backend by address and port then check if the client backend is not initialized yet, and that the request id is the correct value
-
-    Store the backend token in the init data for that backend and transition to initialized.
-
-    Define the ping packet and pong packet structs (SDK side and also XDP side...)
-
-    Update client -> client backend packets to include sdk version at front for versioning
-
-    Remove serialize and read/write functions. We're going to go with structs this time.
-
-    Fill version info from SDK in client -> client backend packets
-
-    Implement XDP program to process ping packet
-
-    Verify backend token decrypts
-
-    Verify backend token has not expired
-
-    Respond with a client backend pong packet
-
-    Verify the client gets the backend pong packets
-
-    Increase pong count if the pong packet has a ping sequence >= current pong sequence, this way we reward in-order responses.
-
-    After n pongs transition to selecting that client backend and transition to the connected state temporarily so we have some closure here.
-
-    Number of pings should be in connect token (10)
-
-TODO
-
     Switch to packet struct when sending client init request packet
 
-    -------------
+TODO
 
     Fix up config by stripping out unused parts, get socket buffer sizes in, buyer private/public key etc.
 
@@ -78,17 +10,21 @@ TODO
 
     Implement the code that fails to connect after the connect timeout is reached
 
+    The connect timeout should be specified in the connect token so the client is zero configuration
+
     Verify that we can have the client backend shut down, and the client will give up after a while and go to error state
 
     -------------
 
     Implement the request to refresh the backend token
 
-    Call the refresh once every 30 seconds
+    Call the refresh once every 30 seconds (this refresh rate should be specified in the connect token)
 
     This will need to include retries (once per-second until we get a response...)
 
     -------------
+
+    Read the client backend private key in config when the client backend starts up
 
     Stick the client backend private key in the client backend config map
 
@@ -108,7 +44,7 @@ TODO
 
     Implement the client backend buyer map
 
-    This map will map from buyer id to data for the buyer
+    This map goes from buyer id to data for the buyer
 
     In the buyer struct, we will have the buyer public key
 
@@ -123,5 +59,13 @@ TODO
     -------------
 
     Fix the connect token so we never send the user hash over un-encrypted channels
+
+    -------------
+
+    If an IP address is passed in instead of a connect token, just go straight to "CONNECTED" state on the client and send and receive passthrough packets.
+
+    This is the simplest possible way to make it super easy to test during development.
+
+    This payload packet codepath must be disabled in the shipping build, so even if you know the server IP address, you cannot connect to it.
 
     -------------

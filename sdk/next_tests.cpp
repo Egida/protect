@@ -20,7 +20,6 @@
 #include "next_packet_loss_tracker.h"
 #include "next_out_of_order_tracker.h"
 #include "next_jitter_tracker.h"
-#include "next_internal_config.h"
 #include "next_value_tracker.h"
 #include "next_connect_token.h"
 #include "next_client_backend_token.h"

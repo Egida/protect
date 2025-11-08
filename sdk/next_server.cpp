@@ -5,7 +5,6 @@
 
 #include "next_server.h"
 #include "next_config.h"
-#include "next_internal_config.h"
 #include "next_constants.h"
 #include "next_platform.h"
 #include "next_hash.h"
@@ -23,9 +22,6 @@ struct next_server_t
     next_platform_socket_t * socket;
     void (*packet_received_callback)( next_server_t * server, void * context, int client_index, const uint8_t * packet_data, int packet_bytes );
 };
-
-// todo
-// extern next_internal_config_t next_global_config;
 
 next_server_t * next_server_create( void * context, const char * bind_address_string, const char * public_address_string, void (*packet_received_callback)( next_server_t * client, void * context, int client_index, const uint8_t * packet_data, int packet_bytes ) )
 {
@@ -56,8 +52,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     server->context = context;
     server->packet_received_callback = packet_received_callback;
 
-    server->socket = next_platform_socket_create( server->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, NEXT_DEFAULT_SOCKET_SEND_BUFFER_SIZE, NEXT_DEFAULT_SOCKET_RECEIVE_BUFFER_SIZE );
-    // server->socket = next_platform_socket_create( server->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, next_global_config.socket_send_buffer_size, next_global_config.socket_receive_buffer_size );
+    server->socket = next_platform_socket_create( server->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, NEXT_SOCKET_SEND_BUFFER_SIZE, NEXT_SOCKET_RECEIVE_BUFFER_SIZE );
     if ( server->socket == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create socket" );
