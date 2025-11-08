@@ -4,6 +4,7 @@
 */
 
 #include "platform.h"
+#include "hydrogen/hydrogen.h"
 
 #include <assert.h>
 #include <time.h>
@@ -19,12 +20,16 @@
 
 static double time_start;
 
-int platform_init()
+void platform_init()
 {
     struct timespec ts;
     clock_gettime( CLOCK_MONOTONIC_RAW, &ts );
     time_start = ts.tv_sec + ( (double) ( ts.tv_nsec ) ) / 1000000000.0;
-    return PLATFORM_OK;
+    if ( hydro_init() != 0 )
+    {
+        printf( "error: could not initialize hydrogen\n" );
+        exit(1);
+    }
 }
 
 double platform_time()
@@ -44,7 +49,6 @@ void platform_sleep( double time )
 
 void platform_random_bytes( uint8_t * buffer, int bytes )
 {
-    // todo
     // randombytes_buf( buffer, bytes );
 }
 

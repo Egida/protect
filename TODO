@@ -70,6 +70,20 @@ TODO
 
     -------------
 
+    Switch to packet struct when sending client init request packet
+
+    -------------
+
+    Fix up config by stripping out unused bits, get socket buffer sizes in, buyer private/public key etc.
+
+    -------------
+
+    Implement the code that fails to connect after the connect timeout is reached
+
+    Verify that we can have the client backend shut down, and the client will give up after a while and go to error state
+
+    -------------
+
     Implement the request to refresh the backend token
 
     Call the refresh once every 30 seconds

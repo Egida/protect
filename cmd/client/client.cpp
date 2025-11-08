@@ -61,6 +61,7 @@ int main()
         token.backend_addresses[0] = 0xf3fdfa2d;                // 45.250.253.243 (latitude.newyork)
         token.backend_ports[0] = next_platform_htons( 40000 );
         token.pings_per_second = 10;
+        token.pongs_before_select = 10;
         token.max_connect_seconds = 30;
         if ( !next_write_connect_token( &token, connect_token_string, buyer_private_key ) )
         {

@@ -27,6 +27,7 @@ struct next_connect_token_t
     uint32_t backend_addresses[NEXT_MAX_CONNECT_TOKEN_BACKENDS];             // big endian ipv4. 0 if not provided.
     uint16_t backend_ports[NEXT_MAX_CONNECT_TOKEN_BACKENDS];                 // big endian port. 0 if not provided.
     uint8_t pings_per_second;
+    uint8_t pongs_before_select;
     uint8_t max_connect_seconds;
     uint8_t signature[NEXT_CONNECT_TOKEN_SIGNATURE_BYTES];
 };

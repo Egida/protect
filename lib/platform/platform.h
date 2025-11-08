@@ -15,9 +15,6 @@ extern "C"
 {
 #endif
 
-#define PLATFORM_OK             1
-#define PLATFORM_ERROR          0
-
 #define PLATFORM_ADDRESS_NONE   0
 #define PLATFORM_ADDRESS_IPV4   1
 #define PLATFORM_ADDRESS_IPV6   2
@@ -146,7 +143,7 @@ struct platform_mutex_t
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 
-int platform_init();
+void platform_init();
 
 double platform_time();
 

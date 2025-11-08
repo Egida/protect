@@ -550,31 +550,6 @@ int next_init( void * context, next_config_t * config_in )
     next_global_config = config;
     */
 
-    // todo: design new packets
-    /*
-    next_signed_packets[NEXT_UPGRADE_REQUEST_PACKET] = 1;
-    next_signed_packets[NEXT_UPGRADE_CONFIRM_PACKET] = 1;
-
-    next_signed_packets[NEXT_BACKEND_SERVER_INIT_REQUEST_PACKET] = 1;
-    next_signed_packets[NEXT_BACKEND_SERVER_INIT_RESPONSE_PACKET] = 1;
-    next_signed_packets[NEXT_BACKEND_SERVER_UPDATE_REQUEST_PACKET] = 1;
-    next_signed_packets[NEXT_BACKEND_SERVER_UPDATE_RESPONSE_PACKET] = 1;
-    next_signed_packets[NEXT_BACKEND_SESSION_UPDATE_REQUEST_PACKET] = 1;
-    next_signed_packets[NEXT_BACKEND_SESSION_UPDATE_RESPONSE_PACKET] = 1;
-    next_signed_packets[NEXT_BACKEND_CLIENT_RELAY_REQUEST_PACKET] = 1;
-    next_signed_packets[NEXT_BACKEND_CLIENT_RELAY_RESPONSE_PACKET] = 1;
-    next_signed_packets[NEXT_BACKEND_SERVER_RELAY_REQUEST_PACKET] = 1;
-    next_signed_packets[NEXT_BACKEND_SERVER_RELAY_RESPONSE_PACKET] = 1;
-
-    next_encrypted_packets[NEXT_DIRECT_PING_PACKET] = 1;
-    next_encrypted_packets[NEXT_DIRECT_PONG_PACKET] = 1;
-    next_encrypted_packets[NEXT_CLIENT_STATS_PACKET] = 1;
-    next_encrypted_packets[NEXT_ROUTE_UPDATE_PACKET] = 1;
-    next_encrypted_packets[NEXT_ROUTE_ACK_PACKET] = 1;
-    next_encrypted_packets[NEXT_CLIENT_RELAY_UPDATE_PACKET] = 1;
-    next_encrypted_packets[NEXT_CLIENT_RELAY_ACK_PACKET] = 1;
-    */
-
     return NEXT_OK;
 }
 
