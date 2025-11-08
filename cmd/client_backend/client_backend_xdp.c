@@ -790,7 +790,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                 response->backend_token.session_id = session_id;
                                 response->backend_token.user_hash = user_hash;
 
-                                int result = proton_secretbox_encrypt( (__u8*) &response->backend_token, sizeof(struct next_client_backend_token_t), 0, client_backend_private_key, PROTON_SECRETBOX_KEY_BYTES );
+                                result = proton_secretbox_encrypt( (__u8*) &response->backend_token, sizeof(struct next_client_backend_token_t), 0, client_backend_private_key, PROTON_SECRETBOX_KEY_BYTES );
                                 if ( result != 0 )
                                 {
                                     debug_printf( "could not encrypt backend token" );
