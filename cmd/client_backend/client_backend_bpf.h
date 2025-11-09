@@ -22,6 +22,7 @@ struct bpf_t
     bool attached_native;
     bool attached_skb;
     int config_fd;
+    int state_fd;
 #endif // #ifdef __linux__
 };
 

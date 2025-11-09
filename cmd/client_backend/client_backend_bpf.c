@@ -183,11 +183,21 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
 
     // delete all bpf maps we use so stale data doesn't stick around
     {
-        const char * command = "rm -f /sys/fs/bpf/client_backend_config_map";
-        FILE * file = popen( command, "r" );
-        char buffer[1024];
-        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
-        pclose( file );
+        {
+            const char * command = "rm -f /sys/fs/bpf/client_backend_config_map";
+            FILE * file = popen( command, "r" );
+            char buffer[1024];
+            while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+            pclose( file );
+        }
+
+        {
+            const char * command = "rm -f /sys/fs/bpf/client_backend_state_map";
+            FILE * file = popen( command, "r" );
+            char buffer[1024];
+            while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+            pclose( file );
+        }
     }
 
     // write out source tar.gz for client_backend_xdp.o
@@ -268,7 +278,14 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
     bpf->config_fd = bpf_obj_get( "/sys/fs/bpf/client_backend_config_map" );
     if ( bpf->config_fd <= 0 )
     {
-        printf( "\nerror: could not get client backend config: %s\n\n", strerror(errno) );
+        printf( "\nerror: could not get client backend config map: %s\n\n", strerror(errno) );
+        return false;
+    }
+
+    bpf->state_fd = bpf_obj_get( "/sys/fs/bpf/client_backend_state_map" );
+    if ( bpf->state_fd <= 0 )
+    {
+        printf( "\nerror: could not get client backend state map: %s\n\n", strerror(errno) );
         return false;
     }
 
