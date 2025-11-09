@@ -34,11 +34,11 @@ DONE
 
     Read the client backend private key from env var when the client backend starts up
 
-TODO
-
     Stick the client backend private key in the client backend config map
 
     Update the XDP program so it gets client backend public and private keys from the config map
+
+TODO
 
     -------------
 
