@@ -51,7 +51,7 @@ bool main_init( struct main_t * main, struct config_t * config, struct bpf_t * b
 
     struct client_backend_state state;
     state.current_timestamp = time(NULL);
-    int err = bpf_map_update_elem( main->state_fd, &key, &state, BPF_ANY );
+    err = bpf_map_update_elem( main->state_fd, &key, &state, BPF_ANY );
     if ( err != 0 )
     {
         printf( "\nerror: failed to set state: %s\n\n", strerror(errno) );
