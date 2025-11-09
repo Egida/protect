@@ -40,13 +40,11 @@ DONE
 
 TODO
 
-    -------------
-
     Implement the client backend buyer map
 
     This map goes from buyer id to data for the buyer
 
-    In the buyer struct, we will have the buyer public key
+    In the buyer struct, we will have the buyer public key, mock it up for now
 
     Then, we can update the XDP program to get the buyer public key from the buyer map
 
@@ -71,6 +69,12 @@ TODO
     This is the simplest possible way to make it super easy to test during development.
 
     This payload packet codepath must be disabled in the shipping build, so even if you know the server IP address, you cannot connect to it.
+
+    -------------
+
+    Finish updating the server so it has the zero copy packet send and receive interface
+
+    Update the server so it sends packets to all connected clients
 
     -------------
 

@@ -166,6 +166,14 @@ struct {
     __uint( pinning, LIBBPF_PIN_BY_NAME );
 } client_backend_state_map SEC(".maps");
 
+struct {
+    __uint( type, BPF_MAP_TYPE_HASH );
+    __type( key, __u64 );
+    __type( value, struct client_backend_buyer );
+    __uint( max_entries, 1024 );
+    __uint( pinning, LIBBPF_PIN_BY_NAME );
+} client_backend_buyer_map SEC(".maps");
+
 #define DEBUG 1
 
 #if DEBUG
@@ -645,8 +653,15 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                                 struct next_client_backend_init_request_packet_t * request = (struct next_client_backend_init_request_packet_t*) packet_data;
 
-                                // todo: buyer public key should come from a map indexed by buyer id
-                                struct proton_sign_verify_args args = { { 0x9d, 0x59, 0x40, 0xa4, 0xe2, 0x4a, 0xa3, 0x0a, 0xf2, 0x30, 0xb6, 0x1b, 0x49, 0x7d, 0x60, 0xe8, 0x6d, 0xf9, 0x03, 0x28, 0x5c, 0x96, 0x83, 0x06, 0x89, 0xf5, 0xdd, 0x62, 0x8a, 0x25, 0x95, 0x16 } };
+                                struct client_backend_buyer * buyer = (struct client_backend_buyer*) bpf_map_lookup_elem( &client_backend_buyer_map, &request->buyer_id );
+                                if ( buyer == NULL )
+                                {
+                                    debug_printf( "unknown buyer" );
+                                    return XDP_DROP;
+                                }
+
+                                struct proton_sign_verify_args args;
+                                memcpy( args.buyer_public_key, buyer->buyer_public_key, PROTON_SIGN_PUBLIC_KEY_BYTES );
 
                                 __u8 * connect_token = (__u8*) &request->connect_token;
                                 __u8 * signature = (__u8*) &request->connect_token.signature;

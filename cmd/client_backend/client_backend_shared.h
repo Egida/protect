@@ -16,10 +16,10 @@
 #define __u8 uint8_t
 #endif // #ifdef __linux__
 
-#define SIGN_PUBLIC_KEY_BYTES       32
-#define SIGN_PRIVATE_KEY_BYTES      64
+#define SIGN_PUBLIC_KEY_BYTES               32
+#define SIGN_PRIVATE_KEY_BYTES              64
 
-#define SECRETBOX_PRIVATE_KEY_BYTES 32
+#define SECRETBOX_PRIVATE_KEY_BYTES         32
 
 struct client_backend_config
 {
@@ -31,4 +31,9 @@ struct client_backend_config
 struct client_backend_state
 {
     __u64 current_timestamp;
+};
+
+struct client_backend_buyer
+{
+    __u8 public_key[SIGN_PUBLIC_KEY_BYTES];
 };
