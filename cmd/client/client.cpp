@@ -50,7 +50,7 @@ int main()
         next_connect_token_t token;
         memset( &token, 0, sizeof(token) );
         token.expire_timestamp = next_random_uint64();
-        token.buyer_id = next_random_uint64();
+        token.buyer_id = 0x12345678;
         token.server_id = next_random_uint64();
         token.session_id = next_random_uint64();
         token.user_hash = next_random_uint64();

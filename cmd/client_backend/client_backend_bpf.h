@@ -23,6 +23,7 @@ struct bpf_t
     bool attached_skb;
     int config_fd;
     int state_fd;
+    int buyer_fd;
 #endif // #ifdef __linux__
 };
 

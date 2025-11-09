@@ -289,6 +289,13 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
         return false;
     }
 
+    bpf->buyer_fd = bpf_obj_get( "/sys/fs/bpf/client_backend_buyer_map" );
+    if ( bpf->buyer_fd <= 0 )
+    {
+        printf( "\nerror: could not get client backend buyer map: %s\n\n", strerror(errno) );
+        return false;
+    }
+
 #endif // #ifdef __linux__
 
     return true;
