@@ -661,7 +661,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                 }
 
                                 struct proton_sign_verify_args args;
-                                memcpy( args.buyer_public_key, buyer->buyer_public_key, PROTON_SIGN_PUBLIC_KEY_BYTES );
+                                memcpy( args.public_key, buyer->public_key, PROTON_SIGN_PUBLIC_KEY_BYTES );
 
                                 __u8 * connect_token = (__u8*) &request->connect_token;
                                 __u8 * signature = (__u8*) &request->connect_token.signature;
