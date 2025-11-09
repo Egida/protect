@@ -662,8 +662,15 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                     return XDP_DROP;
                                 }
 
-                                // todo: we need to get this value from the client_backend_state map
-                                const __u64 current_timestamp = 0;
+                                int key = 0;
+                                struct client_backend_state * state = (struct client_backend_state*) bpf_map_lookup_elem( &client_backend_config_state, &key );
+                                if ( state == NULL )
+                                {
+                                    debug_printf( "client backend state is null" );
+                                    return XDP_DROP;
+                                }
+
+                                const __u64 current_timestamp = state->current_timestamp;
                                 
                                 if ( request->connect_token.expire_timestamp < current_timestamp )
                                 {
@@ -726,8 +733,15 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                     return XDP_DROP;
                                 }
 
-                                // todo: we need to get this value from the client_backend_state map
-                                const __u64 current_timestamp = 0;
+                                int key = 0;
+                                struct client_backend_state * state = (struct client_backend_state*) bpf_map_lookup_elem( &client_backend_config_state, &key );
+                                if ( state == NULL )
+                                {
+                                    debug_printf( "client backend state is null" );
+                                    return XDP_DROP;
+                                }
+
+                                const __u64 current_timestamp = state->current_timestamp;
                                 
                                 if ( request->backend_token.expire_timestamp < current_timestamp )
                                 {
@@ -772,8 +786,15 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                     return XDP_DROP;
                                 }
 
-                                // todo: we need to get this value from the client_backend_state map
-                                const __u64 current_timestamp = 0;
+                                int key = 0;
+                                struct client_backend_state * state = (struct client_backend_state*) bpf_map_lookup_elem( &client_backend_config_state, &key );
+                                if ( state == NULL )
+                                {
+                                    debug_printf( "client backend state is null" );
+                                    return XDP_DROP;
+                                }
+
+                                const __u64 current_timestamp = state->current_timestamp;
                                 
                                 if ( request->backend_token.expire_timestamp < current_timestamp )
                                 {
