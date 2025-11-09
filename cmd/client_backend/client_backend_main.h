@@ -17,14 +17,10 @@ struct main_t
     uint16_t port;
     bool initialized;
     bool shutting_down;
-
-    /*
-    int stats_fd;
+#ifdef __linux__
     int state_fd;
     int config_fd;
-    int session_map_fd;
-    int whitelist_map_fd;
-    */
+#endif // #ifdef __linux__
 };
 
 struct config_t;

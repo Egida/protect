@@ -37,13 +37,27 @@ bool main_init( struct main_t * main, struct config_t * config, struct bpf_t * b
     xdp_config.public_address = htonl( config->public_address );
 
 #ifdef __linux__
+
+    main->config_fd = bpf->config_fd;
+    main->state_fd = bpf->state_fd;
+
     __u32 key = 0;
-    int err = bpf_map_update_elem( bpf->config_fd, &key, &xdp_config, BPF_ANY );
+    int err = bpf_map_update_elem( main->config_fd, &key, &xdp_config, BPF_ANY );
     if ( err != 0 )
     {
         printf( "\nerror: failed to set config: %s\n\n", strerror(errno) );
         return false;
     }
+
+    client_backend_state state;
+    state.current_timestamp = time(NULL);
+    int err = bpf_map_update_elem( main->state_fd, &key, &state, BPF_ANY );
+    if ( err != 0 )
+    {
+        printf( "\nerror: failed to set state: %s\n\n", strerror(errno) );
+        return false;
+    }
+
 #endif // #ifdef __linux__
 
     return true;
@@ -60,23 +74,16 @@ int main_run( struct main_t * main )
 
     while ( !quit )
     {
-        /*
-        if ( main_update( main ) == RELAY_OK )
+        #ifdef __linux__
+        int key = 0;
+        client_backend_state state;
+        state.current_timestamp = time(NULL);
+        int err = bpf_map_update_elem( main->state_fd, &key, &state, BPF_ANY );
+        if ( err != 0 )
         {
-            update_attempts = 0;
+            printf( "\nwarning: failed to set state: %s\n\n", strerror(errno) );
         }
-        else
-        {
-            if ( update_attempts++ >= RELAY_MAX_UPDATE_ATTEMPTS )
-            {
-                printf( "error: could not update relay %d times in a row. shutting down :(", RELAY_MAX_UPDATE_ATTEMPTS );
-                fflush( stdout );
-                aborted = true;
-                quit = 1;
-                break;
-            }
-        }
-        */
+        #endif // #ifdef __linux__
 
         platform_sleep( 1.0 );
     }
