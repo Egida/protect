@@ -53,6 +53,7 @@ struct next_server_t
     void (*packet_received_callback)( next_server_t * server, void * context, int client_index, const uint8_t * packet_data, int packet_bytes );
 
     bool client_connected[NEXT_MAX_CLIENTS];
+    bool client_direct[NEXT_MAX_CLIENTS];
     next_address_t client_address[NEXT_MAX_CLIENTS];
 
     next_platform_mutex_t client_payload_mutex;
@@ -112,8 +113,9 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     next_info( "server id is %016" PRIx64, server->server_id );
     next_info( "match id is %016" PRIx64, server->match_id );
 
-    // todo: mock up as if client 0 is connected
+    // todo: mock up as if client 0 is connected direct
     server->client_connected[0] = true;
+    server->client_direct[0] = true;
     next_address_parse( &server->client_address[0], "127.0.0.1:30000" );
 
     if ( !next_platform_mutex_create( &server->client_payload_mutex ) )

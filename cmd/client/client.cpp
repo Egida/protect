@@ -24,14 +24,14 @@ void interrupt_handler( int signal )
     (void) signal; quit = 1;
 }
 
-void packet_received_callback( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes )
+void packet_received_callback( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes, uint64_t sequence )
 {
     (void) client;
     (void) context;
     (void) packet_data;
     (void) packet_bytes;
 
-    next_info( "client received %d byte packet", packet_bytes );
+    next_info( "client received packet %" PRId64 " from server (%d bytes)", sequence, packet_bytes );
 }
 
 int main()

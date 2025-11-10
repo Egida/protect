@@ -24,7 +24,7 @@ DONE
 
 TODO
 
-    Direct packets don't even need sequence numbers. Just pass them through...
+    Client should receive sequence number when a payload packet comes in
 
     -------------
 

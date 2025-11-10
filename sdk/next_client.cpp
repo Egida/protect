@@ -52,10 +52,10 @@ struct next_client_t
 
     next_platform_socket_t * socket;
 
-    void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes );
+    void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes, uint64_t sequence );
 };
 
-next_client_t * next_client_create( void * context, const char * connect_token_string, const uint8_t * buyer_public_key, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) )
+next_client_t * next_client_create( void * context, const char * connect_token_string, const uint8_t * buyer_public_key, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes, uint64_t sequence ) )
 {
     next_assert( connect_token );
     next_assert( buyer_public_key );
@@ -339,7 +339,10 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
         {
             if ( packet_bytes > 18 + 8 )
             {
-                client->packet_received_callback( client, client->context, packet_data + 18 + 8, packet_bytes - ( 18 + 8 ) );
+                uint64_t sequence;
+                memcpy( (uint8_t*) &sequence, packet_data + 18, 8 );
+                // todo: endian fixup
+                client->packet_received_callback( client, client->context, packet_data + 18 + 8, packet_bytes - ( 18 + 8 ), sequence );
             }
         }
         else if ( packet_type == NEXT_PACKET_CLIENT_BACKEND_REFRESH_TOKEN_RESPONSE && packet_bytes == sizeof(next_client_backend_refresh_token_response_packet_t) )
