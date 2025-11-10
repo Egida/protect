@@ -16,6 +16,9 @@ struct next_server_t;
 #define NEXT_SERVER_RUNNING    1
 #define NEXT_SERVER_STOPPING   2
 
+// todo: move to next_packets.h or whatever
+#define NEXT_PACKET_DIRECT 0
+
 next_server_t * next_server_create( void * context, const char * bind_address, const char * public_address );
 
 void next_server_destroy( next_server_t * server );
@@ -34,7 +37,7 @@ uint64_t next_server_id( next_server_t * server );
 
 // send packets (zero copy)
 
-uint8_t * next_server_start_packet( struct next_server_t * server, int client_index );
+uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * sequence );
 
 void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_data, int packet_bytes );
 

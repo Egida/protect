@@ -227,7 +227,7 @@ uint64_t next_server_id( next_server_t * server )
     return server->server_id;
 }
 
-uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * out_sequence )
+uint8_t * next_server_start_packet_internal( struct next_server_t * server, int client_index, uint64_t * out_sequence, uint8_t packet_type )
 {
     next_assert( server );
     next_assert( client_index >= 0 );
@@ -268,6 +268,20 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
     return packet_data;
 }
 
+uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * out_sequence )
+{
+    uint8_t * packet_data = next_server_start_packet_internal( server, client_index, out_sequence, NEXT_PACKET_DIRECT );
+    if ( !packet_data )
+        return NULL;
+
+    // todo: endian fix up
+    memcpy( packet_data, (char*)out_sequence, 8 );
+
+    packet_data += 8;
+
+    return packet_data;
+}
+
 void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_data, int packet_bytes )
 {
     next_assert( server );
@@ -298,7 +312,7 @@ void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_
 
     next_assert( packet_data );
     next_assert( packet_size > 0 );
-    next_assert( packet_size <= NEXT_MAX_PACKET_BYTES );
+    next_assert( packet_size <= NEXT_MTU );
 
     packet_info->packet_size = packet_bytes + NEXT_HEADER_BYTES;
 
