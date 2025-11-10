@@ -11,6 +11,8 @@
 
 #include <memory.h>
 
+#define NEXT_MAX_CLIENTS                                  1024
+
 #define NEXT_NUM_SERVER_FRAMES                   ( 10 * 1024 )
 
 struct next_server_send_packet_info_t
@@ -57,6 +59,9 @@ struct next_server_t
     void (*packet_received_callback)( next_server_t * server, void * context, int client_index, const uint8_t * packet_data, int packet_bytes );
     next_server_send_buffer_t send_buffer;
     next_server_receive_buffer_t receive_buffer;
+    bool client_connected[NEXT_MAX_CLIENTS];
+    next_address_t client_address[NEXT_MAX_CLIENTS];
+    uint64_t client_sequence[NEXT_MAX_CLIENTS];
 };
 
 next_server_t * next_server_create( void * context, const char * bind_address_string, const char * public_address_string )
@@ -189,16 +194,19 @@ void next_server_update( next_server_t * server )
 bool next_server_client_connected( next_server_t * server, int client_index )
 {
     next_assert( server );
-    (void) client_index;
-    // todo
-    return false;
+    next_assert( client_index >= 0 );
+    next_assert( client_index <= NEXT_MAX_CLIENTS );
+    return server->client_connected[client_index];
 }
 
 void next_server_disconnect_client( next_server_t * server, int client_index )
 {
     next_assert( server );
-    (void) client_index;
+    next_assert( client_index >= 0 );
+    next_assert( client_index <= NEXT_MAX_CLIENTS );
+
     // todo
+    (void) client_index;
 }
 
 void next_server_stop( next_server_t * server )
@@ -219,12 +227,45 @@ uint64_t next_server_id( next_server_t * server )
     return server->server_id;
 }
 
-uint8_t * next_server_start_packet( struct next_server_t * server, int client_index )
+uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * out_sequence )
 {
     next_assert( server );
-    (void) server;
-    (void) client_index;
-    return NULL;
+    next_assert( client_index >= 0 );
+    next_assert( out_sequence );
+
+    next_platform_mutex_acquire( &server->send_buffer.mutex );
+
+    uint64_t sequence = 0;
+    uint8_t * packet_data = NULL;
+
+    // todo: next_restrict
+    next_server_send_packet_info_t * __restrict__ packet_info = NULL;
+
+    if ( server->send_buffer.current_frame < NEXT_NUM_SERVER_FRAMES )
+    {
+        sequence = ++server->client_sequence[client_index];
+        packet_info = server->send_buffer.info + server->send_buffer.current_frame;
+        packet_data = server->send_buffer.data + server->send_buffer.current_frame * NEXT_MAX_PACKET_BYTES;
+        server->send_buffer.current_frame++;
+    }
+
+    next_platform_mutex_release( &server->send_buffer.mutex );
+
+    if ( !packet_data )
+        return NULL;
+
+    packet_data += NEXT_HEADER_BYTES;
+
+    next_assert( packet_info );
+
+    memset( packet_info, 0, sizeof(next_server_send_packet_info_t) );
+
+    packet_info->sequence = sequence;
+    packet_info->client_index = client_index;
+
+    *out_sequence = sequence;
+
+    return packet_data;
 }
 
 void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_data, int packet_bytes )
