@@ -170,6 +170,9 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
     memset( &bind_address, 0, sizeof(bind_address) );
     bind_address.type = NEXT_ADDRESS_IPV4;
 
+    // todo: dummy the client on port 30000 for easy testing
+    bind_address.port = 30000;
+
     // IMPORTANT: for many platforms it's best practice to bind to ipv6 and go dual stack on the client
     if ( next_platform_client_dual_stack() )
     {
@@ -438,20 +441,6 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
     }
 }
 
-void next_client_update_receive_packets( next_client_t * client )
-{
-    while ( true )
-    {
-        uint8_t packet_data[NEXT_MAX_PACKET_BYTES];
-        next_address_t from;
-        int packet_bytes = next_platform_socket_receive_packet( client->socket, &from, packet_data, sizeof(packet_data) );
-        if ( packet_bytes == 0 )
-            return;
-
-        next_client_process_packet( client, &from, packet_data, packet_bytes );
-    }
-}
-
 void next_client_update_refresh_backend_token( next_client_t * client )
 {
     if ( client->state <= NEXT_CLIENT_INITIALIZING )
@@ -487,12 +476,6 @@ void next_client_update( next_client_t * client )
     next_client_update_initialize( client );
 
     next_client_update_refresh_backend_token( client );
-
-    next_client_update_receive_packets( client );
-
-    // todo
-    (void) client;
-    next_platform_sleep( 1.0 / 100.0 );
 }
 
 void next_client_send_packet( next_client_t * client, const uint8_t * packet_data, int packet_bytes )
@@ -530,4 +513,19 @@ uint64_t next_client_server_id( next_client_t * client )
 {
     next_assert( client );
     return client->server_id;
+}
+
+void next_client_receive_packets( next_client_t * client )
+{
+    next_assert( client );
+    while ( true )
+    {
+        uint8_t packet_data[NEXT_MAX_PACKET_BYTES];
+        next_address_t from;
+        int packet_bytes = next_platform_socket_receive_packet( client->socket, &from, packet_data, sizeof(packet_data) );
+        if ( packet_bytes == 0 )
+            return;
+
+        next_client_process_packet( client, &from, packet_data, packet_bytes );
+    }
 }

@@ -29,6 +29,8 @@ next_client_t * next_client_create( void * context, const char * connect_token, 
 
 void next_client_destroy( next_client_t * client );
 
+void next_client_receive_packets( next_client_t * client );
+
 void next_client_update( next_client_t * client );
 
 void next_client_send_packet( next_client_t * client, const uint8_t * packet_data, int packet_bytes );

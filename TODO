@@ -1,68 +1,18 @@
 DONE
 
-    Switch to packet struct when sending client init request packet
+    Use the zero copy interface to send packets to all connected clients
 
-    Remove config. We really don't need it. Client can configure fully with connect token, and the server can just read env vars or do its own config if it needs to.
+    Mock client 0 being connected and verify that we can send packets to it
 
-    Implement the code that fails to connect after the connect timeout is reached
+    Mock client always being at port 30000, verify it receives direct packets sent from the server -> callback
 
-    The connect timeout should be specified in the connect token so the client is zero configuration
-
-    Verify that we can have the client backend shut down, and the client will give up after a while and go to error state
-
-    Extend the connect token so it has the backend token refresh rate in it (30 seconds...)
-
-    Implement the code on the client to request to refresh the backend token
-
-    This will need to include retries (once per-second until we get a response...)
-
-    Implement the backend responding to the refresh backend token request with a new encrypted backend token
-
-    Verify the client gets the refresh token response packet
-
-    Implement the client processing the refresh token response, stashing the updated backend token and setting the next refresh to n seconds in future
-
-    Verify that the client sits and refreshes backend token post-init every 30 seconds
-
-    Implement the client backend state map
-
-    Set the current time in the client backend state map once per-second
-
-    Get the current time in XDP from the state map
-
-    Verify that the client can connect and refresh backend tokens without having them expire for 10 minutes
-
-    Read the client backend private key from env var when the client backend starts up
-
-    Stick the client backend private key in the client backend config map
-
-    Update the XDP program so it gets client backend public and private keys from the config map
-
-    Implement the client backend buyer map
-
-    Update XDP program to get buyer public key from map
-
-    First, verify that if we can't look up from buyer id then we fail with unknown buyer
-
-    Then mock up the buyer public key in client_backend_main.c for now to have the expected value we want
-
-    Verify that the client can init again
-
-    Bring across the zero copy send packet data structures and functions
-
-    Generalize packet send so there is next_server_send_packet (payload) and there is next_server_send_packet_internal
-
-    Write the direct packet with a direct packet header and the sequence number
-
-    Decision is to have sequence numbers that don't map one-to-one to game packets, so if we have some holes, but that's OK because we can check what is sent (payload) vs. received in that case.
+    We're going to need to do client slots on the server
 
 TODO
 
-    Use the zero copy interface to send packets to all connected clients
+    Separate out client payload sequence from the sequence used for other packet types. Not all packet types need a sequence.
 
-    -------------
-
-    Mock client 0 being connected and verify that we can send packets to it
+    This lets us send packets to addresses (not client slots...) for internal packets while negotiating connection for example.
 
     -------------
 
@@ -75,6 +25,12 @@ TODO
     If an IP address is passed in instead of a connect token, just go straight to "CONNECTED" state on the client and send and receive passthrough packets.
 
     This is the simplest possible way to make it super easy to test during development.
+
+    -------------
+
+    On the server implement very simple handshake with client, or even just, any client that sends me a direct packet, connect them and go.
+
+    This is a bit weird, but it's fine for dev *and* in production we'll setup an XDP program to discard any direct packets to the server, so they are 100% dev only.
 
     -------------
 

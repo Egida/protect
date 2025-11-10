@@ -83,7 +83,7 @@ NEXT_EXPORT_FUNC void next_platform_server_thread_priority( struct next_platform
 
 // ----------------------------------------------------------------
 
-NEXT_EXPORT_FUNC int next_platform_mutex_create( struct next_platform_mutex_t * mutex );
+NEXT_EXPORT_FUNC bool next_platform_mutex_create( struct next_platform_mutex_t * mutex );
 
 NEXT_EXPORT_FUNC void next_platform_mutex_destroy( struct next_platform_mutex_t * mutex );
 

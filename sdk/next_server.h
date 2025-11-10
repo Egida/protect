@@ -47,6 +47,8 @@ void next_server_send_packets( struct next_server_t * server );
 
 // receive packets (zero copy)
 
+void next_server_receive_packets( struct next_server_t * server );
+
 // ...
 
 #endif // #ifndef NEXT_CLIENT_H

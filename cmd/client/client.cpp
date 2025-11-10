@@ -44,6 +44,7 @@ int main()
         return 1;        
     }
 
+    /*
     char connect_token_string[NEXT_MAX_CONNECT_TOKEN_BYTES];
     memset( connect_token_string, 0, sizeof(connect_token_string) );
     {
@@ -67,8 +68,12 @@ int main()
             return 1;        
         }
     }
+    */
 
-    next_client_t * client = next_client_create( NULL, connect_token_string, buyer_public_key, packet_received_callback );
+    // todo: test direct connection (development only...)
+    const char * connect = "127.0.0.1:40000";
+
+    next_client_t * client = next_client_create( NULL, connect, buyer_public_key, packet_received_callback );
     if ( !client )
     {
         next_error( "could not create client" );
@@ -87,6 +92,8 @@ int main()
         if ( next_client_state( client ) <= NEXT_CLIENT_DISCONNECTED )
             break;
 
+        next_client_receive_packets( client );
+
         next_client_update( client );
 
         next_client_send_packet( client, packet_data, (int) sizeof(packet_data) );
@@ -100,6 +107,8 @@ int main()
                 previous_connected = true;
             }
         }
+
+        next_platform_sleep( 1.0 / 100.0 );        
     }
 
     next_info( "disconnecting" );

@@ -5,6 +5,7 @@
 
 #include "next.h"
 #include "next_server.h"
+#include "next_platform.h"
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
@@ -35,6 +36,8 @@ int main()
 
     while ( !quit )
     {
+        next_server_receive_packets( server );
+
         next_server_update( server );
 
         for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
@@ -45,12 +48,16 @@ int main()
                 uint8_t * packet_data = next_server_start_packet( server, i, &sequence );
                 if ( packet_data )
                 {
+                    memset( packet_data, 0, 100 );
                     next_server_finish_packet( server, packet_data, 100 );
+                    next_info( "server sent packet %" PRId64 " to client %d", sequence, i );
                 }
             }
         }
 
         next_server_send_packets( server );
+
+        next_platform_sleep( 1.0 / 100.0 );       
     }
 
     next_info( "stopping" );
@@ -59,8 +66,10 @@ int main()
 
     while ( next_server_state( server ) != NEXT_SERVER_STOPPED )
     {
+        next_server_receive_packets( server );
         next_server_update( server );
         next_server_send_packets( server );
+        next_platform_sleep( 1.0 / 100.0 );
     }
 
     next_info( "stopped" );

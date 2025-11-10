@@ -113,16 +113,16 @@ void next_platform_server_thread_priority( next_platform_thread_t * thread )
     (void) thread;
 }
 
-int next_platform_mutex_create( next_platform_mutex_t * mutex )
+bool next_platform_mutex_create( next_platform_mutex_t * mutex )
 {
     next_assert( mutex );
     memset( mutex, 0, sizeof(next_platform_mutex_t) );
     if ( !InitializeCriticalSectionAndSpinCount( &mutex->handle, 0xFF ) )
     {
-        return NEXT_ERROR;
+        return false;
     }
     mutex->ok = true;
-    return NEXT_OK;
+    return true;
 }
 
 void next_platform_mutex_acquire( next_platform_mutex_t * mutex )
