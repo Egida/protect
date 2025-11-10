@@ -52,15 +52,15 @@ DONE
 
 TODO
 
+    Generalize packet send so there is next_server_send_packet (payload) and there is next_server_send_packet_internal
+
+    -------------
+
     Use the zero copy interface to send packets to all connected clients
 
     -------------
 
     Mock client 0 being connected and verify that we can send packets to it
-
-    -------------
-
-    Generalize packet send so there is next_server_send_packet (payload) and there is next_server_send_packet_internal
 
     -------------
 
