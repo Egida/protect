@@ -73,14 +73,14 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     next_assert( public_address_string );
 
     next_address_t bind_address;
-    if ( next_address_parse( &bind_address, bind_address_string ) != NEXT_OK )
+    if ( !next_address_parse( &bind_address, bind_address_string ) )
     {
         next_error( "server could not parse bind address" );
         return NULL;
     }
 
     next_address_t public_address;
-    if ( next_address_parse( &public_address, public_address_string ) != NEXT_OK )
+    if ( !next_address_parse( &public_address, public_address_string ) )
     {
         next_error( "server could not parse public address" );
         return NULL;
@@ -241,15 +241,14 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
     next_assert( client_index < NEXT_MAX_CLIENTS );
     next_assert( out_sequence );
 
+    if ( !server->client_connected[client_index] )
+        return NULL;
+
     next_platform_mutex_acquire( &server->client_payload_mutex );
     uint64_t sequence = ++server->client_payload_sequence[client_index];
     next_platform_mutex_release( &server->client_payload_mutex );
 
-    // todo: client slot system
-    next_address_t to;
-    next_address_parse( &to, "127.0.0.1:30000" );
-
-    uint8_t * packet_data = next_server_start_packet_internal( server, &to, NEXT_PACKET_DIRECT );
+    uint8_t * packet_data = next_server_start_packet_internal( server, &server->client_address[client_index], NEXT_PACKET_DIRECT );
     if ( !packet_data )
         return NULL;
 
@@ -294,6 +293,7 @@ void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_
     next_assert( server );
     next_assert( packet_bytes >= 0 );
     next_assert( packet_bytes <= NEXT_MTU );
+
     next_server_finish_packet_internal( server, packet_data - 8, packet_bytes + 8 );
 }
 

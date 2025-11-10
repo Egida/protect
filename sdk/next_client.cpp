@@ -95,6 +95,9 @@ struct next_client_t
 
     uint16_t bound_port;
 
+    bool direct;
+    next_address_t direct_address;
+
     double init_start_time;
     next_connect_token_t connect_token;
     next_client_backend_init_data_t backend_init_data[NEXT_MAX_CONNECT_TOKEN_BACKENDS];
@@ -120,50 +123,61 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
     next_assert( packet_received_callback );
 
     next_connect_token_t connect_token;
-    if ( !next_read_connect_token( &connect_token, connect_token_string, buyer_public_key ) )
-    {
-        next_error( "connect token is invalid" );
-        return NULL;
-    }
+    memset( &connect_token, 0, sizeof(connect_token) );
 
-    int num_backends_found = 0;
-    for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
+    bool direct = false;
+    next_address_t direct_address;
+    if ( next_address_parse( &direct_address, connect_token_string ) )
     {
-        if ( connect_token.backend_addresses[i] != 0 )
+        direct = true;
+
+        char string_buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
+        next_info( "client direct connection to %s", next_address_to_string( &direct_address, string_buffer ) );
+    }
+    else
+    {
+        next_info( "secure connection via connect token" );
+
+        if ( !next_read_connect_token( &connect_token, connect_token_string, buyer_public_key ) )
         {
-            num_backends_found++;
+            next_error( "connect token is invalid" );
+            return NULL;
         }
-    }
 
-    if ( num_backends_found == 0 )
-    {
-        next_error( "no backends found in connect token" );
-        return NULL;
-    }
+        int num_backends_found = 0;
+        for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
+        {
+            if ( connect_token.backend_addresses[i] != 0 )
+            {
+                num_backends_found++;
+            }
+        }
 
-    if ( connect_token.pings_per_second == 0 )
-    {
-        next_error( "pings per-second is zero in connect token" );
-        return NULL;
+        if ( num_backends_found == 0 )
+        {
+            next_error( "no backends found in connect token" );
+            return NULL;
+        }
+
+        if ( connect_token.pings_per_second == 0 )
+        {
+            next_error( "pings per-second is zero in connect token" );
+            return NULL;
+        }
     }
 
     next_client_t * client = (next_client_t*) next_malloc( context, sizeof(next_client_t) );
     if ( !client )
     {
-        next_error( "could not allocate next_client_t" );
+        next_error( "could not allocate client" );
         return NULL;
     }
 
-    memset( client, 0, sizeof( next_client_t) );
+    memset( client, 0, sizeof(next_client_t) );
     
     const uint64_t current_time = next_platform_time();
 
     client->context = context;
-    client->connect_token = connect_token;
-    client->state = NEXT_CLIENT_INITIALIZING;
-    client->init_start_time = current_time;
-    client->last_refresh_backend_token_time = current_time;
-    client->refresh_backend_token_request_id = next_random_uint64();
     client->packet_received_callback = packet_received_callback;
 
     next_address_t bind_address;
@@ -204,6 +218,20 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
     next_info( "client bound to %s", next_address_to_string( &bind_address, address_string ) );
 
     client->bound_port = bind_address.port;
+
+    if ( direct )
+    {
+        client->direct = true;
+        client->direct_address = direct_address;
+    }
+    else
+    {
+        client->connect_token = connect_token;
+        client->state = NEXT_CLIENT_INITIALIZING;
+        client->init_start_time = current_time;
+        client->last_refresh_backend_token_time = current_time;
+        client->refresh_backend_token_request_id = next_random_uint64();
+    }
 
     return client;    
 }
@@ -246,12 +274,26 @@ void next_client_send_packet_internal( next_client_t * client, next_address_t * 
     next_platform_socket_send_packet( client->socket, to_address, packet_data, packet_bytes );
 }
 
+void next_client_update_direct( next_client_t * client )
+{
+    if ( !client->direct )
+        return;
+
+    if ( client->state != NEXT_CLIENT_INITIALIZING )
+        return;
+
+    // ...
+}
+
 void next_client_update_initialize( next_client_t * client )
 {
     /*
         Our strategy is to ping n client backends and accept the first backend that we init with and receive n pongs from
         This biases us towards selecting the client backend with the lowest latency lowest packet loss for the client
     */
+
+    if ( client->direct )
+        return;
 
     if ( client->state != NEXT_CLIENT_INITIALIZING )
         return;
@@ -368,9 +410,9 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
             client->refresh_backend_token_request_id = next_random_uint64();
         }
     }
-    else if ( client->state == NEXT_CLIENT_INITIALIZING )
+    else if ( client->state == NEXT_CLIENT_INITIALIZING && !client->direct )
     {
-        // client is initializing
+        // client is initializing with client backend
 
         const uint32_t from_ipv4 = next_address_ipv4( from );
         const uint16_t from_port = next_platform_htons( from->port );
@@ -472,6 +514,8 @@ void next_client_update_refresh_backend_token( next_client_t * client )
 void next_client_update( next_client_t * client )
 {
     next_assert( client );
+
+    next_client_update_direct( client );
 
     next_client_update_initialize( client );
 

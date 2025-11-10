@@ -136,30 +136,30 @@ void test_address()
 {
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "" ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "[" ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "[]" ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "[]:" ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, ":" ) == NEXT_ERROR );
+        next_check( !next_address_parse( &address, "" ) );
+        next_check( !next_address_parse( &address, "[" ) );
+        next_check( !next_address_parse( &address, "[]" ) );
+        next_check( !next_address_parse( &address, "[]:" ) );
+        next_check( !next_address_parse( &address, ":" ) );
 #if !defined(WINVER) || WINVER > 0x502 // windows xp sucks
-        next_check( next_address_parse( &address, "1" ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "12" ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "123" ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "1234" ) == NEXT_ERROR );
+        next_check( !next_address_parse( &address, "1" ) );
+        next_check( !next_address_parse( &address, "12" ) );
+        next_check( !next_address_parse( &address, "123" ) );
+        next_check( !next_address_parse( &address, "1234" ) );
 #endif
-        next_check( next_address_parse( &address, "1234.0.12313.0000" ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "1234.0.12313.0000.0.0.0.0.0" ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "1312313:123131:1312313:123131:1312313:123131:1312313:123131:1312313:123131:1312313:123131" ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "." ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, ".." ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "..." ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "...." ) == NEXT_ERROR );
-        next_check( next_address_parse( &address, "....." ) == NEXT_ERROR );
+        next_check( !next_address_parse( &address, "1234.0.12313.0000" ) );
+        next_check( !next_address_parse( &address, "1234.0.12313.0000.0.0.0.0.0" ) );
+        next_check( !next_address_parse( &address, "1312313:123131:1312313:123131:1312313:123131:1312313:123131:1312313:123131:1312313:123131" ) );
+        next_check( !next_address_parse( &address, "." ) );
+        next_check( !next_address_parse( &address, ".." ) );
+        next_check( !next_address_parse( &address, "..." ) );
+        next_check( !next_address_parse( &address, "...." ) );
+        next_check( !next_address_parse( &address, "....." ) );
     }
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "107.77.207.77" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "107.77.207.77" ) );
         next_check( address.type == NEXT_ADDRESS_IPV4 );
         next_check( address.port == 0 );
         next_check( address.data.ipv4[0] == 107 );
@@ -170,7 +170,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "127.0.0.1" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "127.0.0.1" ) );
         next_check( address.type == NEXT_ADDRESS_IPV4 );
         next_check( address.port == 0 );
         next_check( address.data.ipv4[0] == 127 );
@@ -181,7 +181,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "107.77.207.77:40000" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "107.77.207.77:40000" ) );
         next_check( address.type == NEXT_ADDRESS_IPV4 );
         next_check( address.port == 40000 );
         next_check( address.data.ipv4[0] == 107 );
@@ -192,7 +192,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "127.0.0.1:40000" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "127.0.0.1:40000" ) );
         next_check( address.type == NEXT_ADDRESS_IPV4 );
         next_check( address.port == 40000 );
         next_check( address.data.ipv4[0] == 127 );
@@ -204,7 +204,7 @@ void test_address()
 #if NEXT_PLATFORM_HAS_IPV6
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "fe80::202:b3ff:fe1e:8329" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "fe80::202:b3ff:fe1e:8329" ) );
         next_check( address.type == NEXT_ADDRESS_IPV6 );
         next_check( address.port == 0 );
         next_check( address.data.ipv6[0] == 0xfe80 );
@@ -219,7 +219,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "::" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "::" ) );
         next_check( address.type == NEXT_ADDRESS_IPV6 );
         next_check( address.port == 0 );
         next_check( address.data.ipv6[0] == 0x0000 );
@@ -234,7 +234,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "::1" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "::1" ) );
         next_check( address.type == NEXT_ADDRESS_IPV6 );
         next_check( address.port == 0 );
         next_check( address.data.ipv6[0] == 0x0000 );
@@ -249,7 +249,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "[fe80::202:b3ff:fe1e:8329]:40000" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "[fe80::202:b3ff:fe1e:8329]:40000" ) );
         next_check( address.type == NEXT_ADDRESS_IPV6 );
         next_check( address.port == 40000 );
         next_check( address.data.ipv6[0] == 0xfe80 );
@@ -265,7 +265,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "[::]:40000" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "[::]:40000" ) );
         next_check( address.type == NEXT_ADDRESS_IPV6 );
         next_check( address.port == 40000 );
         next_check( address.data.ipv6[0] == 0x0000 );
@@ -280,7 +280,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "[::1]:40000" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "[::1]:40000" ) );
         next_check( address.type == NEXT_ADDRESS_IPV6 );
         next_check( address.port == 40000 );
         next_check( address.data.ipv6[0] == 0x0000 );
@@ -295,7 +295,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "[::ffff:127.0.0.1]:40000" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "[::ffff:127.0.0.1]:40000" ) );
         next_check( address.type == NEXT_ADDRESS_IPV6 );
         next_check( address.port == 40000 );
         next_check( address.data.ipv6[0] == 0x0000 );
@@ -311,7 +311,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "[::ffff:0.0.0.0]:40000" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "[::ffff:0.0.0.0]:40000" ) );
         next_check( address.type == NEXT_ADDRESS_IPV6 );
         next_check( address.port == 40000 );
         next_check( address.data.ipv6[0] == 0x0000 );
@@ -327,7 +327,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "[::ffff:1.2.3.4]:40000" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "[::ffff:1.2.3.4]:40000" ) );
         next_check( address.type == NEXT_ADDRESS_IPV6 );
         next_check( address.port == 40000 );
         next_check( address.data.ipv6[0] == 0x0000 );
@@ -343,7 +343,7 @@ void test_address()
 
     {
         struct next_address_t address;
-        next_check( next_address_parse( &address, "[::ffff:1.2.3.4]:40000" ) == NEXT_OK );
+        next_check( next_address_parse( &address, "[::ffff:1.2.3.4]:40000" ) );
         next_check( next_address_is_ipv4_in_ipv6( &address ) );
 
         next_address_convert_ipv6_to_ipv4( &address );
@@ -588,8 +588,8 @@ void test_platform_thread()
 void test_platform_mutex()
 {
     next_platform_mutex_t mutex;
-    int result = next_platform_mutex_create( &mutex );
-    next_check( result == NEXT_OK );
+    bool result = next_platform_mutex_create( &mutex );
+    next_check( result );
     next_platform_mutex_acquire( &mutex );
     next_platform_mutex_release( &mutex );
     {

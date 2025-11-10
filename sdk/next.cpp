@@ -357,7 +357,7 @@ const char * next_connection_string( int connection_type )
 
 void * next_global_context = NULL;
 
-int next_init( void * context )
+bool next_init( void * context )
 {
     next_assert( next_global_context == NULL );
 
@@ -366,10 +366,10 @@ int next_init( void * context )
 
     next_global_context = context;
 
-    if ( next_platform_init() != NEXT_OK )
+    if ( !next_platform_init() )
     {
         next_error( "failed to initialize platform" );
-        return NEXT_ERROR;
+        return false;
     }
 
     next_info( "network next version is %s", NEXT_VERSION_FULL );
@@ -382,7 +382,7 @@ int next_init( void * context )
     if ( hydro_init() != 0 ) 
     {
         next_error( "failed to initialize hydrogen" );
-        return NEXT_ERROR;
+        return false;
     }
 
     const char * log_level_override = next_platform_getenv( "NEXT_LOG_LEVEL" );
@@ -392,7 +392,7 @@ int next_init( void * context )
         next_info( "log level overridden to %d", log_level );
     }
 
-    return NEXT_OK;
+    return true;
 }
 
 void next_term()

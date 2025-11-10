@@ -170,17 +170,17 @@ static randombytes_implementation next_random_implementation =
 
 static nn::socket::ConfigDefaultWithMemory socket_config_with_memory;
 
-int next_platform_init()
+bool next_platform_init()
 {
     nn::Result result = nn::socket::Initialize( socket_config_with_memory );
     if ( result.IsFailure() )
     {
         next_error( "failed to initialize nintendo sockets" );
-        return NEXT_ERROR;
+        return false;
     }
 
     if ( randombytes_set_implementation( &next_random_implementation ) != 0 )
-        return NEXT_ERROR;
+        return false;
 
     time_start = nn::os::GetSystemTick();
 
@@ -188,10 +188,10 @@ int next_platform_init()
     if ( result.IsFailure() )
     {
         next_error( "failed to initialize nintendo network connection manager" );
-        return NEXT_ERROR;
+        return false;
     }
 
-    return NEXT_OK;
+    return true;
 }
 
 double next_platform_time()
@@ -227,7 +227,7 @@ uint16_t next_platform_htons( uint16_t in )
     return nn::socket::InetHtons( in );
 }
 
-int next_platform_hostname_resolve( const char * hostname, const char * port, next_address_t * address )
+bool next_platform_hostname_resolve( const char * hostname, const char * port, next_address_t * address )
 {
     nn::socket::AddrInfo hints;
     memset( &hints, 0, sizeof(hints) );
@@ -246,18 +246,18 @@ int next_platform_hostname_resolve( const char * hostname, const char * port, ne
                 address->data.ipv4[3] = (uint8_t) ( ( addr_ipv4->sin_addr.S_addr & 0xFF000000 ) >> 24 );
                 address->port = next_platform_ntohs( addr_ipv4->sin_port );
                 nn::socket::FreeAddrInfo( result );
-                return NEXT_OK;
+                return true;
             }
             else
             {
                 next_assert( 0 );
                 nn::socket::FreeAddrInfo( result );
-                return NEXT_ERROR;
+                return false;
             }
         }
     }
 
-    return NEXT_ERROR;
+    return false;
 }
 
 uint16_t next_platform_preferred_client_port()
@@ -270,26 +270,26 @@ bool next_platform_client_dual_stack()
     return false;
 }
 
-int next_platform_inet_pton4( const char * address_string, uint32_t * address_out )
+bool next_platform_inet_pton4( const char * address_string, uint32_t * address_out )
 {
-    return nn::socket::InetPton( nn::socket::Family::Af_Inet, address_string, address_out ) == 1 ? NEXT_OK : NEXT_ERROR;
+    return nn::socket::InetPton( nn::socket::Family::Af_Inet, address_string, address_out ) == 1;
 }
 
-int next_platform_inet_pton6( const char * address_string, uint16_t * address_out )
+bool next_platform_inet_pton6( const char * address_string, uint16_t * address_out )
 {
-    return NEXT_ERROR;
+    return false;
 }
 
-int next_platform_inet_ntop6( const uint16_t * address, char * address_string, size_t address_string_size )
+bool next_platform_inet_ntop6( const uint16_t * address, char * address_string, size_t address_string_size )
 {
-    return NEXT_ERROR;
+    return false;
 }
 
 void next_platform_socket_destroy( next_platform_socket_t * socket );
 
 extern bool next_packet_tagging_enabled;
 
-int next_platform_socket_init( next_platform_socket_t * s, next_address_t * address, int socket_type, float timeout_seconds, int send_buffer_size, int receive_buffer_size )
+bool next_platform_socket_init( next_platform_socket_t * s, next_address_t * address, int socket_type, float timeout_seconds, int send_buffer_size, int receive_buffer_size )
 {
     // create socket
     
@@ -398,7 +398,7 @@ int next_platform_socket_init( next_platform_socket_t * s, next_address_t * addr
         nn::socket::SetSockOpt( s->handle, nn::socket::Level::Sol_Ip, nn::socket::Option::Ip_Tos, (void*)( &value ), nn::socket::SockLenT( sizeof( int ) ) );
     }
 
-    return NEXT_OK;
+    return true;
 }
 
 next_platform_socket_t * next_platform_socket_create( void * context, next_address_t * address, int socket_type, float timeout_seconds, int send_buffer_size, int receive_buffer_size )
@@ -414,7 +414,7 @@ next_platform_socket_t * next_platform_socket_create( void * context, next_addre
 
     socket->context = context;
 
-    if ( next_platform_socket_init( socket, address, socket_type, timeout_seconds, send_buffer_size, receive_buffer_size ) != NEXT_OK )
+    if ( !next_platform_socket_init( socket, address, socket_type, timeout_seconds, send_buffer_size, receive_buffer_size ) )
     {
         next_platform_socket_destroy( socket );
         return NULL;

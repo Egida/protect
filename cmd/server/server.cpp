@@ -21,7 +21,7 @@ int main()
 {
     signal( SIGINT, interrupt_handler ); signal( SIGTERM, interrupt_handler );
 
-    if ( next_init() != NEXT_OK )
+    if ( !next_init() )
     {
         next_error( "could not initialize network next" );
         return 1;        
@@ -37,6 +37,8 @@ int main()
     while ( !quit )
     {
         next_server_receive_packets( server );
+
+        // todo: process packets
 
         next_server_update( server );
 

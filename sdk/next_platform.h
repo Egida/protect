@@ -27,7 +27,7 @@ typedef void (*next_platform_thread_func_t)(void*);
 
 // ----------------------------------------------------------------
 
-NEXT_EXPORT_FUNC int next_platform_init();
+NEXT_EXPORT_FUNC bool next_platform_init();
 
 NEXT_EXPORT_FUNC void next_platform_term();
 
@@ -47,13 +47,13 @@ NEXT_EXPORT_FUNC uint16_t next_platform_ntohs( uint16_t in );
 
 NEXT_EXPORT_FUNC uint16_t next_platform_htons( uint16_t in );
 
-NEXT_EXPORT_FUNC int next_platform_inet_pton4( const char * address_string, uint32_t * address_out );
+NEXT_EXPORT_FUNC bool next_platform_inet_pton4( const char * address_string, uint32_t * address_out );
 
-NEXT_EXPORT_FUNC int next_platform_inet_pton6( const char * address_string, uint16_t * address_out );
+NEXT_EXPORT_FUNC bool next_platform_inet_pton6( const char * address_string, uint16_t * address_out );
 
-NEXT_EXPORT_FUNC int next_platform_inet_ntop6( const uint16_t * address, char * address_string, size_t address_string_size );
+NEXT_EXPORT_FUNC bool next_platform_inet_ntop6( const uint16_t * address, char * address_string, size_t address_string_size );
 
-NEXT_EXPORT_FUNC int next_platform_hostname_resolve( const char * hostname, const char * port, struct next_address_t * address );
+NEXT_EXPORT_FUNC bool next_platform_hostname_resolve( const char * hostname, const char * port, struct next_address_t * address );
 
 NEXT_EXPORT_FUNC uint16_t next_platform_preferred_client_port();
 

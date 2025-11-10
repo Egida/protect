@@ -44,10 +44,6 @@
 
 #define NEXT_MAX_PACKET_BYTES                                  1384
 
-// todo: use bool instead from now on?
-#define NEXT_OK                                                   0
-#define NEXT_ERROR                                               -1
-
 #define NEXT_LOG_LEVEL_NONE                                       0
 #define NEXT_LOG_LEVEL_ERROR                                      1
 #define NEXT_LOG_LEVEL_WARN                                       2
@@ -263,7 +259,7 @@ __inline int c99_snprintf(char *outBuf, size_t size, const char *format, ...)
 
 // -----------------------------------------
 
-NEXT_EXPORT_FUNC int next_init( void * context = NULL );
+NEXT_EXPORT_FUNC bool next_init( void * context = NULL );
 
 NEXT_EXPORT_FUNC void next_term();
 

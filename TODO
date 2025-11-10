@@ -8,13 +8,11 @@ DONE
 
     We're going to need to do client slots on the server
 
-TODO
-
     Separate out client payload sequence from the sequence used for other packet types. Not all packet types need a sequence.
 
     This lets us send packets to addresses (not client slots...) for internal packets while negotiating connection for example.
 
-    -------------
+TODO
 
     Bring across zero copy receive packet functions
 
@@ -24,13 +22,11 @@ TODO
 
     If an IP address is passed in instead of a connect token, just go straight to "CONNECTED" state on the client and send and receive passthrough packets.
 
-    This is the simplest possible way to make it super easy to test during development.
-
     -------------
 
-    On the server implement very simple handshake with client, or even just, any client that sends me a direct packet, connect them and go.
+    There needs to be an actual handshake to pick a client slot (index)
 
-    This is a bit weird, but it's fine for dev *and* in production we'll setup an XDP program to discard any direct packets to the server, so they are 100% dev only.
+    Start with a version of this using direct packets (debug only)
 
     -------------
 

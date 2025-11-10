@@ -93,19 +93,19 @@ int next_platform_init()
     if ( sceSysmoduleLoadModule( SCE_SYSMODULE_RANDOM ) != SCE_OK ) 
     {
         next_error( "failed to load random sysmodule" );
-        return NEXT_ERROR;
+        return false;
     }
 
     if ( randombytes_set_implementation( &next_random_implementation ) != 0 )
     {
         next_error( "failed to set random bytes implementation" );
-        return NEXT_ERROR;
+        return false;
     }
 
     if ( ( handle_net = sceNetPoolCreate("net", HEAP_SIZE_NET, 0 ) ) < 0 )
     {
         next_error( "failed to init network pool" );
-        return NEXT_ERROR;
+        return false;
     }
 
     connection_type = NEXT_CONNECTION_TYPE_UNKNOWN;
@@ -113,7 +113,7 @@ int next_platform_init()
     if ( sceNetCtlInit() != SCE_OK )
     {
         next_warn( "failed to init netctl library" );
-        return NEXT_OK;
+        return true;
     }
 
     SceNetCtlInfo info;
@@ -132,10 +132,10 @@ int next_platform_init()
     else
     {
         next_warn( "failed to determine network connection type" );
-        return NEXT_OK;
+        return true;
     }
 
-    return NEXT_OK;
+    return true;
 }
 
 void next_platform_term()
@@ -295,11 +295,11 @@ uint16_t next_platform_htons( uint16_t in )
     return (uint16_t)( ( ( in << 8 ) & 0xFF00 ) | ( ( in >> 8 ) & 0x00FF ) );
 }
 
-int next_platform_hostname_resolve( const char * hostname, const char * port, next_address_t * address )
+bool next_platform_hostname_resolve( const char * hostname, const char * port, next_address_t * address )
 {
     SceNetId resolver = sceNetResolverCreate( "resolver", handle_net, 0 );
     if ( resolver < 0 )
-        return NEXT_ERROR;
+        return false;
 
     SceNetSockaddrIn addr;
     memset( &addr, 0, sizeof(addr) );
@@ -309,10 +309,10 @@ int next_platform_hostname_resolve( const char * hostname, const char * port, ne
     sceNetResolverDestroy( resolver );
 
     if ( result < 0 )
-        return NEXT_ERROR;
+        return false;
 
     if ( addr.sin_family != SCE_NET_AF_INET )
-        return NEXT_ERROR;
+        return false;
 
     address->type = NEXT_ADDRESS_IPV4;
     address->data.ipv4[0] = (uint8_t)((addr.sin_addr.s_addr & 0x000000FF));
@@ -320,7 +320,7 @@ int next_platform_hostname_resolve( const char * hostname, const char * port, ne
     address->data.ipv4[2] = (uint8_t)((addr.sin_addr.s_addr & 0x00FF0000) >> 16);
     address->data.ipv4[3] = (uint8_t)((addr.sin_addr.s_addr & 0xFF000000) >> 24);
     address->port = uint16_t( atoi( port ) );
-    return NEXT_OK;
+    return true;
 }
 
 uint16_t next_platform_preferred_client_port()
@@ -333,22 +333,22 @@ bool next_platform_client_dual_stack()
     return false;
 }
 
-int next_platform_inet_pton4( const char * address_string, uint32_t * address_out )
+bool next_platform_inet_pton4( const char * address_string, uint32_t * address_out )
 {
     SceNetInAddr sockaddr4;
     bool success = sceNetInetPton( SCE_NET_AF_INET, address_string, &sockaddr4.s_addr ) == 1;
     *address_out = sockaddr4.s_addr;
-    return success ? NEXT_OK : NEXT_ERROR;
+    return success;
 }
 
-int next_platform_inet_pton6( const char * address_string, uint16_t * address_out )
+bool next_platform_inet_pton6( const char * address_string, uint16_t * address_out )
 {
-    return NEXT_ERROR;
+    return false;
 }
 
-int next_platform_inet_ntop6( const uint16_t * address, char * address_string, size_t address_string_size )
+bool next_platform_inet_ntop6( const uint16_t * address, char * address_string, size_t address_string_size )
 {
-    return NEXT_ERROR;
+    return false;
 }
 
 void next_platform_socket_destroy( next_platform_socket_t * socket );

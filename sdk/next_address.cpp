@@ -19,16 +19,16 @@ void next_address_load_ipv4( struct next_address_t * address, uint32_t big_endia
     address->port = next_platform_ntohs( big_endian_port );
 }
 
-int next_address_parse( next_address_t * address, const char * address_string_in )
+bool next_address_parse( next_address_t * address, const char * address_string_in )
 {
     next_assert( address );
     next_assert( address_string_in );
 
     if ( !address )
-        return NEXT_ERROR;
+        return false;
 
     if ( !address_string_in )
-        return NEXT_ERROR;
+        return false;
 
     memset( address, 0, sizeof( next_address_t ) );
 
@@ -55,7 +55,7 @@ int next_address_parse( next_address_t * address, const char * address_string_in
             const int index = base_index - i;
             if ( index < 0 )
             {
-                return NEXT_ERROR;
+                return false;
             }
             if ( address_string[index] == ':' )
             {
@@ -75,14 +75,14 @@ int next_address_parse( next_address_t * address, const char * address_string_in
     }
 
     uint16_t addr6[8];
-    if ( next_platform_inet_pton6( address_string, addr6 ) == NEXT_OK )
+    if ( next_platform_inet_pton6( address_string, addr6 ) )
     {
         address->type = NEXT_ADDRESS_IPV6;
         for ( int i = 0; i < 8; ++i )
         {
             address->data.ipv6[i] = next_platform_ntohs( addr6[i] );
         }
-        return NEXT_OK;
+        return true;
     }
 
     // otherwise it's probably an IPv4 address:
@@ -104,17 +104,17 @@ int next_address_parse( next_address_t * address, const char * address_string_in
     }
 
     uint32_t addr4;
-    if ( next_platform_inet_pton4( address_string, &addr4 ) == NEXT_OK )
+    if ( next_platform_inet_pton4( address_string, &addr4 ) )
     {
         address->type = NEXT_ADDRESS_IPV4;
         address->data.ipv4[3] = (uint8_t) ( ( addr4 & 0xFF000000 ) >> 24 );
         address->data.ipv4[2] = (uint8_t) ( ( addr4 & 0x00FF0000 ) >> 16 );
         address->data.ipv4[1] = (uint8_t) ( ( addr4 & 0x0000FF00 ) >> 8  );
         address->data.ipv4[0] = (uint8_t) ( ( addr4 & 0x000000FF )     );
-        return NEXT_OK;
+        return true;
     }
 
-    return NEXT_ERROR;
+    return false;
 }
 
 const char * next_address_to_string( const next_address_t * address, char * buffer )

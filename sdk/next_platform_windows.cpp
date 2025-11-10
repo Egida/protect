@@ -52,7 +52,7 @@ static int connection_type = NEXT_CONNECTION_TYPE_UNKNOWN;
 
 // init
 
-int next_platform_init()
+bool next_platform_init()
 {
     QueryPerformanceFrequency( &timer_frequency );
     QueryPerformanceCounter( &timer_start );
@@ -61,12 +61,12 @@ int next_platform_init()
     if ( WSAStartup( MAKEWORD(2,2), &WsaData ) != NO_ERROR )
     {
         next_error( "WSAStartup failed" );
-        return NEXT_ERROR;
+        return false;
     }
 
     connection_type = get_connection_type();
 
-    return NEXT_OK;
+    return true;
 }
 
 void next_platform_term()
@@ -234,20 +234,20 @@ int next_platform_inet_pton4( const char * address_string, uint32_t * address_ou
     sockaddr_in sockaddr4;
     bool success = inet_pton( AF_INET, address_string, &sockaddr4.sin_addr ) == 1;
     *address_out = sockaddr4.sin_addr.s_addr;
-    return success ? NEXT_OK : NEXT_ERROR;
+    return success;
 }
 
 int next_platform_inet_pton6( const char * address_string, uint16_t * address_out )
 {
-    return inet_pton( AF_INET6, address_string, address_out ) == 1 ? NEXT_OK : NEXT_ERROR;
+    return inet_pton( AF_INET6, address_string, address_out ) == 1;
 }
 
 int next_platform_inet_ntop6( const uint16_t * address, char * address_string, size_t address_string_size )
 {
-    return inet_ntop( AF_INET6, (void*)address, address_string, address_string_size ) == NULL ? NEXT_ERROR : NEXT_OK;
+    return inet_ntop( AF_INET6, (void*)address, address_string, address_string_size ) != NULL;
 }
 
-int next_platform_hostname_resolve( const char * hostname, const char * port, next_address_t * address )
+bool next_platform_hostname_resolve( const char * hostname, const char * port, next_address_t * address )
 {
     addrinfo hints;
     memset( &hints, 0, sizeof(hints) );
@@ -266,7 +266,7 @@ int next_platform_hostname_resolve( const char * hostname, const char * port, ne
                 }
                 address->port = next_platform_ntohs( addr_ipv6->sin6_port );
                 freeaddrinfo( result );
-                return NEXT_OK;
+                return true;
             }
             else if ( result->ai_addr->sa_family == AF_INET )
             {
@@ -278,18 +278,18 @@ int next_platform_hostname_resolve( const char * hostname, const char * port, ne
                 address->data.ipv4[3] = (uint8_t) ( ( addr_ipv4->sin_addr.s_addr & 0xFF000000 ) >> 24 );
                 address->port = next_platform_ntohs( addr_ipv4->sin_port );
                 freeaddrinfo( result );
-                return NEXT_OK;
+                return true;
             }
             else
             {
                 next_assert( 0 );
                 freeaddrinfo( result );
-                return NEXT_ERROR;
+                return false;
             }
         }
     }
 
-    return NEXT_ERROR;
+    return false;
 }
 
 uint16_t next_platform_preferred_client_port()

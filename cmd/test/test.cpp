@@ -13,7 +13,7 @@ int main()
 {
     next_quiet( true );
 
-    if ( next_init() != NEXT_OK )
+    if ( !next_init() )
     {
         printf( "error: failed to initialize network next\n" );
     }
