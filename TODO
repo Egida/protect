@@ -26,11 +26,13 @@ DONE
 
     Implement the client sending direct payload packets to the server
 
+    Define the interface I want on the server for zero copy packet receives (no callbacks)
+
 TODO
 
-    Bring across zero copy receive packet functions
+    Implement the server zero copy packet receive interface
 
-    Use the zero copy interface to print logs when the server receives payload packets from clients
+    Verify that the server sees the packets sent from the client and the correct sequence number and packet bytes
 
     -------------
 

@@ -422,3 +422,27 @@ void next_server_receive_packets( next_server_t * server )
         server->receive_buffer.current_frame++;
     }
 }
+
+struct next_server_packets_t * next_server_process_packets_start( struct next_server_t * server )
+{
+    next_assert( server );
+    // todo
+    (void) server;
+    return NULL;
+}
+
+void next_server_packet_processed( struct next_server_t * server, uint8_t * packet_data )
+{
+    next_assert( server );
+    next_assert( packet_data );
+    // todo
+    (void) server;
+    (void) packet_data;
+}
+
+void next_server_process_packets_end( struct next_server_t * server )
+{
+    next_assert( server );
+    // todo
+    (void) server;
+}
