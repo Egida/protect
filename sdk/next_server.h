@@ -48,7 +48,7 @@ void next_server_send_packets( struct next_server_t * server );
 
 void next_server_receive_packets( struct next_server_t * server );
 
-struct next_server_packets_t
+struct next_server_process_packets_t
 {
     int num_packets;
     uint64_t sequence[NEXT_NUM_SERVER_FRAMES];
@@ -57,7 +57,7 @@ struct next_server_packets_t
     uint8_t * packet_data[NEXT_NUM_SERVER_FRAMES];
 };
 
-struct next_server_packets_t * next_server_process_packets_start( struct next_server_t * server );
+struct next_server_process_packets_t * next_server_process_packets_start( struct next_server_t * server );
 
 void next_server_packet_processed( struct next_server_t * server, uint8_t * packet_data );
 

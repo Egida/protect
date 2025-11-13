@@ -15,8 +15,9 @@
 
 struct next_server_send_packet_info_t
 {
+    // todo: maybe convert to SoA?
     next_address_t to;
-    size_t packet_size;
+    size_t packet_bytes;
     uint8_t packet_type;
 };
 
@@ -30,13 +31,16 @@ struct next_server_send_buffer_t
 
 struct next_server_receive_packet_info_t
 {
-    int client_index;
-    size_t packet_size;
 };
 
 struct next_server_receive_buffer_t
 {
     int current_frame;
+    bool processing_packets;
+    int client_index[NEXT_NUM_SERVER_FRAMES];
+    uint64_t sequence[NEXT_NUM_SERVER_FRAMES];
+    uint8_t * packet_data[NEXT_NUM_SERVER_FRAMES];
+    size_t packet_bytes[NEXT_NUM_SERVER_FRAMES];
     next_server_receive_packet_info_t info[NEXT_NUM_SERVER_FRAMES];
     uint8_t data[NEXT_MAX_PACKET_BYTES*NEXT_NUM_SERVER_FRAMES];
 };
@@ -62,6 +66,8 @@ struct next_server_t
     next_server_send_buffer_t send_buffer;
 
     next_server_receive_buffer_t receive_buffer;
+
+    next_server_process_packets_t process_packets;
 };
 
 void next_server_destroy( next_server_t * server );
@@ -228,8 +234,8 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
     next_assert( packet_info );
 
     packet_info->to = *to;
-    packet_info->packet_size = 0;
     packet_info->packet_type = packet_type;
+    packet_info->packet_bytes = 0;
 
     return packet_data;
 }
@@ -294,7 +300,7 @@ void next_server_finish_packet_internal( struct next_server_t * server, uint8_t 
     next_assert( packet_bytes > 0 );
     next_assert( packet_bytes <= NEXT_MTU );
 
-    packet_info->packet_size = packet_bytes + NEXT_HEADER_BYTES;
+    packet_info->packet_bytes = packet_bytes + NEXT_HEADER_BYTES;
 
     // write the packet header
 
@@ -345,7 +351,7 @@ void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_d
 
     next_server_send_packet_info_t * packet_info = server->send_buffer.info + frame;
 
-    packet_info->packet_size = 0;
+    packet_info->packet_bytes = 0;
 }
 
 void next_server_send_packets( struct next_server_t * server )
@@ -363,15 +369,20 @@ void next_server_send_packets( struct next_server_t * server )
         // todo: next_restrict
         next_server_send_packet_info_t * __restrict__ packet_info = server->send_buffer.info + i;
 
-        const int packet_bytes = (int) packet_info->packet_size;
+        const int packet_bytes = (int) packet_info->packet_bytes;
 
         if ( packet_bytes > 0 )
         {
             next_assert( packet_data );
             next_assert( packet_bytes <= NET_MAX_PACKET_BYTES );
-            next_platform_socket_send_packet( server->socket, &packet_info->to, packet_data, (int) packet_info->packet_size );
+            next_platform_socket_send_packet( server->socket, &packet_info->to, packet_data, (int) packet_info->packet_bytes );
         }
     }    
+}
+
+void next_server_process_packet_internal( next_server_t * server, next_address_t * from, uint8_t * packet_data, int packet_bytes )
+{
+    // ...
 }
 
 void next_server_receive_packets( next_server_t * server )
@@ -392,43 +403,50 @@ void next_server_receive_packets( next_server_t * server )
         uint8_t * packet_data = server->receive_buffer.data + NEXT_MAX_PACKET_BYTES * server->receive_buffer.current_frame;
 
         struct next_address_t from;
-        int packet_size = next_platform_socket_receive_packet( server->socket, &from, packet_data, NEXT_MAX_PACKET_BYTES );
-        if ( packet_size == 0 )
+        int packet_bytes = next_platform_socket_receive_packet( server->socket, &from, packet_data, NEXT_MAX_PACKET_BYTES );
+        if ( packet_bytes == 0 )
             break;
 
-        const uint8_t packet_type = packet_data[0] & 0xF;
+        const uint8_t packet_type = packet_data[0];
 
-        // todo
-        (void) packet_type;
-        /*
-        if ( packet_type != NET_PAYLOAD_PACKET )
+        if ( packet_type != NEXT_PACKET_DIRECT )
         {  
-            net_server_process_packet( server, &from, packet_data, packet_size );
+            next_server_process_packet_internal( server, &from, packet_data, packet_bytes );
         }
         else
-        */
         {
-            // todo: handle payload
-            /*
-            const int client_index = net_server_find_client_index_by_address( server, &from );
-            if ( client_index >= 0 )
-            {
-                packet_info->packet_size = packet_size;
-                packet_info->client_index = client_index;
-            }
-            */
-        }
+            const int index = server->receive_buffer.current_frame;
 
-        server->receive_buffer.current_frame++;
+            server->receive_buffer.client_index[index] = 0;                     // todo: look up client_index from address
+            server->receive_buffer.sequence[index] = 0;                         // todo: read sequence from packet, ignore duplicates and out of order
+            server->receive_buffer.packet_data[index] = packet_data;
+            server->receive_buffer.packet_bytes[index] = packet_bytes;
+
+            server->receive_buffer.current_frame++;
+        }
     }
 }
 
-struct next_server_packets_t * next_server_process_packets_start( struct next_server_t * server )
+struct next_server_process_packets_t * next_server_process_packets_start( struct next_server_t * server )
 {
     next_assert( server );
-    // todo
-    (void) server;
-    return NULL;
+    next_assert( !server->receive_buffer.processing_packets );          // IMPORTANT: You must always call next_server_process_packets_finish
+
+    server->receive_buffer.processing_packets = true;
+
+    const int num_packets = server->receive_buffer.current_frame;
+
+    for ( int i = 0; i < num_packets; i++ )
+    {
+        server->process_packets.sequence[i] = server->receive_buffer.sequence[i];
+        server->process_packets.client_index[i] = server->receive_buffer.client_index[i];
+        server->process_packets.packet_bytes[i] = server->receive_buffer.packet_bytes[i];
+        server->process_packets.packet_data[i] = server->receive_buffer.packet_data[i];
+    }
+
+    server->process_packets.num_packets = num_packets;
+
+    return &server->process_packets;
 }
 
 void next_server_packet_processed( struct next_server_t * server, uint8_t * packet_data )
@@ -440,9 +458,10 @@ void next_server_packet_processed( struct next_server_t * server, uint8_t * pack
     (void) packet_data;
 }
 
-void next_server_process_packets_end( struct next_server_t * server )
+void next_server_process_packets_finish( struct next_server_t * server )
 {
     next_assert( server );
-    // todo
-    (void) server;
+    next_assert( server->receive_buffer.processing_packets );
+    server->receive_buffer.processing_packets = false;
+    server->process_packets.num_packets = 0;
 }

@@ -1,36 +1,8 @@
 DONE
 
-    Use the zero copy interface to send packets to all connected clients
-
-    Mock client 0 being connected and verify that we can send packets to it
-
-    Mock client always being at port 30000, verify it receives direct packets sent from the server -> callback
-
-    We're going to need to do client slots on the server
-
-    Separate out client payload sequence from the sequence used for other packet types. Not all packet types need a sequence.
-
-    This lets us send packets to addresses (not client slots...) for internal packets while negotiating connection for example.
-
-    If an IP address is passed in instead of a connect token, just go straight to "CONNECTED" state on the client and send and receive passthrough packets.
-
-    Implement direct mode on client.
-
-    Unify all packet types in next_packets.h
-
-    Handle NEXT_PACKET_DIRECT and pass to user via callback
-
-    Verify client sees 100 byte packets sent to it from server
-
-    Client should receive sequence number when a payload packet comes in
-
-    Implement the client sending direct payload packets to the server
-
-    Define the interface I want on the server for zero copy packet receives (no callbacks)
-
 TODO
 
-    Implement the server zero copy packet receive interface
+    Implement the server zero copy packet receive interface on the server
 
     Verify that the server sees the packets sent from the client and the correct sequence number and packet bytes
 
@@ -39,20 +11,6 @@ TODO
     There needs to be an actual handshake to pick a client slot (index)
 
     Start with a version of this using direct packets.
-
-    -------------
-
-    A fork in the road... do we make direct packets a production feature, for example just like netcode, but in XDP
-
-    This way we could have customers set some servers in the fleet as direct, and others as protected, *for example* pro play would be protected only.
-
-    It doesn't seem that difficult to incorporate parts of netcode.io into a new versions for secure direct connection
-
-    The alternative is saying, look the direct connection is a debug only feature and in production you must run relays, even if those relays are sitting in the same datacenters as your servers.
-
-    I don't know which is the correct thing to do, but I do know that it's less work and simpler just to do the debug only direct connection...
-
-    So maybe, just in the name of simplicity, do this.
 
     -------------
 
