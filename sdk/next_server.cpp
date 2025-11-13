@@ -415,10 +415,25 @@ void next_server_receive_packets( next_server_t * server )
         }
         else
         {
+            if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
+                continue;
+
+            // todo: look up client index from address
+            const int client_index = 0;
+
             const int index = server->receive_buffer.current_frame;
 
-            server->receive_buffer.client_index[index] = 0;                     // todo: look up client_index from address
-            server->receive_buffer.sequence[index] = 0;                         // todo: read sequence from packet, ignore duplicates and out of order
+            uint64_t sequence;
+            memcpy( (char*) &sequence, packet_data + NEXT_HEADER_BYTES, 8 );
+            // todo: endian fixup
+
+            packet_data += NEXT_HEADER_BYTES + 8;
+            packet_bytes -= NEXT_HEADER_BYTES + 8;
+
+            next_assert( packet_bytes >= 0 );
+
+            server->receive_buffer.client_index[index] = client_index;
+            server->receive_buffer.sequence[index] = sequence;
             server->receive_buffer.packet_data[index] = packet_data;
             server->receive_buffer.packet_bytes[index] = packet_bytes;
 
