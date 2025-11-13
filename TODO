@@ -6,9 +6,11 @@ DONE
 
     Verify that the server sees the packets sent from the client and the correct sequence number and packet bytes
 
+    Convert the server over to have SoA for send buffer
+
 TODO
 
-    Do the same thing when receiving packets on the client (internally...)
+    Convert the client to internally use a receive buffer.
 
     This will allow greater flexibility wrt. packet receiving and possibly we can do packet receives on a background thread with minimal effort.
 

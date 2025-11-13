@@ -13,19 +13,13 @@
 #include <memory.h>
 #include <stdio.h>
 
-struct next_server_send_packet_info_t
-{
-    // todo: maybe convert to SoA?
-    next_address_t to;
-    size_t packet_bytes;
-    uint8_t packet_type;
-};
-
 struct next_server_send_buffer_t
 {
     next_platform_mutex_t mutex;
     size_t current_frame;
-    next_server_send_packet_info_t info[NEXT_NUM_SERVER_FRAMES];
+    next_address_t to[NEXT_NUM_SERVER_FRAMES];
+    size_t packet_bytes[NEXT_NUM_SERVER_FRAMES];
+    uint8_t packet_type[NEXT_NUM_SERVER_FRAMES];
     uint8_t data[NEXT_MAX_PACKET_BYTES*NEXT_NUM_SERVER_FRAMES];
 };
 
@@ -213,14 +207,10 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
     next_platform_mutex_acquire( &server->send_buffer.mutex );
 
     uint8_t * packet_data = NULL;
-
-    // todo: next_restrict
-    next_server_send_packet_info_t * __restrict__ packet_info = NULL;
-
+    int frame = server->send_buffer.current_frame ;
     if ( server->send_buffer.current_frame < NEXT_NUM_SERVER_FRAMES )
     {
-        packet_info = server->send_buffer.info + server->send_buffer.current_frame;
-        packet_data = server->send_buffer.data + server->send_buffer.current_frame * NEXT_MAX_PACKET_BYTES;
+        packet_data = server->send_buffer.data + frame * NEXT_MAX_PACKET_BYTES;
         server->send_buffer.current_frame++;
     }
 
@@ -233,9 +223,9 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
 
     next_assert( packet_info );
 
-    packet_info->to = *to;
-    packet_info->packet_type = packet_type;
-    packet_info->packet_bytes = 0;
+    server->send_buffer.to[frame] = *to;
+    server->send_buffer.packet_type[frame] = packet_type;
+    server->send_buffer.packet_bytes[frame] = 0;
 
     return packet_data;
 }
@@ -294,22 +284,20 @@ void next_server_finish_packet_internal( struct next_server_t * server, uint8_t 
     next_assert( frame >= 0 );  
     next_assert( frame < NEXT_NUM_SERVER_FRAMES );  
 
-    next_server_send_packet_info_t * packet_info = server->send_buffer.info + frame;
-
     next_assert( packet_data );
     next_assert( packet_bytes > 0 );
     next_assert( packet_bytes <= NEXT_MTU );
 
-    packet_info->packet_bytes = packet_bytes + NEXT_HEADER_BYTES;
+    server->send_buffer.packet_bytes[frame] = packet_bytes + NEXT_HEADER_BYTES;
 
     // write the packet header
 
     packet_data -= 18;
 
-    packet_data[0] = packet_info->packet_type;
+    packet_data[0] = server->send_buffer.packet_type[frame];
 
     uint8_t to_address_data[32];
-    next_address_data( &packet_info->to, to_address_data );
+    next_address_data( &server->send_buffer.to[frame], to_address_data );
 
     uint8_t from_address_data[32];
     next_address_data( &server->public_address, from_address_data );
@@ -349,9 +337,7 @@ void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_d
     next_assert( frame >= 0 );  
     next_assert( frame < NEXT_NUM_SERVER_FRAMES );  
 
-    next_server_send_packet_info_t * packet_info = server->send_buffer.info + frame;
-
-    packet_info->packet_bytes = 0;
+    server->send_buffer.packet_bytes[frame] = 0;
 }
 
 void next_server_send_packets( struct next_server_t * server )
@@ -366,16 +352,13 @@ void next_server_send_packets( struct next_server_t * server )
     {
         uint8_t * packet_data = server->send_buffer.data + i*NEXT_MAX_PACKET_BYTES;
 
-        // todo: next_restrict
-        next_server_send_packet_info_t * __restrict__ packet_info = server->send_buffer.info + i;
-
-        const int packet_bytes = (int) packet_info->packet_bytes;
+        const int packet_bytes = (int) server->send_buffer.packet_bytes[i];
 
         if ( packet_bytes > 0 )
         {
             next_assert( packet_data );
             next_assert( packet_bytes <= NET_MAX_PACKET_BYTES );
-            next_platform_socket_send_packet( server->socket, &packet_info->to, packet_data, (int) packet_info->packet_bytes );
+            next_platform_socket_send_packet( server->socket, &server->send_buffer.to[i], packet_data, (int) server->send_buffer.packet_bytes[i] );
         }
     }    
 }
