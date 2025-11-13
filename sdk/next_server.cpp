@@ -432,9 +432,10 @@ struct next_server_process_packets_t * next_server_process_packets_start( struct
     next_assert( server );
     next_assert( !server->receive_buffer.processing_packets );          // IMPORTANT: You must always call next_server_process_packets_finish
 
-    server->receive_buffer.processing_packets = true;
-
     const int num_packets = server->receive_buffer.current_frame;
+
+    if ( num_packets == 0 )
+        return NULL;
 
     for ( int i = 0; i < num_packets; i++ )
     {
@@ -446,6 +447,8 @@ struct next_server_process_packets_t * next_server_process_packets_start( struct
 
     server->process_packets.num_packets = num_packets;
 
+    server->receive_buffer.processing_packets = true;
+
     return &server->process_packets;
 }
 
@@ -453,7 +456,7 @@ void next_server_packet_processed( struct next_server_t * server, uint8_t * pack
 {
     next_assert( server );
     next_assert( packet_data );
-    // todo
+    // todo: 
     (void) server;
     (void) packet_data;
 }

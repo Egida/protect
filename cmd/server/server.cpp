@@ -38,7 +38,18 @@ int main()
     {
         next_server_receive_packets( server );
 
-        // todo: process packets
+        next_server_process_packets_t * packets = next_server_process_packets_start( server );
+        if ( packets )
+        {
+            for ( int i = 0; i < packets->num_packets; i++ )
+            {
+                // todo
+                next_info( "server received %d byte packet from client %d", packets->packet_bytes[i], packets->client_index[i] );   
+
+                next_server_packet_processed( server, packets->packet_data[i] );
+            }
+            next_server_process_packets_finish( server );
+        }
 
         next_server_update( server );
 
