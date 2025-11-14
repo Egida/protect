@@ -18,133 +18,19 @@ DONE
 
 TODO
 
-    Design the ping near relay
-
-    Requirements:
-
-        1. Can have more relays to ping than can fit in one response packet
-
-        2. Pass down lowest cost from each relay so we can self direct the optimization to give up early on relays that don't make sense
-
-        3. The common case should be fast. If we have a lot of good relays with no packet loss and low jitter, we can stop after just one second.
-
-        4. If we don't have any good relays that we can communicate across we can retry until we reach the connect timeout. The worst can be slower, but taking its time to connect.
-
-        5. The client doesn't connect until it finds the route through the relays, so we don't have the first 10 seconds of the match being unaccelerated.
-
-    I can mock up and test everything above with the sha256 hash, so the relay ping/pongs are compatible with the current fleet, so I can have a LOT of relays that I can ping.
+    Ignore any requests that don't come from the correct ip/port in the client backend token
 
     -------------
 
-    Another thing to consider is that we need the ip2location results as input to the query for near relays
-
-    We currently don't have anything setup to do the ip2location
-
-    We should probably solve this first?
-
-    I can't do the ip2location lookup inside the XDP program, but what I could do is have ip2location results cached inside a bpf map, and then only drop down to the userspace socket (AF_XDP?) if the ip address is not in the cache.
-
-    This should all be done inside the client backend, because we'll have multiple instances of these across the world (close to players) and we don't want them relying on a sub-service that's somewhere else.
-
-    So the client backend will need some loop where it periodically refreshes and downloads the ip2location database from some central location (or more likely, from multiple ones...)
-
-    -------------
-
-    We have a similar pattern when performaning autodetect for servers.
-
-    We won't be able to do this autodetect (whois) inside the XDP program, but we can have a cache in an XDP map, and then in the bpf program, just return the cached value, otherwise forward packet to userspace socket.
-
-    -------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    Implement endian fix up for packet structs
 
     -------------
 
     Implement handshake to pick a client slot (index)
 
-    -------------
-
     Implement timeouts on the server side for client slots
 
-    -------------
-
     Fix up all the hacked code to actually use client slot system when sending/receiving packets etc.
-
-    -------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     -------------
 
@@ -156,47 +42,18 @@ TODO
 
     -------------
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    -------------
-
-    Implement endian fix up for packet structs
-
-    -------------
-
     Fix the connect token so we never send the user hash over un-encrypted channels
 
     This involves doing key exchange and switching over to more advanced crypto primitive
 
     Add these primitives to proton and then upgrade the code in protect to do the key exchange at the same time as processing the connect token
+
+    -------------
+
+    Implement ip2location in client backend
+
+    -------------
+
+    Implement the client ping near relay design
 
     -------------
