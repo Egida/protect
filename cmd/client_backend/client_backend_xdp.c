@@ -88,6 +88,8 @@ void endian_fix( uint64_t * value )
 
 #pragma pack(push,1)
 
+// ---------------------------------------------------------------------------------------------------------------------
+
 struct next_connect_token_t
 {
     __u64 version;
@@ -96,15 +98,27 @@ struct next_connect_token_t
     __u64 server_id;
     __u64 session_id;
     __u64 user_hash;
-    __u32 client_public_address;
-    __u32 backend_addresses[NEXT_MAX_CONNECT_TOKEN_BACKENDS];             // big endian ipv4. 0 if not provided.
-    __u16 backend_ports[NEXT_MAX_CONNECT_TOKEN_BACKENDS];                 // big endian port. 0 if not provided.
+    __u32 client_public_address;                                            // big endian
+    __u32 backend_addresses[NEXT_MAX_CONNECT_TOKEN_BACKENDS];               // big endian
+    __u16 backend_ports[NEXT_MAX_CONNECT_TOKEN_BACKENDS];                   // big endian
     __u8 pings_per_second;
     __u8 pongs_before_select;
     __u8 max_connect_seconds;
     __u8 backend_token_refresh_seconds;
     __u8 signature[NEXT_CONNECT_TOKEN_SIGNATURE_BYTES];
 };
+
+void endian_fix( struct next_connect_token_t * token )
+{
+    endian_fix( &token->version );
+    endian_fix( &token->expire_timestamp );
+    endian_fix( &token->buyer_id );
+    endian_fix( &token->server_id );
+    endian_fix( &token->user_hash );
+    endian_fix( &token->user_hash );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 struct next_client_backend_token_t
 {
@@ -115,9 +129,21 @@ struct next_client_backend_token_t
     __u64 server_id;
     __u64 session_id;
     __u64 user_hash;
-    __u32 client_address;                                                 // big endian ipv4
-    __u16 client_port;                                                    // big endian port #
+    __u32 client_address;                                                 // big endian
+    __u16 client_port;                                                    // big endian
 };
+
+void endian_fix( struct next_client_backend_token_t * token )
+{
+    endian_fix( &token->version );
+    endian_fix( &token->expire_timestamp );
+    endian_fix( &token->buyer_id );
+    endian_fix( &token->server_id );
+    endian_fix( &token->session_id );
+    endian_fix( &token->user_hash );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 struct next_client_backend_init_request_packet_t
 {
@@ -130,6 +156,14 @@ struct next_client_backend_init_request_packet_t
     __u64 request_id;
 };
 
+void endian_fix( struct next_client_backend_init_request_packet_t * packet )
+{
+    endian_fix( &token->connect_token );
+    endian_fix( &token->request_id );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
 struct next_client_backend_init_response_packet_t
 {
     __u8 type;
@@ -137,6 +171,14 @@ struct next_client_backend_init_response_packet_t
     __u64 request_id;
     struct next_client_backend_token_t backend_token;
 };
+
+void endian_fix( struct next_client_backend_init_response_packet_t * packet )
+{
+    endian_fix( &token->request_id );
+    endian_fix( &token->backend_token );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 struct next_client_backend_ping_packet_t
 {
@@ -150,6 +192,15 @@ struct next_client_backend_ping_packet_t
     struct next_client_backend_token_t backend_token;
 };
 
+void endian_fix( struct next_client_backend_ping_packet_t * packet )
+{
+    endian_fix( &token->request_id );
+    endian_fix( &token->ping_sequence );
+    endian_fix( &token->backend_token );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
 struct next_client_backend_pong_packet_t
 {
     __u8 type;
@@ -157,6 +208,14 @@ struct next_client_backend_pong_packet_t
     __u64 request_id;
     __u64 ping_sequence;
 };
+
+void endian_fix( struct next_client_backend_pong_packet_t * packet )
+{
+    endian_fix( &token->request_id );
+    endian_fix( &token->ping_sequence );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 struct next_client_backend_refresh_token_request_packet_t
 {
@@ -169,6 +228,14 @@ struct next_client_backend_refresh_token_request_packet_t
     struct next_client_backend_token_t backend_token;
 };
 
+void endian_fix( struct next_client_backend_refresh_token_request_packet_t * packet )
+{
+    endian_fix( &token->request_id );
+    endian_fix( &token->backend_token );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
 struct next_client_backend_refresh_token_response_packet_t
 {
     __u8 type;
@@ -176,6 +243,14 @@ struct next_client_backend_refresh_token_response_packet_t
     __u64 request_id;
     struct next_client_backend_token_t backend_token;
 };
+
+void endian_fix( struct next_client_backend_refresh_token_response_packet_t * packet )
+{
+    endian_fix( &token->request_id );
+    endian_fix( &token->backend_token );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 #pragma pack(pop)
 
