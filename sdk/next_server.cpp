@@ -150,7 +150,7 @@ void next_server_update( next_server_t * server )
 {
     next_assert( server );
 
-    // todo
+    // todo: mock stopping -> stopped transition
     if ( server->state == NEXT_SERVER_STOPPING )
     {
         server->state = NEXT_SERVER_STOPPED;
@@ -171,7 +171,7 @@ void next_server_disconnect_client( next_server_t * server, int client_index )
     next_assert( client_index >= 0 );
     next_assert( client_index <= NEXT_MAX_CLIENTS );
 
-    // todo
+    // todo: implement clean client disconnect
     (void) client_index;
 }
 
@@ -247,8 +247,9 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
         if ( !packet_data )
             return NULL;
 
-        // todo: endian fix up
-        memcpy( packet_data, (char*)&sequence, 8 );
+        uint64_t endian_sequence = sequence;
+        next_endian_fix( &endian_sequence );
+        memcpy( packet_data, (char*)&endian_sequence, 8 );
 
         packet_data += 8;
 
@@ -395,7 +396,7 @@ void next_server_receive_packets( next_server_t * server )
 
             uint64_t sequence;
             memcpy( (char*) &sequence, packet_data + NEXT_HEADER_BYTES, 8 );
-            // todo: endian fixup
+            next_endian_fix( &sequence );
 
             packet_data += NEXT_HEADER_BYTES + 8;
             packet_bytes -= NEXT_HEADER_BYTES + 8;
@@ -445,7 +446,9 @@ void next_server_packet_processed( struct next_server_t * server, uint8_t * pack
 {
     next_assert( server );
     next_assert( packet_data );
-    // todo: 
+
+    // ...
+
     (void) server;
     (void) packet_data;
 }

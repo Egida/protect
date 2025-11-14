@@ -22,6 +22,8 @@
 
 #pragma pack(push,1)
 
+// --------------------------------------------------------------------------------------------------
+
 struct next_client_backend_init_request_packet_t
 {
     uint8_t type;
@@ -33,6 +35,14 @@ struct next_client_backend_init_request_packet_t
     uint64_t request_id;
 };
 
+inline void next_endian_fix( next_client_backend_init_request_packet_t * packet )
+{
+    next_endian_fix( &packet->connect_token );
+    next_endian_fix( &packet->request_id );
+}
+
+// --------------------------------------------------------------------------------------------------
+
 struct next_client_backend_init_response_packet_t
 {
     uint8_t type;
@@ -40,6 +50,14 @@ struct next_client_backend_init_response_packet_t
     uint64_t request_id;
     struct next_client_backend_token_t backend_token;
 };
+
+inline void next_endian_fix( next_client_backend_init_response_packet_t * packet )
+{
+    next_endian_fix( &packet->request_id );
+    next_endian_fix( &packet->backend_token );
+}
+
+// --------------------------------------------------------------------------------------------------
 
 struct next_client_backend_ping_packet_t
 {
@@ -53,6 +71,15 @@ struct next_client_backend_ping_packet_t
     struct next_client_backend_token_t backend_token;
 };
 
+inline void next_endian_fix( next_client_backend_ping_packet_t * packet )
+{
+    next_endian_fix( &packet->request_id );
+    next_endian_fix( &packet->ping_sequence );
+    next_endian_fix( &packet->backend_token );
+}
+
+// --------------------------------------------------------------------------------------------------
+
 struct next_client_backend_pong_packet_t
 {
     uint8_t type;
@@ -60,6 +87,14 @@ struct next_client_backend_pong_packet_t
     uint64_t request_id;
     uint64_t ping_sequence;
 };
+
+inline void next_endian_fix( next_client_backend_pong_packet_t * packet )
+{
+    next_endian_fix( &packet->request_id );
+    next_endian_fix( &packet->ping_sequence );
+}
+
+// --------------------------------------------------------------------------------------------------
 
 struct next_client_backend_refresh_token_request_packet_t
 {
@@ -72,6 +107,14 @@ struct next_client_backend_refresh_token_request_packet_t
     struct next_client_backend_token_t backend_token;
 };
 
+inline void next_endian_fix( next_client_backend_refresh_token_request_packet_t * packet )
+{
+    next_endian_fix( &packet->request_id );
+    next_endian_fix( &packet->backend_token );
+}
+
+// --------------------------------------------------------------------------------------------------
+
 struct next_client_backend_refresh_token_response_packet_t
 {
     uint8_t type;
@@ -79,6 +122,14 @@ struct next_client_backend_refresh_token_response_packet_t
     uint64_t request_id;
     struct next_client_backend_token_t backend_token;
 };
+
+inline void next_endian_fix( next_client_backend_refresh_token_response_packet_t * packet )
+{
+    next_endian_fix( &packet->request_id );
+    next_endian_fix( &packet->backend_token );
+}
+
+// --------------------------------------------------------------------------------------------------
 
 struct next_direct_packet_t
 {
@@ -88,40 +139,13 @@ struct next_direct_packet_t
     uint8_t payload[NEXT_MTU];
 };
 
-#pragma pack(pop)
-
-inline void next_endian_fix( next_client_backend_init_request_packet_t * packet )
-{
-
-}
-
-inline void next_endian_fix( next_client_backend_init_response_packet_t * packet )
-{
-
-}
-
-inline void next_endian_fix( next_client_backend_ping_packet_t * packet )
-{
-
-}
-
-inline void next_endian_fix( next_client_backend_pong_packet_t * packet )
-{
-
-}
-
-inline void next_endian_fix( next_client_backend_refresh_token_request_packet_t * packet )
-{
-}
-
-inline void next_endian_fix( next_client_backend_refresh_token_response_packet_t * packet )
-{
-
-}
-
 inline void next_endian_fix( next_direct_packet_t * packet )
 {
-    
+    next_endian_fix( &packet->sequence );
 }
+
+// --------------------------------------------------------------------------------------------------
+
+#pragma pack(pop)
 
 #endif // #ifndef NEXT_PACKETS_H

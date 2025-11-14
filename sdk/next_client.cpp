@@ -144,7 +144,6 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
     memset( &bind_address, 0, sizeof(bind_address) );
     bind_address.type = NEXT_ADDRESS_IPV4;
 
-
     // todo: dummy the client on port 30000 for easy testing
     bind_address.port = 30000;
 
@@ -369,7 +368,6 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
     }
 
 #if NEXT_ADVANCED_PACKET_FILTER
-
 
     // todo: advanced packet filter
 
