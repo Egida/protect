@@ -70,7 +70,7 @@ int main()
     }
     */
 
-    // todo: test direct connection (development only...)
+    // todo: test direct connection
     const char * connect = "127.0.0.1:40000";
 
     next_client_t * client = next_client_create( NULL, connect, buyer_public_key, packet_received_callback );

@@ -12,13 +12,72 @@ DONE
 
     This will allow greater flexibility wrt. packet receiving and possibly we can do packet receives on a background thread with minimal effort.
 
+    Implement a client background thread pumping the receive packet once every millisecond protected by mutex.
+
+    Pump the receive packets once on main thread as will, right before we actually process them (to catch any packets in the last millisecond intra...)
+
 TODO
 
-    Implement a client background thread pumping the receive packet once every millisecond protected by mutex.
+    Implement the ping near relays state of client init
+
+    The trick here is that not only do we want the set of relays to ping, we also want...
+
+    1. more relays to ping than can fit in one response packet
+
+    2. an estimate of best cost from each relay to the destination
+
+    This will allows us to quickly stop pinging relays that have demonstrated after 1 second that they are probably not suitable
+
+    Think of it sort of a progressive refinement
+
+    It also will let us in the common case very quickly decide, ok, these relays are fine, let's go.
 
     -------------
 
-    Pump the receive packets once on main thread as will, right before we actually process them (to catch any packets in the last millisecond intra...)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     -------------
 
@@ -120,21 +179,5 @@ TODO
     This involves doing key exchange and switching over to more advanced crypto primitive
 
     Add these primitives to proton and then upgrade the code in protect to do the key exchange at the same time as processing the connect token
-
-    -------------
-
-    Implement the ping near relays state of client init
-
-    The trick here is that not only do we want the set of relays to ping, we also want...
-
-    1. more relays to ping than can fit in one response packet
-
-    2. an estimate of best cost from each relay to the destination
-
-    This will allows us to quickly stop pinging relays that have demonstrated after 1 second that they are probably not suitable
-
-    Think of it sort of a progressive refinement
-
-    It also will let us in the common case very quickly decide, ok, these relays are fine, let's go.
 
     -------------

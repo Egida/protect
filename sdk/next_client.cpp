@@ -219,9 +219,7 @@ void next_client_destroy( next_client_t * client )
 
     if ( client->thread )
     {
-        next_platform_mutex_acquire( &client->mutex );
         client->quit = true;
-        next_platform_mutex_release( &client->mutex );
         next_platform_thread_join( client->thread );
         next_platform_thread_destroy( client->thread );
     }
@@ -515,12 +513,16 @@ void next_client_update_process_packets( next_client_t * client )
 {
     const int num_packets = client->receive_buffer.current_frame;
 
+    next_platform_mutex_acquire( &client->mutex );
+
     for ( int i = 0; i < num_packets; i++ )
     {
         next_client_process_packet( client, &client->receive_buffer.from[i], client->receive_buffer.packet_data[i], client->receive_buffer.packet_bytes[i] );
     }
 
     client->receive_buffer.current_frame = 0;
+
+    next_platform_mutex_release( &client->mutex );
 }
 
 void next_client_update( next_client_t * client )
@@ -592,8 +594,7 @@ static void next_client_thread_function( void * data )
 
     while ( !client->quit )
     {
-        // ...
-
+        next_client_receive_packets( client );
         next_platform_sleep( 0.001 );
     }
 }
@@ -601,6 +602,8 @@ static void next_client_thread_function( void * data )
 void next_client_receive_packets( next_client_t * client )
 {
     next_assert( server );
+
+    next_platform_mutex_acquire( &client->mutex );
 
     while ( 1 )
     {
@@ -635,4 +638,6 @@ void next_client_receive_packets( next_client_t * client )
         client->receive_buffer.packet_bytes[index] = packet_bytes;
         client->receive_buffer.current_frame++;
     }
+
+    next_platform_mutex_release( &client->mutex );
 }
