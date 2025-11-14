@@ -8,17 +8,65 @@ DONE
 
     Convert the server over to have SoA for send buffer
 
-TODO
-
     Convert the client to internally use a receive buffer.
 
     This will allow greater flexibility wrt. packet receiving and possibly we can do packet receives on a background thread with minimal effort.
 
+TODO
+
+    Implement a client background thread pumping the receive packet once every millisecond protected by mutex.
+
     -------------
 
-    There needs to be an actual handshake to pick a client slot (index)
+    Pump the receive packets once on main thread as will, right before we actually process them (to catch any packets in the last millisecond intra...)
 
-    Start with a version of this using direct packets.
+    -------------
+
+    Implement handshake to pick a client slot (index)
+
+    -------------
+
+    Implement timeouts on the server side for client slots
+
+    -------------
+
+    Fix up all the hacked code to actually use client slot system when sending/receiving packets etc.
+
+    -------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     -------------
 
