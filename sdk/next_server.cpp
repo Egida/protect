@@ -142,6 +142,49 @@ void next_server_destroy( next_server_t * server )
     next_clear_and_free( server->context, server, sizeof(next_server_t) );
 }
 
+void next_server_client_timed_out( next_server_t * server, int client_index )
+{
+    next_assert( client_index >= 0 );
+    next_assert( client_index < NEXT_MAX_CLIENTS );
+    char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
+    next_info( "client %s timed out from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
+    server->client_connected[client_index] = 0;
+    memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
+}
+
+void next_server_client_disconnected( next_server_t * server, int client_index )
+{
+    next_assert( client_index >= 0 );
+    next_assert( client_index < NEXT_MAX_CLIENTS );
+    char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
+    next_info( "client %s disconnected from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
+    server->client_connected[client_index] = 0;
+    memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
+}
+
+void next_server_update_timeout( next_server_t * server )
+{
+    double current_time = next_platform_time();
+
+    for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
+    {
+        if ( server->client_connected[i] )
+        {
+            if ( server->client_direct[i] )
+            {
+                if ( server->client_last_packet_receive_time[i] + NEXT_DIRECT_TIMEOUT < current_time )
+                {
+                    next_server_client_timed_out( server, i );
+                }
+            }
+            else
+            {
+                // todo: next timeout                
+            }
+        }
+    }
+}
+
 void next_server_update( next_server_t * server )
 {
     next_assert( server );
@@ -151,6 +194,8 @@ void next_server_update( next_server_t * server )
     {
         server->state = NEXT_SERVER_STOPPED;
     }
+
+    next_server_update_timeout( server );
 }
 
 bool next_server_client_connected( next_server_t * server, int client_index )
@@ -167,8 +212,10 @@ void next_server_disconnect_client( next_server_t * server, int client_index )
     next_assert( client_index >= 0 );
     next_assert( client_index <= NEXT_MAX_CLIENTS );
 
-    // todo: implement clean client disconnect
-    (void) client_index;
+    if ( !server->client_connected[client_index] )
+        return;
+
+    next_server_client_disconnected( server, client_index );
 }
 
 void next_server_stop( next_server_t * server )
@@ -357,7 +404,25 @@ void next_server_send_packets( struct next_server_t * server )
 
 void next_server_process_packet_internal( next_server_t * server, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {
-    // ...
+    const uint8_t packet_type = packet_data[0];
+
+    if ( packet_type == NEXT_PACKET_DISCONNECT && packet_bytes == sizeof(next_disconnect_packet_t) )
+    {
+        int client_index = -1;
+        for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
+        {
+            if ( next_address_equal( from, &server->client_address[i] ) )
+            {
+                client_index = i;
+                break;
+            }
+        }
+
+        if ( client_index == -1 )
+            return;
+
+        next_server_disconnect_client( server, client_index );
+    }
 }
 
 void next_server_receive_packets( next_server_t * server )
@@ -410,7 +475,6 @@ void next_server_receive_packets( next_server_t * server )
                     server->client_connected[client_index] = true;
                     server->client_direct[client_index] = true;
                     server->client_address[client_index] = from;
-                    server->client_last_packet_receive_time[client_index] = next_platform_time();
                 }
                 else
                 {
@@ -418,6 +482,8 @@ void next_server_receive_packets( next_server_t * server )
                     continue;
                 }
             }
+
+            server->client_last_packet_receive_time[client_index] = next_platform_time();
 
             const int index = server->receive_buffer.current_frame;
 

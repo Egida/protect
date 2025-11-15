@@ -6,19 +6,82 @@ DONE
 
     Implement simplest possible direct connection -> client index slot on the server.
 
-TODO
-    
-    Implement a tiemout on the server for direct connections.
+    Unify functions on the client when client connects, timeouts etc. so everything goes through one place.
 
-    Create one place where client connect and client disconnect are performed.
+    Implement a timeout on the server for direct connections.
+
+    Client sends n disconnect packets to server when quitting direct.
+
+    Server reads disconnect packets and disconnects client clean when it quits.
+
+TODO
+
+    Stopping point for weekend.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 
     -------------
-
-    Extend the server so it uses AF_XDP to send and receive packets on linux
+    
+    Extend the server so it uses AF_XDP to send and receive packets on linux.
 
     -------------
 
     Implement a server XDP program that does the packet filtering before passing down packets to userspace
+
+    -------------
+
+    Disable packet filtering #ifdef __linux__, it's done in XDP
 
     -------------
 

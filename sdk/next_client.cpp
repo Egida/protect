@@ -78,6 +78,26 @@ struct next_client_t
     next_client_receive_buffer_t receive_buffer;
 };
 
+void next_client_init_timed_out( next_client_t * client )
+{
+    next_warn( "client init timed out" );
+}
+
+void next_client_connection_timed_out( next_client_t * client )
+{
+    next_warn( "client connection timed out" );
+}
+
+void next_client_connected( next_client_t * client )
+{
+    next_info( "client connected" );
+}
+
+void next_client_disconnected( next_client_t * client )
+{
+    next_info( "client disconnected" );
+}
+
 static void next_client_thread_function( void * data );
 
 next_client_t * next_client_create( void * context, const char * connect_token_string, const uint8_t * buyer_public_key, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes, uint64_t sequence ) )
@@ -188,6 +208,7 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
         client->direct_address = direct_address;
         client->state = NEXT_CLIENT_CONNECTED;
         client->last_packet_receive_time = current_time;
+        next_client_connected( client );
     }
     else
     {
@@ -280,8 +301,8 @@ void next_client_update_timeout( next_client_t * client )
     {
         if ( client->last_packet_receive_time + NEXT_DIRECT_TIMEOUT < next_platform_time() )
         {
-            next_warn( "client connection timed out" );
             client->state = NEXT_CLIENT_CONNECTION_TIMED_OUT;
+            next_client_connection_timed_out( client );
             return;
         }
     }
@@ -308,8 +329,8 @@ void next_client_update_initialize( next_client_t * client )
 
     if ( client->init_start_time + client->connect_token.max_connect_seconds < current_time )
     {
-        next_info( "client init timed out" );
         client->state = NEXT_CLIENT_INIT_TIMED_OUT;
+        next_client_init_timed_out( client );
         return;
     }
 
@@ -487,6 +508,8 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
 
                 if ( client->backend_init_data[i].num_pongs_received++ > client->connect_token.pongs_before_select )
                 {
+                    // todo: we're not really connected at this point, we should transition to pinging relays
+
                     client->state = NEXT_CLIENT_CONNECTED;
                     client->client_backend_address = *from;
                     client->backend_token = client->backend_init_data[i].backend_token;
@@ -589,7 +612,26 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
 void next_client_disconnect( next_client_t * client )
 {
     next_assert( client );
+
+    if ( client->direct )
+    {
+        // fire off 10 disconnect packets to server
+
+        for ( int i = 0; i < 10; i++ )
+        {
+            next_direct_packet_t packet;
+            packet.type = NEXT_PACKET_DISCONNECT;
+            next_client_send_packet_internal( client, &client->direct_address, (uint8_t*) &packet, NEXT_HEADER_BYTES );
+        }
+    }
+    else
+    {
+        // todo: next disconnect. this is a state machine and we stay in this state until we receive ack from the relays that we have closed the sessions, nad from the server, or timeout.
+    }
+
     client->state = NEXT_CLIENT_DISCONNECTED;
+
+    next_client_disconnected( client );
 }
 
 int next_client_state( next_client_t * client )

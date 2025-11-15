@@ -92,6 +92,8 @@ int main()
     uint8_t packet_data[100];
     memset( packet_data, 0, sizeof(packet_data) );
 
+    int count = 0;
+
     while ( !quit )
     {
         if ( next_client_state( client ) <= NEXT_CLIENT_DISCONNECTED )
