@@ -33,7 +33,7 @@ void packet_received_callback( next_client_t * client, void * context, const uin
     (void) packet_data;
     (void) packet_bytes;
 
-    next_info( "client received packet %" PRId64 " from server (%d bytes)", sequence, packet_bytes );
+    // next_info( "client received packet %" PRId64 " from server (%d bytes)", sequence, packet_bytes );
 }
 
 int main()

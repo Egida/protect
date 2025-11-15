@@ -409,6 +409,7 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
                 uint64_t sequence;
                 memcpy( (uint8_t*) &sequence, packet_data + 18, 8 );
                 next_endian_fix( &sequence );
+                client->last_packet_receive_time = next_platform_time();
                 client->packet_received_callback( client, client->context, packet_data + 18 + 8, packet_bytes - ( 18 + 8 ), sequence );
             }
         }

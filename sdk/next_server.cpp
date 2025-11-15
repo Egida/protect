@@ -48,6 +48,7 @@ struct next_server_t
     bool client_connected[NEXT_MAX_CLIENTS];
     bool client_direct[NEXT_MAX_CLIENTS];
     next_address_t client_address[NEXT_MAX_CLIENTS];
+    double client_last_packet_receive_time[NEXT_MAX_CLIENTS];
 
     next_platform_mutex_t client_payload_mutex;
     uint64_t client_payload_sequence[NEXT_MAX_CLIENTS];
@@ -107,11 +108,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     next_info( "server id is %016" PRIx64, server->server_id );
     next_info( "match id is %016" PRIx64, server->match_id );
-
-    // todo: mock up as if client 0 is connected direct
-    server->client_connected[0] = true;
-    server->client_direct[0] = true;
-    next_address_parse( &server->client_address[0], "127.0.0.1:30000" );
 
     if ( !next_platform_mutex_create( &server->client_payload_mutex ) )
     {
@@ -389,8 +385,39 @@ void next_server_receive_packets( next_server_t * server )
             if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
                 continue;
 
-            // todo: look up client index from address
-            const int client_index = 0;
+            int client_index = -1;
+            int first_free_slot = -1;
+            for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
+            {
+                if ( first_free_slot == -1 && !server->client_connected[i] )
+                {
+                    first_free_slot = i;
+                }
+                if ( next_address_equal( &from, &server->client_address[i] ) )
+                {
+                    client_index = i;
+                    break;
+                }
+            }
+
+            if ( client_index == -1 )
+            {
+                if ( first_free_slot != -1 )
+                {
+                    client_index = first_free_slot;
+                    char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
+                    next_info( "client %s connected in slot %d", next_address_to_string( &from, buffer ) );
+                    server->client_connected[client_index] = true;
+                    server->client_direct[client_index] = true;
+                    server->client_address[client_index] = from;
+                    server->client_last_packet_receive_time[client_index] = next_platform_time();
+                }
+                else
+                {
+                    // all client slots are full
+                    continue;
+                }
+            }
 
             const int index = server->receive_buffer.current_frame;
 

@@ -1,56 +1,16 @@
 DONE
 
-    Implement the server zero copy packet receive interface on the server
+    Set direct timeout to 10 seconds. We'll want the accelerated timeout to be much longer (30-60 seconds...)
 
-    Actually read the sequence number for the direct packet and then adjust the packet data and packet bytes
+    Implement a timeout on the direct client.
 
-    Verify that the server sees the packets sent from the client and the correct sequence number and packet bytes
-
-    Convert the server over to have SoA for send buffer
-
-    Convert the client to internally use a receive buffer.
-
-    This will allow greater flexibility wrt. packet receiving and possibly we can do packet receives on a background thread with minimal effort.
-
-    Implement a client background thread pumping the receive packet once every millisecond protected by mutex.
-
-    Pump the receive packets once on main thread as will, right before we actually process them (to catch any packets in the last millisecond intra...)
-
-    Ignore any init that doesn't come from the client public address in the connect token
-
-    Extend the client backend token so it tracks client address and port
-
-    Ignore any client backend requests that don't come from the client IP and port in the client backend token
-
-    Implement endian fix up for packet structs
-
-    Pass over the packet processing in XDP and call endian_fix as needed
-
-    Big decision point.
-
-    We could just make the direct a debug only feature, and implement it in an insecure way.
-
-    This would mean simply taking the first packet sent and assigning a slot, or even just removing slots and just letting the packets through.
-
-    The alternative is to support a secure direct with a netcode like connect token and slot negotiation.
-
-    I think its better to leave the slot negotiation to the higher level, thus if we have this sort of insecure direct that's fine
-    
-    If we need a secure direct in the future, we can have a direct connect token that enables direct connection negotiation with the server.
-
-    But it's not possible to have secure connect without a connect token, so for now I vote just to make it like the simplest possible direct connection for a LAN and local testing situation.
-
-    Decision: implement an insecure direct that is development only and keep it as simple as possible. If a future customer wants secure direct, we can add that feature then.
-
-    Connection via next is secure and always goes through relays. Without a connect token, nobody can connect to a server.
+    Implement simplest possible direct connection -> client index slot on the server.
 
 TODO
     
-    Implement simplest possible direct connection -> client index slot on the server.
+    Implement a tiemout on the server for direct connections.
 
-    Implement a tiemout on the server for direct connections (10 seconds).
-
-    Implement a timeout on the direct client (5 seconds).
+    Create one place where client connect and client disconnect are performed.
 
     -------------
 
