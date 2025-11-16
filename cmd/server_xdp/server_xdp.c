@@ -44,7 +44,7 @@ int main( int argc, char *argv[] )
 {
     platform_init();
 
-    printf( "Network Next Client Backend\n" );
+    printf( "Network Next Server XDP\n" );
 
     fflush( stdout );
 
