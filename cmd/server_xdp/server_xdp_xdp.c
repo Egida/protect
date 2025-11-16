@@ -50,32 +50,11 @@
 #define bpf_htons(x)        (x)
 #endif // #if NEXT_LITTLE_ENDIAN
 
-void endian_fix( __u16 * value )
-{
-#if NEXT_BIG_ENDIAN
-    __builtin_bswap16( *value );
-#endif // #if NEXT_BIG_ENDIAN
-}
-
-void endian_fix( __u32 * value )
-{
-#if NEXT_BIG_ENDIAN
-    __builtin_bswap32( *value );
-#endif // #if NEXT_BIG_ENDIAN
-}
-
-void endian_fix( __u64 * value )
-{
-#if NEXT_BIG_ENDIAN
-    __builtin_bswap64( *value );
-#endif // #if NEXT_BIG_ENDIAN
-}
-
 #pragma pack(push,1)
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-// todo: packets
+// todo: packu64s
 
 // ---------------------------------------------------------------------------------------------------------------------
 
