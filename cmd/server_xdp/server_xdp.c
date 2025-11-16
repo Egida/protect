@@ -3,10 +3,10 @@
     Licensed under the Network Next Source Available License 2.0
 */
 
-#include "client_backend.h"
-#include "client_backend_main.h"
-#include "client_backend_bpf.h"
-#include "client_backend_config.h"
+#include "server_xdp.h"
+#include "server_xdp_main.h"
+#include "server_xdp_bpf.h"
+#include "server_xdp_config.h"
 
 #include "platform/platform.h"
 

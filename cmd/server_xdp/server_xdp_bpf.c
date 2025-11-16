@@ -3,7 +3,7 @@
     Licensed under the Network Next Source Available License 2.0
 */
 
-#include "client_backend_bpf.h"
+#include "server_xdp_bpf.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -14,7 +14,7 @@
 #include <stdlib.h>
 
 #ifdef __linux__
-#include "client_backend_xdp_source.h"
+#include "server_xdp_source.h"
 #endif // #ifdef __linux__
 
 bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
@@ -184,7 +184,7 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
     // delete all bpf maps we use so stale data doesn't stick around
     {
         {
-            const char * command = "rm -f /sys/fs/bpf/client_backend_config_map";
+            const char * command = "rm -f /sys/fs/bpf/server_xdp_config_map";
             FILE * file = popen( command, "r" );
             char buffer[1024];
             while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
@@ -192,7 +192,7 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
         }
 
         {
-            const char * command = "rm -f /sys/fs/bpf/client_backend_state_map";
+            const char * command = "rm -f /sys/fs/bpf/server_xdp_state_map";
             FILE * file = popen( command, "r" );
             char buffer[1024];
             while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
@@ -200,23 +200,23 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
         }
     }
 
-    // write out source tar.gz for client_backend_xdp.o
+    // write out source tar.gz for server_xdp_xdp.o
     {
-        FILE * file = fopen( "client_backend_xdp_source.tar.gz", "wb" );
+        FILE * file = fopen( "server_xdp_source.tar.gz", "wb" );
         if ( !file )
         {
-            printf( "\nerror: could not open client_backend_xdp_source.tar.gz for writing" );
+            printf( "\nerror: could not open server_xdp_source.tar.gz for writing" );
             return false;
         }
 
-        fwrite( ___cmd_client_backend_client_backend_xdp_source_tar_gz, sizeof(___cmd_client_backend_client_backend_xdp_source_tar_gz), 1, file );
+        fwrite( ___cmd_server_xdp_server_xdp_source_tar_gz, sizeof(___cmd_server_xdp_server_xdp_source_tar_gz), 1, file );
 
         fclose( file );
     }
 
-    // unzip source build client_backend_xdp.o from source with make
+    // unzip source build server_xdp_xdp.o from source with make
     {
-        const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.o && rm -f Makefile && tar -zxf client_backend_xdp_source.tar.gz && make client_backend_xdp.o";
+        const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.o && rm -f Makefile && tar -zxf server_xdp_source.tar.gz && make server_xdp_xdp.o";
         FILE * file = popen( command, "r" );
         char buffer[1024];
         while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
@@ -232,24 +232,24 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
         pclose( file );
     }
 
-    // load the client_backend_xdp program and attach it to the network interface
+    // load the server_xdp_xdp program and attach it to the network interface
 
-    printf( "loading client_backend_xdp...\n" );
+    printf( "loading server_xdp_xdp...\n" );
 
     fflush( stdout );
 
-    bpf->program = xdp_program__open_file( "client_backend_xdp.o", "client_backend_xdp", NULL );
+    bpf->program = xdp_program__open_file( "server_xdp_xdp.o", "server_xdp_xdp", NULL );
     if ( libxdp_get_error( bpf->program ) ) 
     {
-        printf( "\nerror: could not load client_backend_xdp program\n\n");
+        printf( "\nerror: could not load server_xdp_xdp program\n\n");
         return false;
     }
 
-    printf( "client_backend_xdp loaded successfully.\n" );
+    printf( "server_xdp_xdp loaded successfully.\n" );
 
     fflush( stdout );
 
-    printf( "attaching client_backend_xdp to network interface\n" );
+    printf( "attaching server_xdp_xdp to network interface\n" );
 
     fflush( stdout );
 
@@ -268,31 +268,24 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address )
         }
         else
         {
-            printf( "\nerror: failed to attach client_backend_xdp program to interface\n\n" );
+            printf( "\nerror: failed to attach server_xdp_xdp program to interface\n\n" );
             return false;
         }
     }
 
-    // get file descriptors for maps so we can communicate with the client_backend_xdp program running in kernel space
+    // get file descriptors for maps so we can communicate with the server_xdp_xdp program running in kernel space
 
-    bpf->config_fd = bpf_obj_get( "/sys/fs/bpf/client_backend_config_map" );
+    bpf->config_fd = bpf_obj_get( "/sys/fs/bpf/server_xdp_config_map" );
     if ( bpf->config_fd <= 0 )
     {
         printf( "\nerror: could not get client backend config map: %s\n\n", strerror(errno) );
         return false;
     }
 
-    bpf->state_fd = bpf_obj_get( "/sys/fs/bpf/client_backend_state_map" );
+    bpf->state_fd = bpf_obj_get( "/sys/fs/bpf/server_xdp_state_map" );
     if ( bpf->state_fd <= 0 )
     {
         printf( "\nerror: could not get client backend state map: %s\n\n", strerror(errno) );
-        return false;
-    }
-
-    bpf->buyer_fd = bpf_obj_get( "/sys/fs/bpf/client_backend_buyer_map" );
-    if ( bpf->buyer_fd <= 0 )
-    {
-        printf( "\nerror: could not get client backend buyer map: %s\n\n", strerror(errno) );
         return false;
     }
 

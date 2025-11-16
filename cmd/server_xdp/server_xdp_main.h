@@ -3,10 +3,10 @@
     Licensed under the Network Next Source Available License 2.0
 */
 
-#ifndef CLIENT_BACKEND_MAIN_H
-#define CLIENT_BACKEND_MAIN_H
+#ifndef SERVER_XDP_MAIN_H
+#define SERVER_XDP_MAIN_H
 
-#include "client_backend.h"
+#include "server_xdp.h"
 
 struct main_t
 {
@@ -14,13 +14,11 @@ struct main_t
 
     uint64_t start_time;
     uint32_t public_address;
-    uint16_t port;
     bool initialized;
     bool shutting_down;
 #ifdef __linux__
     int state_fd;
     int config_fd;
-    int buyer_fd;
 #endif // #ifdef __linux__
 };
 
@@ -33,4 +31,4 @@ int main_run( struct main_t * main );
 
 void main_shutdown( struct main_t * main );
 
-#endif // #ifndef CLIENT_BACKEND_MAIN_H
+#endif // #ifndef SERVER_XDP_MAIN_H

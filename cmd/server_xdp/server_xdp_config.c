@@ -3,8 +3,8 @@
     Licensed under the Network Next Source Available License 2.0
 */
 
-#include "client_backend_config.h"
-#include "client_backend_shared.h"
+#include "server_xdp_config.h"
+#include "server_xdp_shared.h"
 #include "platform/platform.h"
 #include "shared/shared_base64.h"
 
@@ -20,10 +20,10 @@ bool read_config( struct config_t * config )
 {
     // -----------------------------------------------------------------------------------------------------------------------------
 
-    char * public_address_env = getenv( "CLIENT_BACKEND_PUBLIC_ADDRESS" );
+    char * public_address_env = getenv( "SERVER_XDP_PUBLIC_ADDRESS" );
     if ( !public_address_env )
     {
-        printf( "\nerror: CLIENT_BACKEND_PUBLIC_ADDRESS not set\n\n" );
+        printf( "\nerror: SERVER_XDP_PUBLIC_ADDRESS not set\n\n" );
         return false;
     }
 
@@ -40,23 +40,6 @@ bool read_config( struct config_t * config )
         ((uint8_t*)&config->public_address)[0],
         config->port
     );
-
-    // -----------------------------------------------------------------------------------------------------------------------------
-
-    const char * client_backend_private_key_env = getenv( "CLIENT_BACKEND_PRIVATE_KEY" );
-    if ( !client_backend_private_key_env )
-    {
-        printf( "\nerror: CLIENT_BACKEND_PRIVATE_KEY not set\n\n" );
-        return false;
-    }
-
-    if ( shared_base64_decode_data( client_backend_private_key_env, config->client_backend_private_key, SECRETBOX_PRIVATE_KEY_BYTES ) != SECRETBOX_PRIVATE_KEY_BYTES )
-    {
-        printf( "\nerror: invalid client backend private key\n\n" );
-        return false;
-    }
-
-    printf( "Client backend private key is %s\n", client_backend_private_key_env );
 
     // -----------------------------------------------------------------------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "client_backend_constants.h"
+#include "server_xdp_constants.h"
 
 #ifdef __linux__
 #include <linux/types.h>
@@ -21,19 +21,12 @@
 
 #define SECRETBOX_PRIVATE_KEY_BYTES         32
 
-struct client_backend_config
+struct server_xdp_config
 {
     __u32 public_address;                                               // big endian
-    __u16 port;                                                         // big endian
-    __u8 client_backend_private_key[SECRETBOX_PRIVATE_KEY_BYTES];
 };
 
-struct client_backend_state
+struct server_xdp_state
 {
     __u64 current_timestamp;
-};
-
-struct client_backend_buyer
-{
-    __u8 public_key[SIGN_PUBLIC_KEY_BYTES];
 };

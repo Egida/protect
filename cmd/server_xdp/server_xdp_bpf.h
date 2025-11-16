@@ -3,10 +3,10 @@
     Licensed under the Network Next Source Available License 2.0
 */
 
-#ifndef CLIENT_BACKEND_BPF_H
-#define CLIENT_BACKEND_BPF_H
+#ifndef SERVER_XDP_BPF_H
+#define SERVER_XDP_BPF_H
 
-#include "client_backend.h"
+#include "server_xdp.h"
 
 #ifdef __linux__
 #include <bpf/bpf.h>
@@ -23,7 +23,6 @@ struct bpf_t
     bool attached_skb;
     int config_fd;
     int state_fd;
-    int buyer_fd;
 #endif // #ifdef __linux__
 };
 
@@ -31,4 +30,4 @@ bool bpf_init( struct bpf_t * bpf, uint32_t public_address );
 
 void bpf_shutdown( struct bpf_t * bpf );
 
-#endif // #ifndef CLIENT_BACKEND_BPF_H
+#endif // #ifndef SERVER_XDP_BPF_H

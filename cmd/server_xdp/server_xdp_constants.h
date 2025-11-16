@@ -3,9 +3,9 @@
     Licensed under the Network Next Source Available License 2.0
 */
 
-#ifndef CLIENT_BACKEND_CONSTANTS_H
-#define CLIENT_BACKEND_CONSTANTS_H
+#ifndef SERVER_XDP_CONSTANTS_H
+#define SERVER_XDP_CONSTANTS_H
 
 // ...
 
-#endif // #ifndef CLIENT_BACKEND_CONSTANTS_H
+#endif // #ifndef SERVER_XDP_CONSTANTS_H
