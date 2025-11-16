@@ -27,18 +27,18 @@ bool read_config( struct config_t * config )
         return false;
     }
 
-    if ( !platform_parse_address( public_address_env, &config->public_address, &config->port ) )
+    uint16_t port;
+    if ( !platform_parse_address( public_address_env, &config->public_address, &port ) )
     {
         printf( "\nerror: invalid public address '%s'\n\n", public_address_env );
         return false;
     }
 
-    printf( "Public address is %d.%d.%d.%d:%d\n", 
+    printf( "Public address is %d.%d.%d.%d\n", 
         ((uint8_t*)&config->public_address)[3], 
         ((uint8_t*)&config->public_address)[2], 
         ((uint8_t*)&config->public_address)[1], 
-        ((uint8_t*)&config->public_address)[0],
-        config->port
+        ((uint8_t*)&config->public_address)[0]
     );
 
     // -----------------------------------------------------------------------------------------------------------------------------

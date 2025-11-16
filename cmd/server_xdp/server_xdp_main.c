@@ -26,7 +26,6 @@
 bool main_init( struct main_t * main, struct config_t * config, struct bpf_t * bpf )
 {
     main->start_time = time( NULL );
-    main->port = config->port;
     main->public_address = config->public_address;
 
     struct server_xdp_config xdp_config;
