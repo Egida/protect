@@ -16,63 +16,10 @@ DONE
 
 TODO
 
-    Stopping point for weekend.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
+    SSH back into the linux box
 
     -------------
-    
+
     Extend the server so it uses AF_XDP to send and receive packets on linux.
 
     -------------
