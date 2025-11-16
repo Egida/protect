@@ -310,7 +310,7 @@ SEC("server_xdp_xdp") int server_xdp_filter( struct xdp_md *ctx )
                 if ( (void*)udp + sizeof(struct udphdr) <= data_end )
                 {
                     // IMPORTANT: Leave any system UDP packets alone
-                    if ( udp->dest <= 1024 )
+                    if ( udp->dest < 1024 )
                         return XDP_PASS;
 
                     int key = 0;
@@ -321,7 +321,7 @@ SEC("server_xdp_xdp") int server_xdp_filter( struct xdp_md *ctx )
                         return XDP_PASS;
                     }
 
-                    if ( ip->daddr == config->public_address && udp->dest == config->port )
+                    if ( ip->daddr == config->public_address )
                     {
                         __u8 * packet_data = (unsigned char*) (void*)udp + sizeof(struct udphdr);
 
