@@ -32,8 +32,6 @@ DONE
 
     Look up the server ethernet address and save it to a variable
 
-TODO
-
     First look up the gateway IP address for the network interface by name:
 
         ubuntu@latitude:~/protect$ netstat -rn | grep UG
@@ -50,7 +48,9 @@ TODO
 
     ps. We assume that XDP servers will *never* be doing any direct communication within a local network.
 
-    -------------
+    Actually, ended up using "ip neigh show" instead of "arp -a" because the latter takes several seconds and ip is instant.
+
+TODO
 
     ... Study docs on sending packets with AF_XDP ...
 
