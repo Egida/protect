@@ -159,7 +159,7 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
     char buffer[1024];
     while ( fgets( buffer, sizeof(buffer), file ) != NULL )
     {
-        if ( strlen( buffer ) > 0 )
+        if ( strlen( buffer ) > 0 && strstr( buffer, "UG" ) && strstr( buffer, interface_name ) )
         {
             printf( "%s", buffer );
         }
