@@ -746,7 +746,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                         switch ( packet_data[0] )
                         {
-                            case NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST:
+                            case NEXT_PACKET_CLIENT_BACKEND_INIT_REQUEST:
                             {
                                 if ( (void*)packet_data + sizeof(struct next_client_backend_init_request_packet_t) > data_end )
                                 {
@@ -842,7 +842,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                             }
                             break;
 
-                            case NEXT_CLIENT_BACKEND_PACKET_PING:
+                            case NEXT_PACKET_CLIENT_BACKEND_PING:
                             {
                                 if ( (void*)packet_data + sizeof(struct next_client_backend_ping_packet_t) > data_end )
                                 {
