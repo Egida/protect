@@ -441,7 +441,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     // the server has started successfully
 
     char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
-    next_info( "server started on %s (xdp)", next_address_to_string( &public_address, address_string ) );
+    next_info( "server started on %s [xdp]", next_address_to_string( &public_address, address_string ) );
 
 #else // #ifdef __linux __
 
