@@ -120,7 +120,7 @@ static bool get_interface_mac_address( const char * interface_name, char * mac_a
 
     if ( fgets( mac_address, 18, file ) == NULL ) 
     {
-        fclose( filse );
+        fclose( file );
         return false;
     }
 
@@ -222,7 +222,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     char mac_address_string[18];
     
-    if ( !get_interface_mac_address( interface_nam, mac_address_string ) )
+    if ( !get_interface_mac_address( interface_name, mac_address_string ) )
     {
         next_error( "server could not get mac address of network interface" );
         return NULL;
