@@ -151,6 +151,8 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
 {
     memset( mac_address, 0, 6 );
 
+    // first find the gateway IP address for the network interface via netstat
+
     const char * gateway_ip_string = NULL;
 
     FILE * file = popen( "netstat -rn", "r" );
@@ -174,7 +176,21 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
     pclose( file );
 
     if ( !gateway_ip_string )
+    {
         return false;
+    }
+
+    // parse the address and make sure it's a valid ipv4
+
+    next_address_t address;
+    if ( !next_address_parse( &gateway_ip_string ) || address.type != NEXT_ADDRESS_IPV4 )
+    {
+        return false;
+    }
+
+    // now look up in the arp cache to find the ethernet address corresponding to the gateway IP address (it should also be tied to our interface name)
+
+    // ...
 
     printf( "%s\n", gateway_ip_string );
 
