@@ -139,7 +139,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     
     server->context = context;
 
-#if __linux__
+#ifdef __linux__
 
     // AF_XDP can only be run as root
 
@@ -239,7 +239,12 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
     next_info( "server started on %s (xdp)", next_address_to_string( &public_address, address_string ) );
 
-#else // #if __linux __
+    // save the server public address and port in network order (big endian)
+
+    server->server_address_big_endian = public_address_ipv4;
+    server->server_port_big_endian = next_platform_htons( public_address.port );
+
+#else // #ifdef __linux __
 
     server->socket = next_platform_socket_create( server->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, NEXT_SOCKET_SEND_BUFFER_SIZE, NEXT_SOCKET_RECEIVE_BUFFER_SIZE );
     if ( server->socket == NULL )
@@ -252,7 +257,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
     next_info( "server started on %s", next_address_to_string( &bind_address, address_string ) );
 
-#endif // #if __linux__
+#endif // #ifdef __linux__
 
     server->bind_address = bind_address;
     server->public_address = public_address;
@@ -327,6 +332,10 @@ void next_server_client_timed_out( next_server_t * server, int client_index )
     next_info( "client %s timed out from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
     server->client_connected[client_index] = 0;
     memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
+#ifdef __linux__
+    server->client_address_big_endian[client_index] = 0;
+    server->client_port_big_endian[client_index] = 0;
+#endif // #ifdef __linux__
 }
 
 void next_server_client_disconnected( next_server_t * server, int client_index )
@@ -337,6 +346,10 @@ void next_server_client_disconnected( next_server_t * server, int client_index )
     next_info( "client %s disconnected from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
     server->client_connected[client_index] = 0;
     memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
+#ifdef __linux__
+    server->client_address_big_endian[client_index] = 0;
+    server->client_port_big_endian[client_index] = 0;
+#endif // #ifdef __linux__
 }
 
 void next_server_update_timeout( next_server_t * server )
@@ -524,6 +537,12 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
     if ( !server->client_connected[client_index] )
         return NULL;
 
+#ifdef __linux__
+
+    // todo: AF_XDP
+
+#else // #ifdef __linux__
+
     next_platform_mutex_acquire( &server->client_payload_mutex );
     uint64_t sequence = ++server->client_payload_sequence[client_index];
     next_platform_mutex_release( &server->client_payload_mutex );
@@ -552,6 +571,8 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
 
         return NULL;
     }
+
+#endif // #ifdef __linux__
 }
 
 void next_server_finish_packet_internal( struct next_server_t * server, uint8_t * packet_data, int packet_bytes )

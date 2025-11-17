@@ -24,21 +24,21 @@ DONE
 
     Added generate packet header function
 
+    Sketch out data structures needed by AF_XDP for building packet header
+
+    Keep an array of the client_address_big_endian and client_port_big_endian so we can pass in to the packet header as-is.
+
 TODO
+
+    Stash the server_address_big_endian and server_port_big_endian so we can pass it in to the packet header as-is.
+
+    -------------
 
     Look up the server ethernet address and save it to a variable
 
     -------------
 
     Look up the gateway ethernet address for the network interface and save it to a variable
-
-    -------------
-
-    Stash the server_address_big_endian and server_port_big_endian so we can pass it in to the packet header as-is.
-
-    -------------
-
-    Keep an array of the client_address_big_endian and client_port_big_endian so we can pass in to the packet header as-is.
 
     -------------
 
