@@ -157,8 +157,8 @@ struct next_client_backend_init_request_packet_t
 
 void endian_fix_init_request_packet( struct next_client_backend_init_request_packet_t * packet )
 {
-    endian_fix_connect_token( &token->connect_token );
-    endian_fix_u64( &token->request_id );
+    endian_fix_connect_token( &packet->connect_token );
+    endian_fix_u64( &packet->request_id );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -173,8 +173,8 @@ struct next_client_backend_init_response_packet_t
 
 void endian_fix_init_response_packet( struct next_client_backend_init_response_packet_t * packet )
 {
-    endian_fix_u64( &token->request_id );
-    endian_fix_backend_token( &token->backend_token );
+    endian_fix_u64( &packet->request_id );
+    endian_fix_backend_token( &packet->backend_token );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -193,9 +193,9 @@ struct next_client_backend_ping_packet_t
 
 void endian_fix_ping_packet( struct next_client_backend_ping_packet_t * packet )
 {
-    endian_fix_u64( &token->request_id );
-    endian_fix_u64( &token->ping_sequence );
-    endian_fix_backend_token( &token->backend_token );
+    endian_fix_u64( &packet->request_id );
+    endian_fix_u64( &packet->ping_sequence );
+    endian_fix_backend_token( &packet->backend_token );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -210,8 +210,8 @@ struct next_client_backend_pong_packet_t
 
 void endian_fix_pong_packet( struct next_client_backend_pong_packet_t * packet )
 {
-    endian_fix_u64( &token->request_id );
-    endian_fix_u64( &token->ping_sequence );
+    endian_fix_u64( &packet->request_id );
+    endian_fix_u64( &packet->ping_sequence );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -229,8 +229,8 @@ struct next_client_backend_refresh_token_request_packet_t
 
 void endian_fix_refresh_token_request_packet( struct next_client_backend_refresh_token_request_packet_t * packet )
 {
-    endian_fix_u64( &token->request_id );
-    endian_fix_backend_token( &token->backend_token );
+    endian_fix_u64( &packet->request_id );
+    endian_fix_backend_token( &packet->backend_token );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -245,8 +245,8 @@ struct next_client_backend_refresh_token_response_packet_t
 
 void endian_fix_refresh_token_response_packet( struct next_client_backend_refresh_token_response_packet_t * packet )
 {
-    endian_fix_u64( &token->request_id );
-    endian_fix_backend_token( &token->backend_token );
+    endian_fix_u64( &packet->request_id );
+    endian_fix_backend_token( &packet->backend_token );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
