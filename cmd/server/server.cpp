@@ -27,7 +27,7 @@ int main()
         return 1;        
     }
 
-    next_server_t * server = next_server_create( NULL, "0.0.0.0:40000", "127.0.0.1:40000" );
+    next_server_t * server = next_server_create( NULL, "0.0.0.0:40000", "45.250.253.243:40000" );
     if ( !server )
     {
         next_error( "could not create server" );
