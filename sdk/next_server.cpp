@@ -166,7 +166,7 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
                 token = strtok( NULL, " " );
                 if ( token )
                 {
-                    printf( "%s", p );                    
+                    printf( "%s", token );                    
                     found_gateway_ip = true;
                     break;
                 }
