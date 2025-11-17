@@ -164,12 +164,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
                 if ( ntohl( sa->sin_addr.s_addr ) == public_address_ipv4 )
                 {
                     strncpy( interface_name, iap->ifa_name, sizeof(interface_name) );
-                    bpf->interface_index = if_nametoindex( iap->ifa_name );
-                    if ( !bpf->interface_index ) 
-                    {
-                        next_error( "server if_nametoindex failed" );
-                        return NULL;
-                    }
                     found = true;
                     break;
                 }
