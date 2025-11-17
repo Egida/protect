@@ -149,31 +149,34 @@ static bool get_interface_mac_address( const char * interface_name, uint8_t * ma
 
 static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_address )
 {
-    // todo
     memset( mac_address, 0, 6 );
 
-    bool found_gateway_ip = false;
+    const char * gateway_ip_string = NULL;
 
     FILE * file = popen( "netstat -rn", "r" );
-    char buffer[1024];
-    while ( fgets( buffer, sizeof(buffer), file ) != NULL )
+    char netstat_buffer[1024];
+    while ( fgets( netstat_buffer, sizeof(netstat_buffer), file ) != NULL )
     {
-        if ( strlen( buffer ) > 0 && strstr( buffer, "UG" ) && strstr( buffer, interface_name ) )
+        if ( strlen( netstat_buffer ) > 0 && strstr( netstat_buffer, "UG" ) && strstr( netstat_buffer, interface_name ) )
         {
-            char * token = strtok( buffer, " " );
+            char * token = strtok( netstat_buffer, " " );
             if ( token )
             {
                 token = strtok( NULL, " " );
                 if ( token )
                 {
-                    printf( "%s", token );                    
-                    found_gateway_ip = true;
+                    gateway_ip_string = token;
                     break;
                 }
             }
         }
     }
     pclose( file );
+
+    if ( !gateway_ip_string )
+        return false;
+
+    printf( "%s\n", gateway_ip_string );
 
     // todo
     fflush( stdout );
