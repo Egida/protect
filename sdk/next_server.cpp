@@ -404,6 +404,66 @@ uint64_t next_server_id( next_server_t * server )
     return server->server_id;
 }
 
+#ifdef __linux__
+
+static uint16_t ipv4_checksum( const void * data, size_t header_length )
+{
+    unsigned long sum = 0;
+    const uint16_t * p = (const uint16_t*) data;
+    while ( header_length > 1 )
+    {
+        sum += *p++;
+        if ( sum & 0x80000000 )
+        {
+            sum = ( sum & 0xFFFF ) + ( sum >> 16 );
+        }
+        header_length -= 2;
+    }
+    while ( sum >> 16 )
+    {
+        sum = (sum & 0xFFFF) + (sum >> 16);
+    }
+    return ~sum;
+}
+
+int generate_packet_header( void * data, uint8_t * server_ethernet_address, uint8_t * client_ethernet_address, uint32_t server_address_big_endian, uint32_t client_address_big_endian, uint16_t server_port_big_endian, uint16_t client_port_big_endian, int payload_bytes )
+{
+    struct ethhdr * eth = data;
+    struct iphdr  * ip  = data + sizeof( struct ethhdr );
+    struct udphdr * udp = (void*) ip + sizeof( struct iphdr );
+
+    // generate ethernet header
+
+    memcpy( eth->h_source, server_ethernet_address, ETH_ALEN );
+    memcpy( eth->h_dest, client_ethernet_address, ETH_ALEN );
+    eth->h_proto = __constant_htons( ETH_P_IP );
+
+    // generate ip header
+
+    ip->ihl      = 5;
+    ip->version  = 4;
+    ip->tos      = 0x0;
+    ip->id       = 0;
+    ip->frag_off = __constant_htons( 0x4000 );
+    ip->ttl      = 64;
+    ip->tot_len  = __constant_htons( sizeof(struct iphdr) + sizeof(struct udphdr) + payload_bytes );
+    ip->protocol = IPPROTO_UDP;
+    ip->saddr    = server_address_big_endian;
+    ip->daddr    = client_address_big_endian;
+    ip->check    = ipv4_checksum( ip, sizeof( struct iphdr ) );
+
+    // generate udp header
+
+    udp->source  = server_port_big_endian;
+    udp->dest    = client_port_big_endian;
+    udp->len     = __constant_htons( sizeof(struct udphdr) + payload_bytes );
+    udp->check   = 0;
+
+    return sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr) + payload_bytes; 
+}
+
+#endif // #ifdef __linux__
+
 uint8_t * next_server_start_packet_internal( struct next_server_t * server, next_address_t * to, uint8_t packet_type )
 {
     next_assert( server );

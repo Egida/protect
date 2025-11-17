@@ -24,7 +24,11 @@ DONE
 
 TODO
 
-    Study docs and work out how to implement the send and receive with AF_XDP
+    Implement send with AF_XDP
+
+    -------------
+
+    Implement receive with AF_XDP
 
     -------------
 
