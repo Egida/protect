@@ -65,21 +65,21 @@
 #define bpf_htons(x)        (x)
 #endif // #if NEXT_LITTLE_ENDIAN
 
-void endian_fix( uint16_t * value )
+void endian_fix_u16( __u16 * value )
 {
 #if NEXT_BIG_ENDIAN
     __builtin_bswap16( *value );
 #endif // #if NEXT_BIG_ENDIAN
 }
 
-void endian_fix( uint32_t * value )
+void endian_fix_u32( __u32 * value )
 {
 #if NEXT_BIG_ENDIAN
     __builtin_bswap32( *value );
 #endif // #if NEXT_BIG_ENDIAN
 }
 
-void endian_fix( uint64_t * value )
+void endian_fix_u64( __u64 * value )
 {
 #if NEXT_BIG_ENDIAN
     __builtin_bswap64( *value );
@@ -108,14 +108,13 @@ struct next_connect_token_t
     __u8 signature[NEXT_CONNECT_TOKEN_SIGNATURE_BYTES];
 };
 
-void endian_fix( struct next_connect_token_t * token )
+void endian_fix_connect_token( struct next_connect_token_t * token )
 {
-    endian_fix( &token->version );
-    endian_fix( &token->expire_timestamp );
-    endian_fix( &token->buyer_id );
-    endian_fix( &token->server_id );
-    endian_fix( &token->user_hash );
-    endian_fix( &token->user_hash );
+    endian_fix_u64( &token->version );
+    endian_fix_u64( &token->expire_timestamp );
+    endian_fix_u64( &token->buyer_id );
+    endian_fix_u64( &token->server_id );
+    endian_fix_u64( &token->user_hash );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -133,14 +132,14 @@ struct next_client_backend_token_t
     __u16 client_port;                                                    // big endian
 };
 
-void endian_fix( struct next_client_backend_token_t * token )
+void endian_fix_backend_token( struct next_client_backend_token_t * token )
 {
-    endian_fix( &token->version );
-    endian_fix( &token->expire_timestamp );
-    endian_fix( &token->buyer_id );
-    endian_fix( &token->server_id );
-    endian_fix( &token->session_id );
-    endian_fix( &token->user_hash );
+    endian_fix_u64( &token->version );
+    endian_fix_u64( &token->expire_timestamp );
+    endian_fix_u64( &token->buyer_id );
+    endian_fix_u64( &token->server_id );
+    endian_fix_u64( &token->session_id );
+    endian_fix_u64( &token->user_hash );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -156,10 +155,10 @@ struct next_client_backend_init_request_packet_t
     __u64 request_id;
 };
 
-void endian_fix( struct next_client_backend_init_request_packet_t * packet )
+void endian_fix_init_request_packet( struct next_client_backend_init_request_packet_t * packet )
 {
-    endian_fix( &token->connect_token );
-    endian_fix( &token->request_id );
+    endian_fix_connect_token( &packet->connect_token );
+    endian_fix_u64( &packet->request_id );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -172,10 +171,10 @@ struct next_client_backend_init_response_packet_t
     struct next_client_backend_token_t backend_token;
 };
 
-void endian_fix( struct next_client_backend_init_response_packet_t * packet )
+void endian_fix_init_response_packet( struct next_client_backend_init_response_packet_t * packet )
 {
-    endian_fix( &token->request_id );
-    endian_fix( &token->backend_token );
+    endian_fix_u64( &packet->request_id );
+    endian_fix_backend_token( &packet->backend_token );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -192,11 +191,11 @@ struct next_client_backend_ping_packet_t
     struct next_client_backend_token_t backend_token;
 };
 
-void endian_fix( struct next_client_backend_ping_packet_t * packet )
+void endian_fix_ping_packet( struct next_client_backend_ping_packet_t * packet )
 {
-    endian_fix( &token->request_id );
-    endian_fix( &token->ping_sequence );
-    endian_fix( &token->backend_token );
+    endian_fix_u64( &packet->request_id );
+    endian_fix_u64( &packet->ping_sequence );
+    endian_fix_backend_token( &packet->backend_token );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -209,10 +208,10 @@ struct next_client_backend_pong_packet_t
     __u64 ping_sequence;
 };
 
-void endian_fix( struct next_client_backend_pong_packet_t * packet )
+void endian_fix_pong_packet( struct next_client_backend_pong_packet_t * packet )
 {
-    endian_fix( &token->request_id );
-    endian_fix( &token->ping_sequence );
+    endian_fix_u64( &packet->request_id );
+    endian_fix_u64( &packet->ping_sequence );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -228,10 +227,10 @@ struct next_client_backend_refresh_token_request_packet_t
     struct next_client_backend_token_t backend_token;
 };
 
-void endian_fix( struct next_client_backend_refresh_token_request_packet_t * packet )
+void endian_fix_refresh_token_request_packet( struct next_client_backend_refresh_token_request_packet_t * packet )
 {
-    endian_fix( &token->request_id );
-    endian_fix( &token->backend_token );
+    endian_fix_u64( &packet->request_id );
+    endian_fix_backend_token( &packet->backend_token );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -244,10 +243,10 @@ struct next_client_backend_refresh_token_response_packet_t
     struct next_client_backend_token_t backend_token;
 };
 
-void endian_fix( struct next_client_backend_refresh_token_response_packet_t * packet )
+void endian_fix_refresh_token_response_packet( struct next_client_backend_refresh_token_response_packet_t * packet )
 {
-    endian_fix( &token->request_id );
-    endian_fix( &token->backend_token );
+    endian_fix_u64( &packet->request_id );
+    endian_fix_backend_token( &packet->backend_token );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -747,7 +746,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                         switch ( packet_data[0] )
                         {
-                            case NEXT_CLIENT_BACKEND_PACKET_INIT_REQUEST:
+                            case NEXT_PACKET_CLIENT_BACKEND_INIT_REQUEST:
                             {
                                 if ( (void*)packet_data + sizeof(struct next_client_backend_init_request_packet_t) > data_end )
                                 {
@@ -757,8 +756,8 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                                 struct next_client_backend_init_request_packet_t * request = (struct next_client_backend_init_request_packet_t*) packet_data;
 
-                                const uint64_t buyer_id = request->connect_token.buyer_id;
-                                endian_fix( &buyer_id );
+                                __u64 buyer_id = request->connect_token.buyer_id;
+                                endian_fix_u64( &buyer_id );
 
                                 struct client_backend_buyer * buyer = (struct client_backend_buyer*) bpf_map_lookup_elem( &client_backend_buyer_map, &buyer_id );
                                 if ( buyer == NULL )
@@ -778,7 +777,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                     return XDP_DROP;
                                 }
 
-                                endian_fix( request );
+                                endian_fix_init_request_packet( request );
 
                                 if ( request->connect_token.version != 0 )
                                 {
@@ -786,7 +785,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                     return XDP_DROP;
                                 }
 
-                                if ( request->client_public_address != ip->saddr )
+                                if ( request->connect_token.client_public_address != ip->saddr )
                                 {
                                     debug_printf( "connect token client address mismatch" );
                                     return XDP_DROP;
@@ -815,7 +814,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                                 struct next_client_backend_init_response_packet_t * response = (struct next_client_backend_init_response_packet_t*) packet_data;
 
-                                response->type = NEXT_CLIENT_BACKEND_PACKET_INIT_RESPONSE;
+                                response->type = NEXT_PACKET_CLIENT_BACKEND_INIT_RESPONSE;
                                 response->request_id = request_id;
                                 response->backend_token.version = NEXT_CLIENT_BACKEND_TOKEN_VERSION;
                                 response->backend_token.expire_timestamp = current_timestamp + NEXT_CLIENT_BACKEND_TOKEN_EXPIRE_SECONDS;
@@ -826,7 +825,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                 response->backend_token.client_address = ip->saddr;
                                 response->backend_token.client_port = udp->source;
 
-                                endian_fix( response );
+                                endian_fix_init_response_packet( response );
 
                                 int result = proton_secretbox_encrypt( (__u8*) &response->backend_token, sizeof(struct next_client_backend_token_t), 0, config->client_backend_private_key, PROTON_SECRETBOX_KEY_BYTES );
                                 if ( result != 0 )
@@ -843,7 +842,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                             }
                             break;
 
-                            case NEXT_CLIENT_BACKEND_PACKET_PING:
+                            case NEXT_PACKET_CLIENT_BACKEND_PING:
                             {
                                 if ( (void*)packet_data + sizeof(struct next_client_backend_ping_packet_t) > data_end )
                                 {
@@ -860,7 +859,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                     return XDP_DROP;
                                 }
 
-                                endian_fix( request );
+                                endian_fix_ping_packet( request );
 
                                 if ( request->backend_token.client_address != ip->saddr )
                                 {
@@ -895,11 +894,11 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                                 struct next_client_backend_pong_packet_t * response = (struct next_client_backend_pong_packet_t*) packet_data;
 
-                                response->type = NEXT_CLIENT_BACKEND_PACKET_PONG;
+                                response->type = NEXT_PACKET_CLIENT_BACKEND_PONG;
                                 response->request_id = request_id;
                                 response->ping_sequence = ping_sequence;
 
-                                endian_fix( response );
+                                endian_fix_pong_packet( response );
 
                                 reflect_packet( data, sizeof(struct next_client_backend_pong_packet_t), magic );
 
@@ -909,7 +908,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                             }
                             break;
                             
-                            case NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN_REQUEST:
+                            case NEXT_PACKET_CLIENT_BACKEND_REFRESH_TOKEN_REQUEST:
                             {
                                 if ( (void*)packet_data + sizeof(struct next_client_backend_refresh_token_request_packet_t) > data_end )
                                 {
@@ -926,7 +925,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                     return XDP_DROP;
                                 }
 
-                                endian_fix( request );
+                                endian_fix_refresh_token_request_packet( request );
 
                                 if ( request->backend_token.client_address != ip->saddr )
                                 {
@@ -964,7 +963,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
 
                                 struct next_client_backend_refresh_token_response_packet_t * response = (struct next_client_backend_refresh_token_response_packet_t*) packet_data;
 
-                                response->type = NEXT_CLIENT_BACKEND_PACKET_REFRESH_TOKEN_RESPONSE;
+                                response->type = NEXT_PACKET_CLIENT_BACKEND_REFRESH_TOKEN_RESPONSE;
                                 response->request_id = request_id;
                                 response->backend_token.version = NEXT_CLIENT_BACKEND_TOKEN_VERSION;
                                 response->backend_token.expire_timestamp = current_timestamp + NEXT_CLIENT_BACKEND_TOKEN_EXPIRE_SECONDS;
@@ -973,7 +972,7 @@ SEC("client_backend_xdp") int client_backend_xdp_filter( struct xdp_md *ctx )
                                 response->backend_token.session_id = session_id;
                                 response->backend_token.user_hash = user_hash;
 
-                                endian_fix( response );
+                                endian_fix_refresh_token_response_packet( response );
 
                                 result = proton_secretbox_encrypt( (__u8*) &response->backend_token, sizeof(struct next_client_backend_token_t), 0, config->client_backend_private_key, PROTON_SECRETBOX_KEY_BYTES );
                                 if ( result != 0 )
