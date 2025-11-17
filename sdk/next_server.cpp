@@ -87,6 +87,10 @@ struct next_server_t
     uint32_t client_address_big_endian[NEXT_MAX_CLIENTS];
     uint16_t client_port_big_endian[NEXT_MAX_CLIENTS];
 
+    next_platform_mutex_t frame_mutex;
+    uint32_t num_free_frames;
+    uint64_t frames[NEXT_NUM_SERVER_FRAMES];
+
     void * buffer;
     struct xsk_umem * umem;
     struct xsk_ring_cons receive_queue;
@@ -412,14 +416,32 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
-    char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
-    next_info( "server started on %s (xdp)", next_address_to_string( &public_address, address_string ) );
+    // initialize frame allocator
+
+    if ( !next_platform_mutex_create( &server->frame_mutex ) )
+    {
+        next_error( "server failed to create frame mutex" );
+        next_server_destroy( server );
+        return NULL;
+    }
+
+    for ( int j = 0; j < NEXT_NUM_SERVER_FRAMES; j++ )
+    {
+        server->frames[j] = j * NEXT_SERVER_FRAME_SIZE;
+    }
+
+    server->num_free_frames = NUM_FRAMES;
 
     // save the server public address and port in network order (big endian)
 
     server->server_address_big_endian = public_address_ipv4;
 
     server->server_port_big_endian = next_platform_htons( public_address.port );
+
+    // the server has started successfully
+
+    char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
+    next_info( "server started on %s (xdp)", next_address_to_string( &public_address, address_string ) );
 
 #else // #ifdef __linux __
 
@@ -474,6 +496,8 @@ void next_server_destroy( next_server_t * server )
     next_platform_mutex_destroy( &server->client_payload_mutex );
 
 #ifdef __linux__
+
+    next_platform_mutex_destroy( &server->frame_mutex );
 
     if ( server->xsk )
     {
