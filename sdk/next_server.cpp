@@ -31,6 +31,8 @@
 #include <memory.h>
 #include <stdio.h>
 
+#ifndef __linux__
+
 struct next_server_send_buffer_t
 {
     next_platform_mutex_t mutex;
@@ -52,6 +54,8 @@ struct next_server_receive_buffer_t
     uint8_t data[NEXT_MAX_PACKET_BYTES*NEXT_NUM_SERVER_FRAMES];
 };
 
+#endif // #ifndef __linux__
+
 struct next_server_t
 {
     void * context;
@@ -71,10 +75,6 @@ struct next_server_t
     next_platform_mutex_t client_payload_mutex;
     uint64_t client_payload_sequence[NEXT_MAX_CLIENTS];
 
-    next_server_send_buffer_t send_buffer;
-
-    next_server_receive_buffer_t receive_buffer;
-
     next_server_process_packets_t process_packets;
 
 #ifdef __linux__
@@ -85,6 +85,11 @@ struct next_server_t
     struct xsk_ring_cons complete_queue;
     struct xsk_ring_prod fill_queue;
     struct xsk_socket * xsk;
+
+#else // #ifdef __linux__
+
+    next_server_send_buffer_t send_buffer;
+    next_server_receive_buffer_t receive_buffer;
 
 #endif // #ifdef __linux__
 };
@@ -155,7 +160,28 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
-#endif // #if __linux__
+    // create xsk socket and assign to network interface queue
+
+    struct xsk_socket_config xsk_config;
+
+    memset( &xsk_config, 0, sizeof(xsk_config) );
+
+    xsk_config.rx_size = XSK_RING_PROD__DEFAULT_NUM_DESCS;
+    xsk_config.tx_size = XSK_RING_PROD__DEFAULT_NUM_DESCS;
+    xsk_config.xdp_flags = XDP_ZEROCOPY;                                            // force zero copy mode
+    xsk_config.bind_flags = XDP_USE_NEED_WAKEUP;                                    // manually wake up the driver when it needs to do work to send packets
+    xsk_config.libbpf_flags = XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD;
+
+    int queue_id = 0;
+
+    result = xsk_socket__create( &server->xsk, interface_name, queue_id, server->umem, &server->send_queue, &server->send_queue, &xsk_config );
+    if ( result )
+    {
+        next_error( "server could not create xsk socket" );
+        return NULL;
+    }
+
+#else // #if __linux __
 
     server->socket = next_platform_socket_create( server->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, NEXT_SOCKET_SEND_BUFFER_SIZE, NEXT_SOCKET_RECEIVE_BUFFER_SIZE );
     if ( server->socket == NULL )
@@ -164,6 +190,8 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         next_server_destroy( server );
         return NULL;
     }
+
+#endif // #if __linux__
 
     char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
     next_info( "server started on %s", next_address_to_string( &bind_address, address_string ) );
@@ -184,12 +212,16 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
+#ifndef __linux__
+
     if ( !next_platform_mutex_create( &server->send_buffer.mutex ) )
     {
         next_error( "server failed to create send buffer mutex" );
         next_server_destroy( server );
         return NULL;
     }
+
+#endif // #ifndef __linux__
 
     return server;    
 }
@@ -199,7 +231,9 @@ void next_server_destroy( next_server_t * server )
     next_assert( server );
     next_assert( server->state == NEXT_SERVER_STOPPED );        // IMPORTANT: Please stop the server and wait until state is NEXT_SERVER_STOPPED before destroying it
 
+#ifndef __linux_
     next_platform_mutex_destroy( &server->send_buffer.mutex );
+#endif // #ifndef __linux__
     next_platform_mutex_destroy( &server->client_payload_mutex );
 
     if ( server->socket )
@@ -326,6 +360,13 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
     next_assert( to );
     next_assert( client_index >= 0 );
 
+#ifdef __linux__
+
+    // todo: AF_XDP
+    return NULL;
+
+#else // #ifdef __linux__
+
     next_platform_mutex_acquire( &server->send_buffer.mutex );
 
     uint8_t * packet_data = NULL;
@@ -350,6 +391,8 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
     server->send_buffer.packet_bytes[frame] = 0;
 
     return packet_data;
+
+#endif // #ifdef __linux__
 }
 
 uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * out_sequence )
@@ -386,7 +429,7 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
     }
     else
     {
-        // todo: server to client packet
+        // todo: next packet
 
         return NULL;
     }
@@ -395,6 +438,12 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
 void next_server_finish_packet_internal( struct next_server_t * server, uint8_t * packet_data, int packet_bytes )
 {
     next_assert( server );
+
+#ifdef __linux__
+
+    // todo: AF_XDP
+
+#else // #ifdef __linux__
 
     size_t offset = ( packet_data - server->send_buffer.data );
 
@@ -434,6 +483,7 @@ void next_server_finish_packet_internal( struct next_server_t * server, uint8_t 
     next_generate_pittle( a, from_address_data, to_address_data, packet_bytes );
     next_generate_chonkle( b, magic, from_address_data, to_address_data, packet_bytes );
 
+#endif // #ifdef __linux__
 }
 
 void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_data, int packet_bytes )
@@ -449,6 +499,12 @@ void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_d
 {
     next_assert( server );
 
+#ifdef __linux__
+
+    // todo: AF_XDP
+
+#else // #ifdef __linux__
+
     size_t offset = ( packet_data - server->send_buffer.data );
 
     offset -= offset % NEXT_MAX_PACKET_BYTES;
@@ -461,11 +517,19 @@ void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_d
     next_assert( frame < NEXT_NUM_SERVER_FRAMES );  
 
     server->send_buffer.packet_bytes[frame] = 0;
+
+#endif // #ifdef __linux__
 }
 
 void next_server_send_packets( struct next_server_t * server )
 {
     next_assert( server );
+
+#ifdef __linux__
+
+    // todo: AF_XDP
+
+#else // #ifdef __linux__
 
     const int num_packets = (int) server->send_buffer.current_frame;
 
@@ -483,7 +547,9 @@ void next_server_send_packets( struct next_server_t * server )
             next_assert( packet_bytes <= NET_MAX_PACKET_BYTES );
             next_platform_socket_send_packet( server->socket, &server->send_buffer.to[i], packet_data, (int) server->send_buffer.packet_bytes[i] );
         }
-    }    
+    }
+
+#endif // #ifdef __linux__
 }
 
 void next_server_process_packet_internal( next_server_t * server, next_address_t * from, uint8_t * packet_data, int packet_bytes )
@@ -513,6 +579,12 @@ void next_server_receive_packets( next_server_t * server )
 {
     next_assert( server );
 
+#ifdef __linux__
+
+    // todo: AF_XDP
+
+#else // #ifdef __linux__
+
     server->receive_buffer.current_frame = 0;
 
     while ( 1 )
@@ -527,8 +599,6 @@ void next_server_receive_packets( next_server_t * server )
         if ( packet_bytes == 0 )
             break;
 
-#ifndef __linux__
-
         // basic packet filter
 
         if ( !next_basic_packet_filter( packet_data, packet_bytes ) )
@@ -542,13 +612,6 @@ void next_server_receive_packets( next_server_t * server )
         // todo: advanced packet filter
 
 #endif // #if NEXT_ADVANCED_PACKET_FILTER
-
-        // IMPORTANT: On Linux the server XDP program does packet filtering for us already.
-        // Just drop any packets smaller than 18 bytes (out of an abundance of caution...)
-        if ( packet_bytes < 18 )
-            continue;
-
-#endif // #ifndef __linux__
 
         const uint8_t packet_type = packet_data[0];
 
@@ -615,11 +678,22 @@ void next_server_receive_packets( next_server_t * server )
             next_server_process_packet_internal( server, &from, packet_data, packet_bytes );            
         }
     }
+
+#endif // #ifdef __linux__
 }
 
 struct next_server_process_packets_t * next_server_process_packets_start( struct next_server_t * server )
 {
     next_assert( server );
+
+#ifdef __linux__
+
+    // todo: AF_XDP
+    memset( &server->process_packets, 0, sizeof(server->process_packets) );
+    return &server->process_packets;
+
+#else // #ifdef __linux__
+
     next_assert( !server->receive_buffer.processing_packets );          // IMPORTANT: You must always call next_server_process_packets_finish
 
     const int num_packets = server->receive_buffer.current_frame;
@@ -640,6 +714,8 @@ struct next_server_process_packets_t * next_server_process_packets_start( struct
     server->receive_buffer.processing_packets = true;
 
     return &server->process_packets;
+
+#endif // #ifdef __linux__
 }
 
 void next_server_packet_processed( struct next_server_t * server, uint8_t * packet_data )
@@ -647,16 +723,33 @@ void next_server_packet_processed( struct next_server_t * server, uint8_t * pack
     next_assert( server );
     next_assert( packet_data );
 
+#ifdef __linux__
+
+    // todo: AF_XDP
+
+#else // #ifdef __linux__
+
     // ...
 
     (void) server;
     (void) packet_data;
+
+#endif // #ifdef __linux__
 }
 
 void next_server_process_packets_finish( struct next_server_t * server )
 {
     next_assert( server );
+
+#ifdef __linux__
+
+    // todo: AF_XDP
+
+#else // #ifdef __linux__
+
     next_assert( server->receive_buffer.processing_packets );
     server->receive_buffer.processing_packets = false;
     server->process_packets.num_packets = 0;
+
+#endif // #ifdef __linux__
 }
