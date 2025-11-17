@@ -133,7 +133,7 @@ static bool get_interface_mac_address( const char * interface_name, uint8_t * ma
     mac_address[3] = (uint8_t) strtol( mac_address_string + 6, mac_address_string + 8, 16 );
     mac_address[2] = (uint8_t) strtol( mac_address_string + 9, mac_address_string + 11, 16 );
     mac_address[1] = (uint8_t) strtol( mac_address_string + 12, mac_address_string + 14, 16 );
-    mac_address[0] = (uint8_t) strtol( mac_address_string + 15, mac_address_string + 17, 16 );
+    mac_address[0] = (uint8_t) strtol( mac_address_string + 15, mac_address_string + 17`, 16 );
 
     fclose( file );
 
@@ -229,7 +229,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // look up the ethernet address of the network interface
 
-    if ( !get_interface_mac_address( interface_name, server_ethernet_address ) )
+    if ( !get_interface_mac_address( interface_name, server->server_ethernet_address ) )
     {
         next_error( "server could not get mac address of network interface" );
         next_server_destroy( server );
