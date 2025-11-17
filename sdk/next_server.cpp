@@ -210,7 +210,19 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
     }
     pclose( file );
 
-    printf( "gateway mac address string = '%s'\n", mac_address_string );
+    mac_address_string[2] = 0;
+    mac_address_string[5] = 0;
+    mac_address_string[8] = 0;
+    mac_address_string[11] = 0;
+    mac_address_string[14] = 0;
+    mac_address_string[17] = 0;
+
+    mac_address[5] = (uint8_t) strtol( mac_address_string + 0, NULL, 16 );
+    mac_address[4] = (uint8_t) strtol( mac_address_string + 3, NULL, 16 );
+    mac_address[3] = (uint8_t) strtol( mac_address_string + 6, NULL, 16 );
+    mac_address[2] = (uint8_t) strtol( mac_address_string + 9, NULL, 16 );
+    mac_address[1] = (uint8_t) strtol( mac_address_string + 12, NULL, 16 );
+    mac_address[0] = (uint8_t) strtol( mac_address_string + 15, NULL, 16 );
 
     return true;
 }
