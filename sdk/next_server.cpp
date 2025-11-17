@@ -135,8 +135,8 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // find the network interface that matches the public address
 
-    char network_interface_name[1024];
-    memset( network_interface_name, 0, sizeof(network_interface_name) );
+    char interface_name[1024];
+    memset( interface_name, 0, sizeof(interface_name) );
     {
         bool found = false;
 
@@ -154,7 +154,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
                 struct sockaddr_in * sa = (struct sockaddr_in*) iap->ifa_addr;
                 if ( ntohl( sa->sin_addr.s_addr ) == public_address )
                 {
-                    strncpy( network_interface_name, iap->ifa_name, sizeof(network_interface_name) );
+                    strncpy( interface_name, iap->ifa_name, sizeof(interface_name) );
                     bpf->interface_index = if_nametoindex( iap->ifa_name );
                     if ( !bpf->interface_index ) 
                     {
