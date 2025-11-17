@@ -115,6 +115,12 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
+    if ( public_address.type != NEXT_ADDRESS_IPV4 )
+    {
+        next_error( "we only support ipv4 servers at the moment" );
+        return NULL;
+    }
+
     next_server_t * server = (next_server_t*) next_malloc( context, sizeof(next_server_t) );
     if ( !server )
         return NULL;
@@ -135,6 +141,8 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // find the network interface that matches the public address
 
+    uint32_t public_address_ipv4 = next_address_ipv4( &public_address );
+
     char interface_name[1024];
     memset( interface_name, 0, sizeof(interface_name) );
     {
@@ -152,7 +160,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             if ( iap->ifa_addr && ( iap->ifa_flags & IFF_UP ) && iap->ifa_addr->sa_family == AF_INET )
             {
                 struct sockaddr_in * sa = (struct sockaddr_in*) iap->ifa_addr;
-                if ( ntohl( sa->sin_addr.s_addr ) == public_address )
+                if ( ntohl( sa->sin_addr.s_addr ) == public_address_ipv4 )
                 {
                     strncpy( interface_name, iap->ifa_name, sizeof(interface_name) );
                     bpf->interface_index = if_nametoindex( iap->ifa_name );
