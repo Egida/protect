@@ -108,7 +108,7 @@ void next_server_destroy( next_server_t * server );
 
 #ifdef __linux__
 
-static bool get_interface_mac_address( const char * interface_name, char * mac_address ) 
+static bool get_interface_mac_address( const char * interface_name, uint8_t * mac_address ) 
 {
     char path[256];
     snprintf( path, sizeof(path), "/sys/class/net/%s/address", interface_name );
@@ -118,16 +118,22 @@ static bool get_interface_mac_address( const char * interface_name, char * mac_a
         return false;
     }
 
-    if ( fgets( mac_address, 18, file ) == NULL ) 
+    // xx.xx.xx.xx.xx.xx
+
+    char mac_address_string[18];
+
+    if ( fgets( mac_address, sizeof(mac_address_string), file ) == NULL ) 
     {
         fclose( file );
         return false;
     }
 
-    mac_address[17] = 0;
-
-    // todo
-    printf( "mac address is '%s'\n", mac_address );
+    mac_address[5] = (uint8_t) strtol( mac_address_string[0], mac_address_string[2], 16 );
+    mac_address[4] = (uint8_t) strtol( mac_address_string[3], mac_address_string[5], 16 );
+    mac_address[3] = (uint8_t) strtol( mac_address_string[6], mac_address_string[8], 16 );
+    mac_address[2] = (uint8_t) strtol( mac_address_string[9], mac_address_string[11], 16 );
+    mac_address[1] = (uint8_t) strtol( mac_address_string[12], mac_address_string[14], 16 );
+    mac_address[0] = (uint8_t) strtol( mac_address_string[15], mac_address_string[17], 16 );
 
     fclose( file );
 
@@ -176,6 +182,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     if ( geteuid() != 0 ) 
     {
         next_error( "server must run as root" );
+        next_server_destroy( server );
         return NULL;
     }
 
@@ -192,6 +199,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         if ( getifaddrs( &addrs ) != 0 )
         {
             next_error( "server getifaddrs failed" );
+            next_server_destroy( server );
             return NULL;
         }
 
@@ -214,19 +222,21 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         if ( !found )
         {
             next_error( "server could not find any network interface matching public address" );
+            next_server_destroy( server );
             return NULL;
         }
     }
 
     // look up the ethernet address of the network interface
 
-    char mac_address_string[18];
-    
-    if ( !get_interface_mac_address( interface_name, mac_address_string ) )
+    if ( !get_interface_mac_address( interface_name, server_ethernet_address ) )
     {
         next_error( "server could not get mac address of network interface" );
+        next_server_destroy( server );
         return NULL;
     }
+
+    // todo: look up the gateway ethernet address for the network interface
 
     // allow unlimited locking of memory, so all memory needed for packet buffers can be locked
 
@@ -235,6 +245,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     if ( setrlimit( RLIMIT_MEMLOCK, &rlim ) ) 
     {
         next_error( "server could not setrlimit" );
+        next_server_destroy( server );
         return NULL;
     }
 
@@ -243,6 +254,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     if ( posix_memalign( &server->buffer, getpagesize(), buffer_size ) ) 
     {
         next_error( "server could allocate buffer" );
+        next_server_destroy( server );
         return NULL;
     }
 
@@ -252,6 +264,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     if ( result ) 
     {
         next_error( "server could not create umem" );
+        next_server_destroy( server );
         return NULL;
     }
 
@@ -273,6 +286,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     if ( result )
     {
         next_error( "server could not create xsk socket" );
+        next_server_destroy( server );
         return NULL;
     }
 
@@ -282,6 +296,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     // save the server public address and port in network order (big endian)
 
     server->server_address_big_endian = public_address_ipv4;
+
     server->server_port_big_endian = next_platform_htons( public_address.port );
 
 #else // #ifdef __linux __
