@@ -30,13 +30,25 @@ DONE
 
     Stash the server_address_big_endian and server_port_big_endian so we can pass it in to the packet header as-is.
 
-TODO
-
     Look up the server ethernet address and save it to a variable
 
-    -------------
+TODO
 
-    Look up the gateway ethernet address for the network interface and save it to a variable
+    First look up the gateway IP address for the network interface by name:
+
+        ubuntu@latitude:~/protect$ netstat -rn | grep UG
+        
+        0.0.0.0         45.250.253.242  0.0.0.0         UG        0 0          0 eno1
+
+    Then once we have the IP address for the gateway, we can search lines in "arp -a" and look for:
+
+        ubuntu@latitude:~/protect$ arp -a
+        
+        ? (45.250.253.242) at 50:87:89:d4:37:2d [ether] on eno1
+
+    This way we should be able to always get the correct gateway ethernet address for outgoing packets.
+
+    ps. We assume that XDP servers will *never* be doing any direct communication within a local network.
 
     -------------
 
