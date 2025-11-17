@@ -120,6 +120,14 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
 #if __linux__
 
+    // AF_XDP can only be run as root
+
+    if ( geteuid() != 0 ) 
+    {
+        next_error( "server must run as root" );
+        return NULL;
+    }
+
     // allow unlimited locking of memory, so all memory needed for packet buffers can be locked
 
     struct rlimit rlim = { RLIM_INFINITY, RLIM_INFINITY };
