@@ -133,6 +133,49 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
+    // find the network interface that matches the public address
+
+    char network_interface_name[1024];
+    memset( network_interface_name, 0, sizeof(network_interface_name) );
+    {
+        bool found = false;
+
+        struct ifaddrs * addrs;
+        if ( getifaddrs( &addrs ) != 0 )
+        {
+            next_error( "server getifaddrs failed" );
+            return NULL;
+        }
+
+        for ( struct ifaddrs * iap = addrs; iap != NULL; iap = iap->ifa_next ) 
+        {
+            if ( iap->ifa_addr && ( iap->ifa_flags & IFF_UP ) && iap->ifa_addr->sa_family == AF_INET )
+            {
+                struct sockaddr_in * sa = (struct sockaddr_in*) iap->ifa_addr;
+                if ( ntohl( sa->sin_addr.s_addr ) == public_address )
+                {
+                    strncpy( network_interface_name, iap->ifa_name, sizeof(network_interface_name) );
+                    bpf->interface_index = if_nametoindex( iap->ifa_name );
+                    if ( !bpf->interface_index ) 
+                    {
+                        next_error( "server if_nametoindex failed" );
+                        return NULL;
+                    }
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        freeifaddrs( addrs );
+
+        if ( !found )
+        {
+            next_error( "server could not find any network interface matching public address" );
+            return NULL;
+        }
+    }
+
     // allow unlimited locking of memory, so all memory needed for packet buffers can be locked
 
     struct rlimit rlim = { RLIM_INFINITY, RLIM_INFINITY };
