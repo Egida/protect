@@ -196,7 +196,7 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
     {
         if ( strlen( arp_buffer ) > 0 && strstr( arp_buffer, gateway_ip_string ) && strstr( arp_buffer, interface_name ) )
         {
-            printf( "%s\n", buffer );
+            printf( "%s\n", arp_buffer );
             /*
             char * token = strtok( netstat_buffer, " " );
             if ( token )
