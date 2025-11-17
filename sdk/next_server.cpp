@@ -106,6 +106,36 @@ struct next_server_t
 
 void next_server_destroy( next_server_t * server );
 
+#ifdef __linux__
+
+static bool get_interface_mac_address( const char * interface_name, char * mac_address ) 
+{
+    char path[256];
+    snprintf( path, sizeof(path), "/sys/class/net/%s/address", interface_name );
+    FILE * file = fopen(path, "r");
+    if ( !file )
+    {
+        return false;
+    }
+
+    if ( fgets( mac_address, 18, file ) == NULL ) 
+    {
+        fclose( filse );
+        return false;
+    }
+
+    mac_address[17] = 0;
+
+    // todo
+    printf( "mac address is '%s'\n", mac_address );
+
+    fclose( file );
+
+    return true;
+}
+
+#endif // #ifdef __linux__
+
 next_server_t * next_server_create( void * context, const char * bind_address_string, const char * public_address_string )
 {
     next_assert( bind_address_string );
@@ -141,7 +171,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
 #ifdef __linux__
 
-    // AF_XDP can only be run as root
+    // AF_XDP can only run as root
 
     if ( geteuid() != 0 ) 
     {
@@ -186,6 +216,16 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             next_error( "server could not find any network interface matching public address" );
             return NULL;
         }
+    }
+
+    // look up the ethernet address of the network interface
+
+    char mac_address_string[18];
+    
+    if ( !get_interface_mac_address( interface_nam, mac_address_string ) )
+    {
+        next_error( "server could not get mac address of network interface" );
+        return NULL;
     }
 
     // allow unlimited locking of memory, so all memory needed for packet buffers can be locked
