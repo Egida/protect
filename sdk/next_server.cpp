@@ -81,6 +81,7 @@ struct next_server_t
 
     void * buffer;
     struct xsk_umem * umem;
+    struct xsk_ring_cons receive_queue;
     struct xsk_ring_prod send_queue;
     struct xsk_ring_cons complete_queue;
     struct xsk_ring_prod fill_queue;
@@ -225,7 +226,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     int queue_id = 0;
 
-    result = xsk_socket__create( &server->xsk, interface_name, queue_id, server->umem, &server->send_queue, &server->send_queue, &xsk_config );
+    result = xsk_socket__create( &server->xsk, interface_name, queue_id, server->umem, &server->receive_queue, &server->send_queue, &xsk_config );
     if ( result )
     {
         next_error( "server could not create xsk socket" );
