@@ -205,6 +205,7 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
             {
                 p += 4;
                 strncpy( mac_address_string, p, 17 );
+                mac_address_string[17] = 0;
                 break;
             }
         }
