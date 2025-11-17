@@ -548,7 +548,7 @@ void next_server_free_frame( next_server_t * server, uint64_t frame )
     next_platform_mutex_acquire( &server->frame_mutex );
     next_assert( server->num_free_frames < NEXT_NUM_SERVER_FRAMES );
     server->frames[server->num_free_frames] = frame;
-    socket->num_free_frames++;
+    server->num_free_frames++;
     next_platform_mutex_release( &server->frame_mutex );
 }
 
