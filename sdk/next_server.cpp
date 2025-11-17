@@ -227,6 +227,9 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
+    char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
+    next_info( "server started on %s", next_address_to_string( &bind_address, address_string ) );
+
 #else // #if __linux __
 
     server->socket = next_platform_socket_create( server->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, NEXT_SOCKET_SEND_BUFFER_SIZE, NEXT_SOCKET_RECEIVE_BUFFER_SIZE );
@@ -237,10 +240,10 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
-#endif // #if __linux__
-
     char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
-    next_info( "server started on %s", next_address_to_string( &bind_address, address_string ) );
+    next_info( "server started on %s (AF_XDP)", next_address_to_string( &public_address, address_string ) );
+
+#endif // #if __linux__
 
     server->bind_address = bind_address;
     server->public_address = public_address;
