@@ -152,8 +152,7 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
     // todo
     memset( mac_address, 0, 6 );
 
-    // todo
-    printf( "----------------------------\n" );
+    bool found_gateway_ip = false;
 
     FILE * file = popen( "netstat -rn", "r" );
     char buffer[1024];
@@ -161,13 +160,28 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
     {
         if ( strlen( buffer ) > 0 && strstr( buffer, "UG" ) && strstr( buffer, interface_name ) )
         {
-            printf( "%s", buffer );
+            char * p = buffer;
+            while ( p != '\0' && p != '\t' )
+            {
+                p++;
+            }
+            if ( *p == '\t' )
+            {
+                char * q = p;
+                while ( q != '\0' && q != '\t' )
+                {
+                    q++;
+                }
+                if ( *q == '\t' )
+                    *q = '\0';
+                printf( "%s", p );
+                found_gateway_ip = true;
+            }
         }
     }
     pclose( file );
 
     // todo
-    printf( "----------------------------\n" );
     fflush( stdout );
 
     return true;
