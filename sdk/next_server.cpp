@@ -188,27 +188,39 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
         return false;
     }
 
-    // now look up in the arp cache to find the ethernet address corresponding to the gateway IP address and interface name
+    // now find the ethernet address corresponding to the gateway IP address and interface name
+
+    bool found_mac_address = false;
 
     char mac_address_string[18];
 
-    file = popen( "arp -a", "r" );
-    char arp_buffer[1024];
-    while ( fgets( arp_buffer, sizeof(arp_buffer), file ) != NULL )
+    file = popen( "ip neigh show", "r" );
+    char ip_buffer[1024];
+    while ( fgets( ip_buffer, sizeof(ip_buffer), file ) != NULL )
     {
-        if ( strlen( arp_buffer ) > 0 && strstr( arp_buffer, gateway_ip_string ) && strstr( arp_buffer, interface_name ) )
+        if ( strlen( ip_buffer ) > 0 && strstr( ip_buffer, gateway_ip_string ) && strstr( ip_buffer, interface_name ) )
         {
-            char * p = strstr( arp_buffer, " at " );
+            // todo
+            printf( "%s\n", ip_buffer );
+            /*
+            char * p = strstr( ip_buffer, " at " );
             if ( p )
             {
                 p += 4;
+                found_mac_address = true;
                 strncpy( mac_address_string, p, 17 );
                 mac_address_string[17] = 0;
                 break;
             }
+            */
         }
     }
     pclose( file );
+
+    if ( !found_mac_address )
+    {
+        return false;
+    }
 
     mac_address_string[2] = 0;
     mac_address_string[5] = 0;
