@@ -64,7 +64,6 @@ struct next_server_t
     next_address_t public_address;
     uint64_t server_id;
     uint64_t match_id;
-    next_platform_socket_t * socket;
     void (*packet_received_callback)( next_server_t * server, void * context, int client_index, const uint8_t * packet_data, int packet_bytes );
 
     bool client_connected[NEXT_MAX_CLIENTS];
@@ -89,6 +88,7 @@ struct next_server_t
 
 #else // #ifdef __linux__
 
+    next_platform_socket_t * socket;
     next_server_send_buffer_t send_buffer;
     next_server_receive_buffer_t receive_buffer;
 
@@ -277,15 +277,7 @@ void next_server_destroy( next_server_t * server )
     next_assert( server );
     next_assert( server->state == NEXT_SERVER_STOPPED );        // IMPORTANT: Please stop the server and wait until state is NEXT_SERVER_STOPPED before destroying it
 
-#ifndef __linux__
-    next_platform_mutex_destroy( &server->send_buffer.mutex );
-#endif // #ifndef __linux__
     next_platform_mutex_destroy( &server->client_payload_mutex );
-
-    if ( server->socket )
-    {
-        next_platform_socket_destroy( server->socket );
-    }
 
 #ifdef __linux__
 
@@ -300,6 +292,15 @@ void next_server_destroy( next_server_t * server )
     }
 
     free( server->buffer );
+
+#else // #ifdef __linux__
+
+    next_platform_mutex_destroy( &server->send_buffer.mutex );
+
+    if ( server->socket )
+    {
+        next_platform_socket_destroy( server->socket );
+    }
 
 #endif // #ifdef __linux__
 

@@ -20,11 +20,11 @@ DONE
 
     This program should look at any UDP ports at 1024 and above and pass down to userspace only if they pass the packet filter
 
+    Setup the skeleton for AF_XDP in next_server.cpp #ifdef __linux__
+
 TODO
 
-    Extend the server so it uses AF_XDP to send and receive packets on linux.
-
-    Disable packet filtering on the server #ifdef __linux__, it's done in XDP.
+    Study docs and work out how to implement the send and receive with AF_XDP
 
     -------------
 
