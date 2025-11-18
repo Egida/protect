@@ -5,8 +5,8 @@
 
     USAGE:
 
-        clang -Ilibbpf/src -g -O2 -target bpf -c server_xdp_xdp.c -o server_xdp_xdp.o
-        sudo ip link set dev enp4s0 xdp obj server_xdp_xdp.o sec server_xdp_xdp
+        clang -Ilibbpf/src -g -O2 -target bpf -c server_xdp.c -o server_xdp.o
+        sudo ip link set dev enp4s0 xdp obj server_xdp.o sec server_xdp
         sudo cat /sys/kernel/debug/tracing/trace_pipe
         sudo ip link set dev enp4s0 xdp off
 */
@@ -327,7 +327,7 @@ static void reflect_packet( void * data, int payload_bytes, __u8 * magic )
     packet_data[17] = chonkle[14];
 }
 
-SEC("server_xdp_xdp") int server_xdp_filter( struct xdp_md *ctx ) 
+SEC("server_xdp") int server_xdp_filter( struct xdp_md *ctx ) 
 { 
     void * data = (void*) (long) ctx->data; 
 
