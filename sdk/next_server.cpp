@@ -976,7 +976,7 @@ void next_server_send_packets_end( struct next_server_t * server )
     {
         struct xdp_desc * desc = xsk_ring_prod__tx_desc( &server->send_queue, server->xdp_send_queue_index + i );
 
-        uint64_t frame = next_server_alloc_frame( server, send_index );
+        uint64_t frame = next_server_alloc_frame( servers );
 
         next_assert( frame != INVALID_FRAME );
         if ( frame == INVALID_FRAME )
