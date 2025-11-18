@@ -975,8 +975,17 @@ void next_server_send_packets_end( struct next_server_t * server )
     for ( int i = 0; i < NEXT_XDP_MAX_SEND_PACKETS; i++ )
     {
         struct xdp_desc * desc = xsk_ring_prod__tx_desc( &server->send_queue, server->xdp_send_queue_index + i );
-        desc->addr = 0;
-        desc->len = 0;
+
+        uint64_t frame = next_server_alloc_frame( server, send_index );
+
+        next_assert( frame != INVALID_FRAME );
+        if ( frame == INVALID_FRAME )
+        {
+            printf( "invalid frame\n" );
+        }
+
+        desc->addr = frame;
+        desc->len = 10;
     }
 
     // submit send queue to driver
