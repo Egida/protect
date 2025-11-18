@@ -479,7 +479,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // be extra safe and let's make sure no xdp programs are running on this interface before we start
     {
-        next_info( "unloading all xdp programs on network interface" );
+        next_info( "unloading xdp programs on network interface %s", interface_name );
 
         char command[2048];
         snprintf( command, sizeof(command), "xdp-loader unload %s --all", interface_name );
@@ -529,7 +529,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // unzip source and build server_xdp.o from source with make
     {
-        next_info( "building server_xdp.o" );
+        next_info( "extracting xdp program source and building server_xdp.o" );
 
         const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.o && tar -zxf server_xdp.tar.gz && make server_xdp.o";
         FILE * file = popen( command, "r" );
@@ -561,7 +561,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     next_info( "server_xdp loaded successfully" );
 
-    next_info( "attaching server_xdp to network interface" );
+    next_info( "attaching server_xdp to network interface %s", interface_name );
 
     int ret = xdp_program__attach( server->program, server->interface_index, XDP_MODE_NATIVE, 0 );
     if ( ret == 0 )
