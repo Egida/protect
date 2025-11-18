@@ -88,41 +88,17 @@ endif()
 # server xdp
 
 add_custom_command(
-    COMMENT "Copying proton.h for server xdp"
-    OUTPUT ../cmd/server_xdp/proton.h
-    COMMAND bash -c "cp ../lib/proton/proton.h ../cmd/server_xdp/proton.h"
-    DEPENDS ../lib/proton/proton.h
+    COMMENT "Generating sdk/next_server_xdp.h"
+    OUTPUT ../sdk/next_server_xdp.h
+    COMMAND bash -c "mkdir -p next_server_xdp"
+    COMMAND bash -c "cp ../cmd/server_xdp/Makefile next_server_xdp"
+    COMMAND bash -c "cp ../cmd/server_xdp/server_xdp.c next_server_xdp"
+    COMMAND bash -c "tar -zcvf next_server_xdp.tar.gz -C next_server_xdp ." >/dev/null 2>&1
+    COMMAND bash -c "rm -rf next_server_xdp"
+    COMMAND bash -c "xxd -i next_server_xdp.tar.gz" > ../sdk/next_server_xdp.h
+    COMMAND bash -c "rm -f next_server_xdp.tar.gz"
+    DEPENDS ../cmd/server_xdp/Makefile ../cmd/server_xdp/server_xdp.c
 )
-
-add_custom_command(
-    COMMENT "Generating server_xdp_source.h"
-    OUTPUT ../cmd/server_xdp/server_xdp_source.h
-    COMMAND bash -c "mkdir -p ../cmd/server_xdp/server_xdp_source"
-    COMMAND bash -c "cp ../cmd/server_xdp/Makefile ../cmd/server_xdp/server_xdp_source"
-    COMMAND bash -c "cp ../cmd/server_xdp/proton.h ../cmd/server_xdp/server_xdp_source"
-    COMMAND bash -c "cp ../cmd/server_xdp/server_xdp_xdp.c ../cmd/server_xdp/server_xdp_source"
-    COMMAND bash -c "cp ../cmd/server_xdp/server_xdp_shared.h ../cmd/server_xdp/server_xdp_source"
-    COMMAND bash -c "cp ../cmd/server_xdp/server_xdp_constants.h ../cmd/server_xdp/server_xdp_source"
-    COMMAND bash -c "tar -zcvf ../cmd/server_xdp/server_xdp_source.tar.gz -C ../cmd/server_xdp/server_xdp_source ." >/dev/null 2>&1
-    COMMAND bash -c "rm -rf ../cmd/server_xdp/server_xdp_source"
-    COMMAND bash -c "xxd -i ../cmd/server_xdp/server_xdp_source.tar.gz" > ../cmd/server_xdp/server_xdp_source.h
-    COMMAND bash -c "rm -f ../cmd/server_xdp/server_xdp_source.tar.gz"
-    DEPENDS ../cmd/server_xdp/Makefile ../cmd/server_xdp/server_xdp_xdp.c ../cmd/server_xdp/server_xdp_shared.h ../cmd/server_xdp/server_xdp_constants.h ../cmd/server_xdp/proton.h
-)
-
-project(server_xdp)
-
-file(GLOB SERVER_XDP_SOURCE ../cmd/server_xdp/*.c)
-file(GLOB SERVER_XDP_HEADERS ../cmd/server_xdp/*.h)
-add_executable(server_xdp ${SERVER_XDP_SOURCE} ${SERVER_XDP_HEADERS} ../cmd/server_xdp/server_xdp_source.h)
-target_include_directories(server_xdp PRIVATE ../lib)
-add_dependencies(server_xdp platform shared)
-find_package(Threads REQUIRED)
-if (APPLE)
-    target_link_libraries(server_xdp platform shared Threads::Threads)
-elseif (UNIX)
-    target_link_libraries(server_xdp platform shared bpf xdp Threads::Threads)
-endif()
 
 
 # ---------------------------------------------------------------------
@@ -136,7 +112,7 @@ project(next)
 enable_language(CXX)
 file(GLOB NEXT_SOURCE ../sdk/*.cpp)
 file(GLOB NEXT_HEADERS ../sdk/*.h)
-add_library(next ${NEXT_SOURCE} ${NEXT_HEADERS})
+add_library(next ${NEXT_SOURCE} ${NEXT_HEADERS} ../sdk/next_server_xdp.h)
 add_dependencies(next platform)
 find_package(Threads REQUIRED)
 if (APPLE)
