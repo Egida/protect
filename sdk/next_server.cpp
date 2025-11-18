@@ -871,7 +871,7 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
 
 #ifdef __linux__
     if ( !server->sending_packets )
-        return;
+        return NULL;
 #endif // #ifdef __linux__
 
     if ( !server->client_connected[client_index] )
