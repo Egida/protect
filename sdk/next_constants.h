@@ -17,7 +17,7 @@
 
 #define NEXT_XDP_QUEUE_SIZE                                 ( 64 * 1024 )
 
-#define NEXT_XDP_MAX_SEND_PACKETS                                    2048
+#define NEXT_XDP_MAX_SEND_PACKETS                                      10 //2048
 
 #define NEXT_DIRECT_TIMEOUT                                           5.0
 
