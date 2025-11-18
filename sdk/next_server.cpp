@@ -962,7 +962,7 @@ void next_server_send_packets_end( struct next_server_t * server )
         uint64_t frame = next_server_alloc_frame( server );
 
         // todo
-        printf( "write frame %d\n", (int) frame );
+        printf( "write frame %" PRId64 "\n", frame );
 
         next_assert( frame != INVALID_FRAME );          // this should never happen
         if ( frame == INVALID_FRAME )
