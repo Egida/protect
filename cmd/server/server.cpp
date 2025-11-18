@@ -55,6 +55,7 @@ int main()
 
         next_server_send_packets_begin( server );
 
+        /*
         for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
         {
             if ( next_server_client_connected( server, i ) )
@@ -69,6 +70,7 @@ int main()
                 }
             }
         }
+        */
 
         next_server_send_packets_end( server );
 
