@@ -373,6 +373,197 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         server->gateway_ethernet_address[0] 
     );
 
+    // are we in AWS?
+
+    bool running_in_aws = false;
+    {
+        next_info( "checking if we are running in aws..." );
+        char command_line[2048];
+        strncpy( command_line, "curl -s \"http://169.254.169.254/latest/meta-data\" --max-time 2 -s 2>/dev/null", sizeof(command_line) );
+        next_info( "command line: '%s'", command_line );
+        FILE * file = popen( command_line, "r" );
+        if ( file )
+        {
+            char buffer[1024];
+            while ( fgets( buffer, sizeof(buffer), file ) != NULL )
+            {
+                if ( strstr( buffer, "ami-id" ) != NULL )
+                {
+                    next_info( "we are running in aws" );
+                    running_in_aws = true;
+                    break;
+                }
+            }
+            pclose( file );
+        }
+        if ( !running_in_aws )
+        {
+            next_info( "we are not running in aws" );
+        }
+    }
+
+    // we need to set an MTU of 1500 in AWS, otherwise we can't attach the XDP program
+
+    if ( running_in_aws )
+    {
+        next_info( "setting mtu to 1500" );
+        char command[2048];
+        snprintf( command, sizeof(command), "ifconfig %s mtu 1500 up", (const char*) &interface_name[0] );
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL )
+        {
+            if ( strlen( buffer ) > 0 )
+            {
+                printf( "%s", buffer );
+            }
+        }
+        pclose( file );
+    }
+
+    // we need to only use half the network queues available on the NIC on AWS
+
+    if ( running_in_aws )
+    {
+        next_info( "aws workaround for nic queues" );
+
+        // first we need to find how many combined queues we have
+
+        int max_queues = 2;
+        {
+            char command[2048];
+            snprintf( command, sizeof(command), "ethtool -l %s | grep -m 1 Combined |  perl -ne '/Combined:\\s*(\\d+)/ and print \"$1\\n\";'", (const char*) &interface_name[0] );
+            FILE * file = popen( command, "r" );
+            char buffer[1024];
+            while ( fgets( buffer, sizeof(buffer), file ) != NULL )
+            {
+                if ( strlen( buffer ) > 0 )
+                {
+                    int result = atoi( buffer );
+                    if ( result > 0 )
+                    {
+                        max_queues = result;
+                        next_info( "maximum nic combined queues is %d", max_queues );
+                    }
+                    break;
+                }
+            }
+            pclose( file );
+        }
+
+        // now reduce to use only half max queues
+
+        int num_queues = max_queues / 2;
+
+        next_intfo( "setting nic combined queues to %d", num_queues );
+
+        char command[2048];
+        snprintf( command, sizeof(command), "ethtool -L %s combined %d", (const char*) &interface_name[0], num_queues );
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
+    // be extra safe and let's make sure no xdp programs are running on this interface before we start
+    {
+        char command[2048];
+        snprintf( command, sizeof(command), "xdp-loader unload %s --all", interface_name );
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
+    // delete all bpf maps we use so stale data doesn't stick around
+    {
+        {
+            const char * command = "rm -f /sys/fs/bpf/server_xdp_config_map";
+            FILE * file = popen( command, "r" );
+            char buffer[1024];
+            while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+            pclose( file );
+        }
+
+        {
+            const char * command = "rm -f /sys/fs/bpf/server_xdp_state_map";
+            FILE * file = popen( command, "r" );
+            char buffer[1024];
+            while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+            pclose( file );
+        }
+    }
+
+    // write out source tar.gz for server_xdp_xdp.o
+    {
+        FILE * file = fopen( "server_xdp.tar.gz", "wb" );
+        if ( !file )
+        {
+            printf( "\nerror: could not open server_xdp.tar.gz for writing" );
+            next_server_destroy( server );
+            return false;
+        }
+
+        fwrite( next_server_xdp_tar_gz, sizeof(next_server_xdp_tar_gz), 1, file );
+
+        fclose( file );
+    }
+
+    // unzip source and build server_xdp.o from source with make
+    {
+        const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.o && tar -zxf server_xdp.tar.gz && make server_xdp.o";
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
+    // clean up after ourselves
+    {
+        const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.tar.gz";
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
+    // load the server_xdp program and attach it to the network interface
+
+    next_info( "loading server_xdp..." );
+
+    bpf->program = xdp_program__open_file( "server_xdp.o", "server_xdp", NULL );
+    if ( libxdp_get_error( bpf->program ) ) 
+    {
+        next_error( "could not load server_xdp program" );
+        next_server_destroy( server );
+        return false;
+    }
+
+    next_info( "server_xdp loaded successfully" );
+
+    next_info( "attaching server_xdp to network interface" );
+
+    int ret = xdp_program__attach( bpf->program, bpf->interface_index, XDP_MODE_NATIVE, 0 );
+    if ( ret == 0 )
+    {
+        bpf->attached_native = true;
+    } 
+    else
+    {
+        next_info( "falling back to skb mode..." );
+        ret = xdp_program__attach( bpf->program, bpf->interface_index, XDP_MODE_SKB, 0 );
+        if ( ret == 0 )
+        {
+            bpf->attached_skb = true;
+        }
+        else
+        {
+            next_error( "failed to attach server_xdp program to interface" );
+            next_server_destroy( server );
+            return false;
+        }
+    }
+
     // allow unlimited locking of memory, so all memory needed for packet buffers can be locked
 
     struct rlimit rlim = { RLIM_INFINITY, RLIM_INFINITY };
