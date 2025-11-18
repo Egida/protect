@@ -846,9 +846,12 @@ void next_server_send_packets_begin( struct next_server_t * server )
 
     next_assert( !server->sending_packets );            // IMPORTANT: You must call next_server_send_packets_end!
 
-    int result = xsk_ring_prod__reserve( &socket->send_queue, NEXT_XDP_MAX_SEND_PACKETS, &server->send_index );
+    int result = xsk_ring_prod__reserve( &server->send_queue, NEXT_XDP_MAX_SEND_PACKETS, &server->send_index );
     if ( result == 0 ) 
+    {
+        next_warn( "server send queue is full" );
         return;
+    }
 
     server->sending_packets = true;
 
@@ -1229,7 +1232,15 @@ void next_server_process_packets_end( struct next_server_t * server )
 
 #ifdef __linux__
 
-    // todo: AF_XDP
+    // send queued packets
+
+    // todo
+    const int num_packets = 0;
+
+    xsk_ring_prod__submit( &server->send_queue, num_packets );
+
+    if ( xsk_ring_prod__needs_wakeup( &server->send_queue ) )
+        sendto( xsk_socket__fd( server->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
 
 #else // #ifdef __linux__
 
