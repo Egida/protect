@@ -991,9 +991,6 @@ void next_server_send_packets_end( struct next_server_t * server )
 
     if ( xsk_ring_prod__needs_wakeup( &server->send_queue ) )
     {
-        // todo
-        printf( "*** WAKEUP ***\n" );
-
         sendto( xsk_socket__fd( server->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
     }
 
@@ -1005,6 +1002,9 @@ void next_server_send_packets_end( struct next_server_t * server )
 
     if ( num_completed > 0 ) 
     {
+        printf( "%d completed\n", num_completed );
+        fflush( stdout );
+
         for ( int i = 0; i < num_completed; i++ )
         {
             uint64_t frame = *xsk_ring_cons__comp_addr( &server->complete_queue, complete_index++ );
