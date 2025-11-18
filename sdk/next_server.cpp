@@ -981,7 +981,7 @@ void next_server_send_packets_end( struct next_server_t * server )
 
     // submit send queue to driver
 
-    xsk_ring_prod__submit( &server->send_queue, 0 ); // NEXT_XDP_MAX_SEND_PACKETS );
+    xsk_ring_prod__submit( &server->send_queue, NEXT_XDP_MAX_SEND_PACKETS );
 
     // actually send the packets
 
