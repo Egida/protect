@@ -994,7 +994,7 @@ void next_server_send_packets_end( struct next_server_t * server )
         {
             uint64_t frame = *xsk_ring_cons__comp_addr( &server->complete_queue, complete_index++ );
 
-            printf( "frame %" PRId64 " completed\n", frame )…
+            printf( "frame %" PRId64 " completed\n", frame );
 
             next_server_free_frame( server, frame );
         }
