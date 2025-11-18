@@ -54,17 +54,17 @@ DONE
 
     Restructure packet send and receive so they have begin/end -- this will help with XDP.
 
-TODO
-
     OK. The trick is that you *must* have an XDP program loaded. It won't work without. It won't call the complete.
 
     So I have to merge in the server XDP program in with the next_server.cpp, and load it when the server starts.
 
     We need to have next_server_xdp.c as part of the SDK!
 
-    ----------------
+    Now I'm getting weird hung and disconnected when I run the server xdp program?
 
+TODO
 
+    I've requested a second IP address for the new york server, so I can load the XDP program on the second NIC (while SSH'ing in on the first NIC)
 
 
 
