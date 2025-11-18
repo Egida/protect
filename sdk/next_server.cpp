@@ -961,9 +961,6 @@ void next_server_send_packets_end( struct next_server_t * server )
 
         uint64_t frame = next_server_alloc_frame( server );
 
-        // todo
-        printf( "write frame %" PRId64 "\n", frame );
-
         next_assert( frame != INVALID_FRAME );          // this should never happen
         if ( frame == INVALID_FRAME )
         {
@@ -979,9 +976,6 @@ void next_server_send_packets_end( struct next_server_t * server )
         int payload_bytes = 100;
 
         int packet_bytes = generate_packet_header( packet_data, server->server_ethernet_address, server->gateway_ethernet_address, server->server_address_big_endian, client_address_big_endian, server->server_port_big_endian, client_port_big_endian, payload_bytes );
-
-        // todo
-        printf( "packet bytes = %d\n", packet_bytes );
 
         desc->addr = frame;
         desc->len = packet_bytes;
