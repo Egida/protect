@@ -434,7 +434,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     for ( int j = 0; j < NEXT_NUM_SERVER_FRAMES; j++ )
     {
-        server->frames[j] = j * NEXT_SERVER_FRAME_SIZE;
+        server->frames[j] = j;
     }
 
     server->num_free_frames = NEXT_NUM_SERVER_FRAMES;
@@ -971,7 +971,7 @@ void next_server_send_packets_end( struct next_server_t * server )
             exit(0);
         }
 
-        uint8_t * packet_data = (uint8_t*)server->buffer + frame;
+        uint8_t * packet_data = (uint8_t*)server->buffer + frame * NEXT_SERVER_FRAME_SIZE;
 
         uint32_t client_address_big_endian = 0;
         uint32_t client_port_big_endian = 0;
