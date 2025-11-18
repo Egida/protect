@@ -731,7 +731,7 @@ void next_server_send_packets_begin( struct next_server_t * server )
 
     next_assert( !server->sending_packets );     // IMPORTANT: You must call next_server_send_packets_end!
 
-    int result = xsk_ring_prod__reserve( &server->send_queue, NEXT_XDP_MAX_SEND_PACKETS, &server->send_index );
+    int result = xsk_ring_prod__reserve( &server->send_queue, NEXT_XDP_MAX_SEND_PACKETS, &server->xdp_send_queue_index );
     if ( result == 0 ) 
     {
         next_warn( "server send queue is full" );
