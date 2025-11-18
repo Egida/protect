@@ -100,7 +100,11 @@ struct next_server_t
     struct xsk_socket * xsk;
 
     bool sending_packets;
-    uint32_t send_index;
+    uint32_t xdp_send_queue_index;
+
+    int num_send_packets;
+    uint64_t send_packet_offset[NEXT_XDP_MAX_SEND_PACKETS];
+    int send_packet_bytes[NEXT_XDP_MAX_SEND_PACKETS];
 
 #else // #ifdef __linux__
 
@@ -532,7 +536,7 @@ void next_server_destroy( next_server_t * server )
 
 #define INVALID_FRAME UINT64_MAX
 
-uint64_t next_server_alloc_frame( next_server_t * server )
+uint64_t next_server_alloc_send_packet( next_server_t * server )
 {
     next_platform_mutex_acquire( &server->frame_mutex );
     uint64_t frame = INVALID_FRAME;
@@ -719,6 +723,30 @@ int generate_packet_header( void * data, uint8_t * server_ethernet_address, uint
 
 #endif // #ifdef __linux__
 
+void next_server_send_packets_begin( struct next_server_t * server )
+{
+    next_assert( server );
+
+#ifdef __linux__
+
+    next_assert( !server->sending_packets );     // IMPORTANT: You must call next_server_send_packets_end!
+
+    int result = xsk_ring_prod__reserve( &server->send_queue, NEXT_XDP_MAX_SEND_PACKETS, &server->send_index );
+    if ( result == 0 ) 
+    {
+        next_warn( "server send queue is full" );
+        return;
+    }
+
+    server->sending_packets = true;
+
+#else // #ifdef __linux__
+
+    // ...
+
+#endif // #ifdef __linux__
+}
+
 uint8_t * next_server_start_packet_internal( struct next_server_t * server, next_address_t * to, uint8_t packet_type )
 {
     next_assert( server );
@@ -727,8 +755,33 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
 
 #ifdef __linux__
 
-    // todo: AF_XDP
+    if ( !server->sending_packets )
+        return NULL;
+
+    // todo
     return NULL;
+
+    /*
+    next_assert( server->num_send_packets < NEXT_XDP_MAX_SEND_PACKETS );
+    if ( server->num_send_packets >= NEXT_XDP_MAX_SEND_PACKETS )
+        return NULL;
+
+    uint64_t frame = next_server_alloc_frame( server, send_index );
+
+    next_assert( frame != INVALID_FRAME );      // this should never happen!
+    if ( frame == INVALID_FRAME )
+        return NULL;
+
+    uint8_t * packet_data = (uint8_t*)server->buffer + ( NEXT_SERVER_FRAME_SIZE * frame );
+
+    // todo: acquire send mutex here
+    const int index = server->num_send_packets++;
+    server->send_packet_frame[index] = frame;
+    server->send_packet_bytes[index] = 0;
+    // todo: release send mutex here
+
+    return packet_data;
+    */
 
 #else // #ifdef __linux__
 
@@ -760,108 +813,6 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
 #endif // #ifdef __linux__
 }
 
-// todo: xdp send logic
-
-#if 0
-
-void socket_update( struct socket_t * socket, int queue_id )
-{
-    // don't do anything if we don't have enough free packets to send a batch
-
-    if ( socket->num_frames < SEND_BATCH_SIZE )
-        return;
-
-    // queue packets to send
-
-    int send_index;
-    int result = xsk_ring_prod__reserve( &socket->send_queue, SEND_BATCH_SIZE, &send_index );
-    if ( result == 0 ) 
-    {
-        return;
-    }
-
-    int num_packets = 0;
-    uint64_t packet_address[SEND_BATCH_SIZE];
-    int packet_length[SEND_BATCH_SIZE];
-
-    while ( true )
-    {
-        uint64_t frame = socket_alloc_frame( socket );
-
-        assert( frame != INVALID_FRAME );   // this should never happen
-
-        uint8_t * packet = socket->buffer + frame;
-
-        packet_address[num_packets] = frame;
-        packet_length[num_packets] = client_generate_packet( packet, PAYLOAD_BYTES, socket->counter + num_packets );
-
-        num_packets++;
-
-        if ( num_packets == SEND_BATCH_SIZE )
-            break;
-    }
-
-    for ( int i = 0; i < num_packets; i++ )
-    {
-        struct xdp_desc * desc = xsk_ring_prod__tx_desc( &socket->send_queue, send_index + i );
-        desc->addr = packet_address[i];
-        desc->len = packet_length[i];
-    }
-
-    xsk_ring_prod__submit( &socket->send_queue, num_packets );
-
-    // send queued packets
-
-    if ( xsk_ring_prod__needs_wakeup( &socket->send_queue ) )
-        sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
-
-    // mark completed sent packet frames as free to be reused
-
-    uint32_t complete_index;
-
-    unsigned int completed = xsk_ring_cons__peek( &socket->complete_queue, XSK_RING_CONS__DEFAULT_NUM_DESCS, &complete_index );
-
-    if ( completed > 0 ) 
-    {
-        for ( int i = 0; i < completed; i++ )
-        {
-            socket_free_frame( socket, *xsk_ring_cons__comp_addr( &socket->complete_queue, complete_index++ ) );
-        }
-
-        xsk_ring_cons__release( &socket->complete_queue, completed );
-
-        __sync_fetch_and_add( &socket->sent_packets, completed );
-
-        socket->counter += completed;
-    }
-}
-
-#endif // #if 0
-
-void next_server_send_packets_begin( struct next_server_t * server )
-{
-    next_assert( server );
-
-#ifdef __linux__
-
-    next_assert( !server->sending_packets );            // IMPORTANT: You must call next_server_send_packets_end!
-
-    int result = xsk_ring_prod__reserve( &server->send_queue, NEXT_XDP_MAX_SEND_PACKETS, &server->send_index );
-    if ( result == 0 ) 
-    {
-        next_warn( "server send queue is full" );
-        return;
-    }
-
-    server->sending_packets = true;
-
-#else // #ifdef __linux__
-
-    // ...
-
-#endif // #ifdef __linux__
-}
-
 uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * out_sequence )
 {
     next_assert( server );
@@ -869,20 +820,8 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
     next_assert( client_index < NEXT_MAX_CLIENTS );
     next_assert( out_sequence );
 
-#ifdef __linux__
-    if ( !server->sending_packets )
-        return NULL;
-#endif // #ifdef __linux__
-
     if ( !server->client_connected[client_index] )
         return NULL;
-
-#ifdef __linux__
-
-    // todo: AF_XDP
-    return NULL;
-
-#else // #ifdef __linux__
 
     next_platform_mutex_acquire( &server->client_payload_mutex );
     uint64_t sequence = ++server->client_payload_sequence[client_index];
@@ -912,8 +851,6 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
 
         return NULL;
     }
-
-#endif // #ifdef __linux__
 }
 
 void next_server_finish_packet_internal( struct next_server_t * server, uint8_t * packet_data, int packet_bytes )
@@ -1014,8 +951,61 @@ void next_server_send_packets_end( struct next_server_t * server )
 
 #ifdef __linux__
 
-    // ...
+    next_assert( server->sending_packets );
 
+    // setup descriptors for packets that were sent
+
+    /*
+    for ( int i = 0; i < server->num_send_packets; i++ )
+    {
+        struct xdp_desc * desc = xsk_ring_prod__tx_desc( &server->send_queue, server->xdp_send_queue_index + i );
+        desc->addr = server->sent;
+        desc->len = 0;
+    }
+    */
+
+    // dummy packet descriptors for packets that were not sent
+
+    for ( int i = server->num_send_packets; i < NEXT_XDP_MAX_SEND_PACKETS; i++ )
+    {
+        struct xdp_desc * desc = xsk_ring_prod__tx_desc( &server->send_queue, server->xdp_send_queue_index + i );
+        desc->addr = 0;
+        desc->len = 0;
+    }
+
+    // submit send queue to driver
+
+    xsk_ring_prod__submit( &server->send_queue, NEXT_XDP_MAX_SEND_PACKETS );
+
+    // actually send the packets
+
+    if ( xsk_ring_prod__needs_wakeup( &server->send_queue ) )
+        sendto( xsk_socket__fd( server->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
+
+    // mark any sent packet frames as free to be reused
+
+    uint32_t complete_index;
+
+    unsigned int num_completed = xsk_ring_cons__peek( &server->complete_queue, XSK_RING_CONS__DEFAULT_NUM_DESCS, &complete_index );
+
+    if ( num_completed > 0 ) 
+    {
+        for ( int i = 0; i < completed; i++ )
+        {
+            uint64_t frame = *xsk_ring_cons__comp_addr( &server->complete_queue, complete_index++ );
+
+            printf( "frame %" PRId64 " completed\n", frame )…
+
+            next_server_free_frame( server, frame );
+        }
+
+        xsk_ring_cons__release( &socket->complete_queue, num_completed );
+    }
+
+    // reset ready for next packet send
+
+    server->num_send_packets = 0;
+    server->xdp_send_queue_index  0;
     server->sending_packets = false;
 
 #else // #ifdef __linux__
@@ -1232,32 +1222,7 @@ void next_server_process_packets_end( struct next_server_t * server )
 
 #ifdef __linux__
 
-    // hack: see if we can send zero tx descriptors and get away with it (cancel)
-    int num_packets = 0;
-    uint64_t packet_address[NEXT_XDP_MAX_SEND_PACKETS];
-    int packet_bytes[NEXT_XDP_MAX_SEND_PACKETS];
-
-    for ( int i = 0; i < NEXT_XDP_MAX_SEND_PACKETS; i++ )
-    {
-        uint64_t frame = next_server_alloc_frame( server );
-
-        next_assert( frame != INVALID_FRAME );   // this should never happen
-
-        uint8_t * packet_data = (uint8_t*)server->buffer + frame;
-
-        packet_address[num_packets] = frame;
-
-        struct xdp_desc * desc = xsk_ring_prod__tx_desc( &server->send_queue, server->send_index + i );
-        desc->addr = 0; // packet_address[i];
-        desc->len = 0; // packet_length[i];
-
-        num_packets++;
-    }
-
-    xsk_ring_prod__submit( &server->send_queue, num_packets );
-
-    if ( xsk_ring_prod__needs_wakeup( &server->send_queue ) )
-        sendto( xsk_socket__fd( server->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
+    // todo: AF_XDP
 
 #else // #ifdef __linux__
 
@@ -1267,3 +1232,82 @@ void next_server_process_packets_end( struct next_server_t * server )
 
 #endif // #ifdef __linux__
 }
+
+
+// todo: xdp send logic
+
+#if 0
+
+void socket_update( struct socket_t * socket, int queue_id )
+{
+    // don't do anything if we don't have enough free packets to send a batch
+
+    if ( socket->num_frames < SEND_BATCH_SIZE )
+        return;
+
+    // queue packets to send
+
+    int send_index;
+    int result = xsk_ring_prod__reserve( &socket->send_queue, SEND_BATCH_SIZE, &send_index );
+    if ( result == 0 ) 
+    {
+        return;
+    }
+
+    int num_packets = 0;
+    uint64_t packet_address[SEND_BATCH_SIZE];
+    int packet_length[SEND_BATCH_SIZE];
+
+    while ( true )
+    {
+        uint64_t frame = socket_alloc_frame( socket );
+
+        assert( frame != INVALID_FRAME );   // this should never happen
+
+        uint8_t * packet = socket->buffer + frame;
+
+        packet_address[num_packets] = frame;
+        packet_length[num_packets] = client_generate_packet( packet, PAYLOAD_BYTES, socket->counter + num_packets );
+
+        num_packets++;
+
+        if ( num_packets == SEND_BATCH_SIZE )
+            break;
+    }
+
+    for ( int i = 0; i < num_packets; i++ )
+    {
+        struct xdp_desc * desc = xsk_ring_prod__tx_desc( &socket->send_queue, send_index + i );
+        desc->addr = packet_address[i];
+        desc->len = packet_length[i];
+    }
+
+    xsk_ring_prod__submit( &socket->send_queue, num_packets );
+
+    // send queued packets
+
+    if ( xsk_ring_prod__needs_wakeup( &socket->send_queue ) )
+        sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
+
+    // mark completed sent packet frames as free to be reused
+
+    uint32_t complete_index;
+
+    unsigned int completed = xsk_ring_cons__peek( &socket->complete_queue, XSK_RING_CONS__DEFAULT_NUM_DESCS, &complete_index );
+
+    if ( completed > 0 ) 
+    {
+        for ( int i = 0; i < completed; i++ )
+        {
+            socket_free_frame( socket, *xsk_ring_cons__comp_addr( &socket->complete_queue, complete_index++ ) );
+        }
+
+        xsk_ring_cons__release( &socket->complete_queue, completed );
+
+        __sync_fetch_and_add( &socket->sent_packets, completed );
+
+        socket->counter += completed;
+    }
+}
+
+#endif // #if 0
