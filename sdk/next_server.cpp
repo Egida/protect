@@ -729,6 +729,9 @@ void next_server_send_packets_begin( struct next_server_t * server )
 
 #ifdef __linux__
 
+    // todo
+    printf( "send packets begin\n" );
+
     next_assert( !server->sending_packets );     // IMPORTANT: You must call next_server_send_packets_end!
 
     int result = xsk_ring_prod__reserve( &server->send_queue, NEXT_XDP_MAX_SEND_PACKETS, &server->xdp_send_queue_index );
@@ -953,6 +956,9 @@ void next_server_send_packets_end( struct next_server_t * server )
 
     next_assert( server->sending_packets );
 
+    // todo
+    printf( "send packets end\n" );
+
     // setup descriptors for packets that were sent
 
     /*
@@ -966,7 +972,7 @@ void next_server_send_packets_end( struct next_server_t * server )
 
     // dummy packet descriptors for packets that were not sent
 
-    for ( int i = server->num_send_packets; i < NEXT_XDP_MAX_SEND_PACKETS; i++ )
+    for ( int i = /*server->num_send_packets*/0; i < NEXT_XDP_MAX_SEND_PACKETS; i++ )
     {
         struct xdp_desc * desc = xsk_ring_prod__tx_desc( &server->send_queue, server->xdp_send_queue_index + i );
         desc->addr = 0;
