@@ -260,6 +260,8 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     next_assert( bind_address_string );
     next_assert( public_address_string );
 
+    next_info( "server public address is %s", public_address_string );
+
     next_address_t bind_address;
     if ( !next_address_parse( &bind_address, bind_address_string ) )
     {
@@ -477,6 +479,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         pclose( file );
     }
 
+    /*
     // be extra safe and let's make sure no xdp programs are running on this interface before we start
     {
         next_info( "unloading xdp programs on network interface %s", interface_name );
@@ -509,6 +512,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             pclose( file );
         }
     }
+    */
 
     // write out source tar.gz for server_xdp_xdp.o
     {
