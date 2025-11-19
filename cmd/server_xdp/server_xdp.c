@@ -5,10 +5,11 @@
 
     USAGE:
 
-        clang -Ilibbpf/src -g -O2 -target bpf -c server_xdp.c -o server_xdp.o
-        sudo ip link set dev enp4s0 xdp obj server_xdp.o sec server_xdp
+        make
+        sudo xdp-loader load eno1 server_xdp.o
+        sudo xdp-loader status
         sudo cat /sys/kernel/debug/tracing/trace_pipe
-        sudo ip link set dev enp4s0 xdp off
+        sudo xdp-loader unload -a eno1
 */
 
 #if defined(__linux__) && defined(__BPF__)
