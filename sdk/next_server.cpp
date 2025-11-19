@@ -33,8 +33,6 @@
 #include <memory.h>
 #include <stdio.h>
 
-#ifndef __linux__
-
 struct next_server_send_buffer_t
 {
     next_platform_mutex_t mutex;
@@ -55,8 +53,6 @@ struct next_server_receive_buffer_t
     size_t packet_bytes[NEXT_NUM_SERVER_FRAMES];
     uint8_t data[NEXT_MAX_PACKET_BYTES*NEXT_NUM_SERVER_FRAMES];
 };
-
-#endif // #ifndef __linux__
 
 struct next_server_t
 {
