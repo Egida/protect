@@ -978,7 +978,9 @@ void next_server_send_packets_end( struct next_server_t * server )
             exit(0);
         }
 
-        uint8_t * packet_data = (uint8_t*)server->buffer + frame * NEXT_SERVER_FRAME_SIZE;
+        const uint64_t offset = frame * NEXT_SERVER_FRAME_SIZE;
+
+        uint8_t * packet_data = (uint8_t*)server->buffer + offset;
 
         // todo: actually set these to something valid
         uint32_t client_address_big_endian = 0x0301a8c0;                            // batman
@@ -988,7 +990,7 @@ void next_server_send_packets_end( struct next_server_t * server )
 
         int packet_bytes = generate_packet_header( packet_data, server->server_ethernet_address, server->gateway_ethernet_address, server->server_address_big_endian, client_address_big_endian, server->server_port_big_endian, client_port_big_endian, payload_bytes );
 
-        desc->addr = frame;
+        desc->addr = offset;
         desc->len = packet_bytes;
     }
 
