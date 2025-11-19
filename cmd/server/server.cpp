@@ -53,9 +53,6 @@ int main()
 
         next_server_update( server );
 
-        next_server_send_packets_begin( server );
-
-        /*
         for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
         {
             if ( next_server_client_connected( server, i ) )
@@ -66,13 +63,12 @@ int main()
                 {
                     memset( packet_data, 0, 100 );
                     next_server_finish_packet( server, packet_data, 100 );
-                    // next_info( "server sent packet %" PRId64 " to client %d", sequence, i );
+                    next_info( "server sent packet %" PRId64 " to client %d", sequence, i );
                 }
             }
         }
-        */
 
-        next_server_send_packets_end( server );
+        next_server_send_packets( server );
 
         next_platform_sleep( 1.0 / 100.0 );       
     }

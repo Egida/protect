@@ -36,15 +36,13 @@ uint64_t next_server_id( struct next_server_t * server );
 
 // send packets (zero copy)
 
-void next_server_send_packets_begin( struct next_server_t * server );
-
 uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * sequence );
 
 void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_data, int packet_bytes );
 
 void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_data );
 
-void next_server_send_packets_end( struct next_server_t * server );
+void next_server_send_packets( struct next_server_t * server );
 
 // receive packets (zero copy)
 

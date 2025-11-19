@@ -101,20 +101,14 @@ struct next_server_t
     struct xsk_ring_prod fill_queue;
     struct xsk_socket * xsk;
 
-    bool sending_packets;
-    uint32_t xdp_send_queue_index;
-
-    int num_send_packets;
-    uint64_t send_packet_offset[NEXT_XDP_SEND_BATCH_SIZE];
-    int send_packet_bytes[NEXT_XDP_SEND_BATCH_SIZE];
-
 #else // #ifdef __linux__
 
     next_platform_socket_t * socket;
-    next_server_send_buffer_t send_buffer;
     next_server_receive_buffer_t receive_buffer;
 
 #endif // #ifdef __linux__
+
+    next_server_send_buffer_t send_buffer;
 };
 
 void next_server_destroy( next_server_t * server );
@@ -733,67 +727,11 @@ int generate_packet_header( void * data, uint8_t * server_ethernet_address, uint
 
 #endif // #ifdef __linux__
 
-void next_server_send_packets_begin( struct next_server_t * server )
-{
-    next_assert( server );
-
-#ifdef __linux__
-
-    next_assert( !server->sending_packets );     // IMPORTANT: You must call next_server_send_packets_end!
-
-    int result = xsk_ring_prod__reserve( &server->send_queue, NEXT_XDP_SEND_BATCH_SIZE, &server->xdp_send_queue_index );
-    if ( result == 0 ) 
-    {
-        next_warn( "server send queue is full" );
-        return;
-    }
-
-    server->sending_packets = true;
-
-#else // #ifdef __linux__
-
-    // ...
-
-#endif // #ifdef __linux__
-}
-
 uint8_t * next_server_start_packet_internal( struct next_server_t * server, next_address_t * to, uint8_t packet_type )
 {
     next_assert( server );
     next_assert( to );
     next_assert( client_index >= 0 );
-
-#ifdef __linux__
-
-    if ( !server->sending_packets )
-        return NULL;
-
-    // todo
-    return NULL;
-
-    /*
-    next_assert( server->num_send_packets < NEXT_XDP_SEND_BATCH_SIZE );
-    if ( server->num_send_packets >= NEXT_XDP_SEND_BATCH_SIZE )
-        return NULL;
-
-    uint64_t frame = next_server_alloc_frame( server, send_index );
-
-    next_assert( frame != INVALID_FRAME );      // this should never happen!
-    if ( frame == INVALID_FRAME )
-        return NULL;
-
-    uint8_t * packet_data = (uint8_t*)server->buffer + ( NEXT_SERVER_FRAME_SIZE * frame );
-
-    // todo: acquire send mutex here
-    const int index = server->num_send_packets++;
-    server->send_packet_frame[index] = frame;
-    server->send_packet_bytes[index] = 0;
-    // todo: release send mutex here
-
-    return packet_data;
-    */
-
-#else // #ifdef __linux__
 
     next_platform_mutex_acquire( &server->send_buffer.mutex );
 
@@ -819,8 +757,6 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
     server->send_buffer.packet_bytes[frame] = 0;
 
     return packet_data;
-
-#endif // #ifdef __linux__
 }
 
 uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * out_sequence )
@@ -863,18 +799,11 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
     }
 }
 
-void next_server_finish_packet_internal( struct next_server_t * server, uint8_t * packet_data, int packet_bytes )
+void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_data, int packet_bytes )
 {
     next_assert( server );
-
-#ifdef __linux__
-
-    if ( !server->sending_packets )
-        return;
-
-    // todo: AF_XDP
-
-#else // #ifdef __linux__
+    next_assert( packet_bytes >= 0 );
+    next_assert( packet_bytes <= NEXT_MTU );
 
     size_t offset = ( packet_data - server->send_buffer.data );
 
@@ -913,31 +842,11 @@ void next_server_finish_packet_internal( struct next_server_t * server, uint8_t 
 
     next_generate_pittle( a, from_address_data, to_address_data, packet_bytes );
     next_generate_chonkle( b, magic, from_address_data, to_address_data, packet_bytes );
-
-#endif // #ifdef __linux__
-}
-
-void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_data, int packet_bytes )
-{
-    next_assert( server );
-    next_assert( packet_bytes >= 0 );
-    next_assert( packet_bytes <= NEXT_MTU );
-
-    next_server_finish_packet_internal( server, packet_data - 8, packet_bytes + 8 );
 }
 
 void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_data )
 {
     next_assert( server );
-
-#ifdef __linux__
-
-    if ( !server->sending_packets )
-        return;
-
-    // todo: AF_XDP
-
-#else // #ifdef __linux__
 
     size_t offset = ( packet_data - server->send_buffer.data );
 
@@ -951,38 +860,82 @@ void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_d
     next_assert( frame < NEXT_NUM_SERVER_FRAMES );  
 
     server->send_buffer.packet_bytes[frame] = 0;
-
-#endif // #ifdef __linux__
 }
 
-void next_server_send_packets_end( struct next_server_t * server )
+void next_server_send_packets( struct next_server_t * server )
 {
     next_assert( server );
 
 #ifdef __linux__
 
-    next_assert( server->sending_packets );
+    // count how many valid packets we have to send in the send buffer (non-zero size)
+
+    int num_packets_to_send = 0;
+
+    const int num_packets = (int) server->send_buffer.current_frame;
+
+    for ( int i = 0; i < num_packets; i++ )
+    {
+        const int packet_bytes = (int) server->send_buffer.packet_bytes[i];
+
+        if ( packet_bytes > 0 )
+        {
+            num_packets_to_send++;
+        }
+    }
+
+    // send packets in batches
+
+    while ( true )
+    {
+        if ( num_packets_to_send == 0 )
+            break;
+
+        const int batch_packets = ( num_packets_to_send < NEXT_XDP_SEND_BATCH_SIZE ) ? num_packets_to_send : NEXT_XDP_SEND_BATCH_SIZE;
+
+        // todo
+        next_info( "send %d packets", batch_packets );
+
+        num_packets_to_send -= batch_packets;
+    }
+
+    next_assert( num_packets_to_send == 0 );
+
+    server->send_buffer.current_frame = 0;
+
+#if 0
+
+    // reserve packets to send in the send queue
+
+    uint32_t send_queue_index;
+    int result = xsk_ring_prod__reserve( &server->send_queue, NEXT_XDP_SEND_BATCH_SIZE, &send_queue_index );
+    if ( result == 0 ) 
+    {
+        next_warn( "server send queue is full" );
+        return;
+    }
 
     // setup descriptors for packets that were sent
 
     for ( int i = 0; i < NEXT_XDP_SEND_BATCH_SIZE; i++ )
     {
-        struct xdp_desc * desc = xsk_ring_prod__tx_desc( &server->send_queue, server->xdp_send_queue_index + i );
+        struct xdp_desc * desc = xsk_ring_prod__tx_desc( &server->send_queue, send_queue_index + i );
 
+        // todo: maybe try alloc'ing the frames above
         uint64_t frame = next_server_alloc_frame( server );
 
         next_assert( frame != INVALID_FRAME );          // this should never happen
         if ( frame == INVALID_FRAME )
         {
-            printf( "invalid frame\n" );
-            exit(0);
+            // IMPORTANT: this does not happen under normal conditions. but if it *does* happen, it is fatal
+            next_error( "invalid xdp frame" );
+            exit(1);
         }
 
         uint8_t * packet_data = (uint8_t*)server->buffer + frame;
 
-        // todo: actually set these to something valid
-        uint32_t client_address_big_endian = 0x0301a8c0;                            // batman
-        uint32_t client_port_big_endian = next_platform_htons( 30000 );             // port is hard coded on the client for now...
+        uint32_t client_address_big_endian = 0x0301a8c0;                            // batman IP on 10G LAN
+        uint32_t client_port_big_endian = next_platform_htons( 30000 );
 
         int payload_bytes = 100;
 
@@ -1005,15 +958,12 @@ void next_server_send_packets_end( struct next_server_t * server )
 
     // mark any sent packet frames as free to be reused
 
-    while ( true )
+    uint32_t complete_index;
+
+    unsigned int num_completed = xsk_ring_cons__peek( &server->complete_queue, XSK_RING_CONS__DEFAULT_NUM_DESCS, &complete_index );
+
+    if ( num_completed > 0 )
     {
-        uint32_t complete_index;
-
-        unsigned int num_completed = xsk_ring_cons__peek( &server->complete_queue, XSK_RING_CONS__DEFAULT_NUM_DESCS, &complete_index );
-
-        if ( num_completed == 0 )
-            break;
-
         printf( "%d completed\n", num_completed );
         fflush( stdout );
 
@@ -1026,17 +976,13 @@ void next_server_send_packets_end( struct next_server_t * server )
         xsk_ring_cons__release( &server->complete_queue, num_completed );
     }
 
-    // reset ready for next packet send
+    server->send_buffer.current_frame = 0;
 
-    server->num_send_packets = 0;
-    server->xdp_send_queue_index = 0;
-    server->sending_packets = false;
+#endif // #if 0
 
 #else // #ifdef __linux__
 
     const int num_packets = (int) server->send_buffer.current_frame;
-
-    server->send_buffer.current_frame = 0;
 
     for ( int i = 0; i < num_packets; i++ )
     {
@@ -1051,6 +997,8 @@ void next_server_send_packets_end( struct next_server_t * server )
             next_platform_socket_send_packet( server->socket, &server->send_buffer.to[i], packet_data, (int) server->send_buffer.packet_bytes[i] );
         }
     }
+
+    server->send_buffer.current_frame = 0;
 
 #endif // #ifdef __linux__
 }
