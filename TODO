@@ -20,13 +20,19 @@ DONE
 
     And then we have this zero copy interface, where you specifically have to call out the number of packets to send and you *must* send that many packets. 
 
+    OK I fixed the mac address byte order, it was reversed, and now the client on the mac receives the packets sent from the linux AF_XDP program.
+
 TODO
 
+    Keep it simple and just do a non-zero copy (one copy) method of sending packets.
 
+    At the end of sending packets, the send packets call will do the XDP stuff. It's simple.
 
+    Later on if we need the zero copy stuff for some reason, we can add that, but it's probably overkill.
 
+    Might be cool to also do a "broadcast" eg. to all connected clients, and then we really can do some sweet XDP stuff with it.
 
-
+    We are also going to need to copy for the two multipath as well, so ...
 
 
 
