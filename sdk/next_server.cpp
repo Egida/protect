@@ -105,8 +105,8 @@ struct next_server_t
     uint32_t xdp_send_queue_index;
 
     int num_send_packets;
-    uint64_t send_packet_offset[NEXT_XDP_MAX_SEND_PACKETS];
-    int send_packet_bytes[NEXT_XDP_MAX_SEND_PACKETS];
+    uint64_t send_packet_offset[NEXT_XDP_SEND_BATCH_SIZE];
+    int send_packet_bytes[NEXT_XDP_SEND_BATCH_SIZE];
 
 #else // #ifdef __linux__
 
@@ -741,7 +741,7 @@ void next_server_send_packets_begin( struct next_server_t * server )
 
     next_assert( !server->sending_packets );     // IMPORTANT: You must call next_server_send_packets_end!
 
-    int result = xsk_ring_prod__reserve( &server->send_queue, NEXT_XDP_MAX_SEND_PACKETS, &server->xdp_send_queue_index );
+    int result = xsk_ring_prod__reserve( &server->send_queue, NEXT_XDP_SEND_BATCH_SIZE, &server->xdp_send_queue_index );
     if ( result == 0 ) 
     {
         next_warn( "server send queue is full" );
@@ -772,8 +772,8 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
     return NULL;
 
     /*
-    next_assert( server->num_send_packets < NEXT_XDP_MAX_SEND_PACKETS );
-    if ( server->num_send_packets >= NEXT_XDP_MAX_SEND_PACKETS )
+    next_assert( server->num_send_packets < NEXT_XDP_SEND_BATCH_SIZE );
+    if ( server->num_send_packets >= NEXT_XDP_SEND_BATCH_SIZE )
         return NULL;
 
     uint64_t frame = next_server_alloc_frame( server, send_index );
@@ -994,7 +994,7 @@ void next_server_send_packets_end( struct next_server_t * server )
 
     // submit send queue to driver
 
-    xsk_ring_prod__submit( &server->send_queue, NEXT_XDP_MAX_SEND_PACKETS );
+    xsk_ring_prod__submit( &server->send_queue, NEXT_XDP_SEND_BATCH_SIZE );
 
     // actually send the packets
 
