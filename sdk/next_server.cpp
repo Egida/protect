@@ -989,7 +989,7 @@ void next_server_send_packets_end( struct next_server_t * server )
         int packet_bytes = generate_packet_header( packet_data, server->server_ethernet_address, server->gateway_ethernet_address, server->server_address_big_endian, client_address_big_endian, server->server_port_big_endian, client_port_big_endian, payload_bytes );
 
         desc->addr = frame;
-        desc->len = ( i < 10 ) ? packet_bytes : 0;
+        desc->len = packet_bytes;
     }
 
     // submit send queue to driver
