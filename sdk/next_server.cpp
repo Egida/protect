@@ -148,12 +148,12 @@ static bool get_interface_mac_address( const char * interface_name, uint8_t * ma
     mac_address_string[14] = 0;
     mac_address_string[17] = 0;
 
-    mac_address[5] = (uint8_t) strtol( mac_address_string + 0, NULL, 16 );
-    mac_address[4] = (uint8_t) strtol( mac_address_string + 3, NULL, 16 );
-    mac_address[3] = (uint8_t) strtol( mac_address_string + 6, NULL, 16 );
-    mac_address[2] = (uint8_t) strtol( mac_address_string + 9, NULL, 16 );
-    mac_address[1] = (uint8_t) strtol( mac_address_string + 12, NULL, 16 );
-    mac_address[0] = (uint8_t) strtol( mac_address_string + 15, NULL, 16 );
+    mac_address[0] = (uint8_t) strtol( mac_address_string + 0, NULL, 16 );
+    mac_address[1] = (uint8_t) strtol( mac_address_string + 3, NULL, 16 );
+    mac_address[2] = (uint8_t) strtol( mac_address_string + 6, NULL, 16 );
+    mac_address[3] = (uint8_t) strtol( mac_address_string + 9, NULL, 16 );
+    mac_address[4] = (uint8_t) strtol( mac_address_string + 12, NULL, 16 );
+    mac_address[5] = (uint8_t) strtol( mac_address_string + 15, NULL, 16 );
 
     fclose( file );
 
@@ -238,12 +238,12 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
     mac_address_string[14] = 0;
     mac_address_string[17] = 0;
 
-    mac_address[5] = (uint8_t) strtol( mac_address_string + 0, NULL, 16 );
-    mac_address[4] = (uint8_t) strtol( mac_address_string + 3, NULL, 16 );
-    mac_address[3] = (uint8_t) strtol( mac_address_string + 6, NULL, 16 );
-    mac_address[2] = (uint8_t) strtol( mac_address_string + 9, NULL, 16 );
-    mac_address[1] = (uint8_t) strtol( mac_address_string + 12, NULL, 16 );
-    mac_address[0] = (uint8_t) strtol( mac_address_string + 15, NULL, 16 );
+    mac_address[0] = (uint8_t) strtol( mac_address_string + 0, NULL, 16 );
+    mac_address[1] = (uint8_t) strtol( mac_address_string + 3, NULL, 16 );
+    mac_address[2] = (uint8_t) strtol( mac_address_string + 6, NULL, 16 );
+    mac_address[3] = (uint8_t) strtol( mac_address_string + 9, NULL, 16 );
+    mac_address[4] = (uint8_t) strtol( mac_address_string + 12, NULL, 16 );
+    mac_address[5] = (uint8_t) strtol( mac_address_string + 15, NULL, 16 );
 
     return true;
 }
@@ -349,18 +349,18 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     }
 
     next_info( "server ethernet address is %02x.%02x.%02x.%02x.%02x.%02x", 
-        server->server_ethernet_address[5], 
-        server->server_ethernet_address[4], 
-        server->server_ethernet_address[3], 
-        server->server_ethernet_address[2], 
+        server->server_ethernet_address[0], 
         server->server_ethernet_address[1], 
-        server->server_ethernet_address[0] 
+        server->server_ethernet_address[2], 
+        server->server_ethernet_address[3], 
+        server->server_ethernet_address[4], 
+        server->server_ethernet_address[5] 
     );
 
     // look up the gateway ethernet address for the network interface
 
     // batman mac address on LAN
-    uint8_t batman_mac[] = { 0xec, 0x3a, 0xd8, 0x7a, 0x81, 0xd0 };
+    uint8_t batman_mac[] = { 0xd0, 0x81, 0x7a, 0xd8, 0x3a, 0xec };
     memcpy( server->gateway_ethernet_address, batman_mac, 6 );
 
     /*
@@ -373,12 +373,12 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     */
 
     next_info( "gateway ethernet address is %02x.%02x.%02x.%02x.%02x.%02x", 
-        server->gateway_ethernet_address[5], 
-        server->gateway_ethernet_address[4], 
-        server->gateway_ethernet_address[3], 
-        server->gateway_ethernet_address[2], 
+        server->gateway_ethernet_address[0], 
         server->gateway_ethernet_address[1], 
-        server->gateway_ethernet_address[0] 
+        server->gateway_ethernet_address[2], 
+        server->gateway_ethernet_address[3], 
+        server->gateway_ethernet_address[4], 
+        server->gateway_ethernet_address[5] 
     );
 
     // allow unlimited locking of memory, so all memory needed for packet buffers can be locked
