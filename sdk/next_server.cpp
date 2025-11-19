@@ -190,8 +190,6 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
 
     if ( !gateway_ip_string )
     {
-        // todo
-        printf( "could not find gateway ip string" );
         return false;
     }
 
@@ -200,8 +198,6 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
     next_address_t address;
     if ( !next_address_parse( &address, gateway_ip_string ) || address.type != NEXT_ADDRESS_IPV4 )
     {
-        // todo
-        printf( "gateway address is not valid" );
         return false;
     }
 
@@ -215,7 +211,7 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
     char ip_buffer[1024];
     while ( fgets( ip_buffer, sizeof(ip_buffer), file ) != NULL )
     {
-        if ( strlen( ip_buffer ) > 0 && strstr( ip_buffer, gateway_ip_string ) && strstr( ip_buffer, interface_name ) ) // && strstr( ip_buffer, "REACHABLE" ) )
+        if ( strlen( ip_buffer ) > 0 && strstr( ip_buffer, gateway_ip_string ) && strstr( ip_buffer, interface_name ) && strstr( ip_buffer, "REACHABLE" ) )
         {
             char * p = strstr( ip_buffer, " lladdr " );
             if ( p )
@@ -232,8 +228,6 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
 
     if ( !found_mac_address )
     {
-        // todo
-        printf( "did not find mac address" );
         return false;
     }
 
@@ -365,12 +359,18 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // look up the gateway ethernet address for the network interface
 
+    // batman mac address on LAN
+    uint8_t batman_mac[] = { 0xd0, 0x81, 0x7a, 0xd8, 0x3a, 0xe3 };
+    memcpy( server->gateway_ethernet_address, batman_mac, 6 );
+
+    /*
     if ( !get_gateway_mac_address( interface_name, server->gateway_ethernet_address ) )
     {
         next_error( "server could not get gateway mac address" );
         next_server_destroy( server );
         return NULL;
     }
+    */
 
     next_info( "gateway ethernet address is %02x.%02x.%02x.%02x.%02x.%02x", 
         server->gateway_ethernet_address[5], 
