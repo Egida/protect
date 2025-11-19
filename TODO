@@ -1,70 +1,16 @@
 DONE
 
-    Set direct timeout to 10 seconds. We'll want the accelerated timeout to be much longer (30-60 seconds...)
-
-    Implement a timeout on the direct client.
-
-    Implement simplest possible direct connection -> client index slot on the server.
-
-    Unify functions on the client when client connects, timeouts etc. so everything goes through one place.
-
-    Implement a timeout on the server for direct connections.
-
-    Client sends n disconnect packets to server when quitting direct.
-
-    Server reads disconnect packets and disconnects client clean when it quits.
-
-    SSH back into the linux box
-
-    Implement the server XDP program skeleton
-
-    This program should look at any UDP ports at 1024 and above and pass down to userspace only if they pass the packet filter
-
-    Setup the skeleton for AF_XDP in next_server.cpp #ifdef __linux__
-
-    Added generate packet header function
-
-    Sketch out data structures needed by AF_XDP for building packet header
-
-    Keep an array of the client_address_big_endian and client_port_big_endian so we can pass in to the packet header as-is.
-
-    Stash the server_address_big_endian and server_port_big_endian so we can pass it in to the packet header as-is.
-
-    Look up the server ethernet address and save it to a variable
-
-    First look up the gateway IP address for the network interface by name:
-
-        ubuntu@latitude:~/protect$ netstat -rn | grep UG
-        
-        0.0.0.0         45.250.253.242  0.0.0.0         UG        0 0          0 eno1
-
-    Then once we have the IP address for the gateway, we can search lines in "arp -a" and look for:
-
-        ubuntu@latitude:~/protect$ arp -a
-        
-        ? (45.250.253.242) at 50:87:89:d4:37:2d [ether] on eno1
-
-    This way we should be able to always get the correct gateway ethernet address for outgoing packets.
-
-    ps. We assume that XDP servers will *never* be doing any direct communication within a local network.
-
-    Actually, ended up using "ip neigh show" instead of "arp -a" because the latter takes several seconds and ip is instant.
-
-    Bring across frame allocator protected by a mutex
-
-    Restructure packet send and receive so they have begin/end -- this will help with XDP.
-
-    OK. The trick is that you *must* have an XDP program loaded. It won't work without. It won't call the complete.
-
-    So I have to merge in the server XDP program in with the next_server.cpp, and load it when the server starts.
-
-    We need to have next_server_xdp.c as part of the SDK!
-
     Now I'm getting weird hung and disconnected when I run the server xdp program?
+
+    I've requested a second IP address for the new york server, so I can load the XDP program on the second NIC (while SSH'ing in on the first NIC)
+
+    They just statically redirected the second IP to the first, doing nothing. So I cancelled the server.
+
+    I will setup my hulk linux machine and work in my lab instead.
 
 TODO
 
-    I've requested a second IP address for the new york server, so I can load the XDP program on the second NIC (while SSH'ing in on the first NIC)
+    Get hulk up and running so I can send packets with AF_XDP
 
 
 

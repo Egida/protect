@@ -25,6 +25,8 @@
 #include <linux/string.h>
 #include <bpf/bpf_helpers.h>
 
+// todo: disable for now
+/*
 #ifdef __BPF__
 #define PROTON_FUNC __ksym
 #else // #ifdef __BPF__
@@ -57,6 +59,7 @@ extern int proton_sign_verify( void * data, int data__sz, void * signature, int 
 extern int proton_secretbox_encrypt( void * data, int data__sz, __u64 message_id, void * key, int key__sz ) PROTON_FUNC;
 
 extern int proton_secretbox_decrypt( void * data, int data__sz, __u64 message_id, void * key, int key__sz ) PROTON_FUNC;
+*/
 
 #define ADVANCED_PACKET_FILTER               0
 
