@@ -80,11 +80,6 @@ struct next_server_t
 
 #ifdef __linux__
 
-    int interface_index;
-    struct xdp_program * program;
-    bool attached_native;
-    bool attached_skb;
-
     uint8_t server_ethernet_address[ETH_ALEN];
     uint8_t gateway_ethernet_address[ETH_ALEN];
 
@@ -326,13 +321,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
                 if ( sa->sin_addr.s_addr == public_address_ipv4 )
                 {
                     strncpy( interface_name, iap->ifa_name, sizeof(interface_name) );
-                    server->interface_index = if_nametoindex( iap->ifa_name );
-                    if ( !server->interface_index ) 
-                    {
-                        next_error( "server if_nametoindex failed" );
-                        next_server_destroy( server );
-                        return NULL;
-                    }
                     found = true;
                     break;
                 }
@@ -479,115 +467,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         pclose( file );
     }
 
-    /*
-    // be extra safe and let's make sure no xdp programs are running on this interface before we start
-    {
-        next_info( "unloading xdp programs on network interface %s", interface_name );
-
-        char command[2048];
-        snprintf( command, sizeof(command), "xdp-loader unload %s --all", interface_name );
-        FILE * file = popen( command, "r" );
-        char buffer[1024];
-        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
-        pclose( file );
-    }
-
-    // delete all bpf maps we use so stale data doesn't stick around
-    {
-        next_info( "deleting previous bpf maps to avoid stale data" );
-
-        {
-            const char * command = "rm -f /sys/fs/bpf/server_xdp_config_map";
-            FILE * file = popen( command, "r" );
-            char buffer[1024];
-            while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
-            pclose( file );
-        }
-
-        {
-            const char * command = "rm -f /sys/fs/bpf/server_xdp_state_map";
-            FILE * file = popen( command, "r" );
-            char buffer[1024];
-            while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
-            pclose( file );
-        }
-    }
-    */
-
-    // write out source tar.gz for server_xdp_xdp.o
-    {
-        next_info( "writing server_xdp.tar.gz" );
-
-        FILE * file = fopen( "server_xdp.tar.gz", "wb" );
-        if ( !file )
-        {
-            printf( "\nerror: could not open server_xdp.tar.gz for writing" );
-            next_server_destroy( server );
-            return NULL;
-        }
-
-        fwrite( next_server_xdp_tar_gz, sizeof(next_server_xdp_tar_gz), 1, file );
-
-        fclose( file );
-    }
-
-    // unzip source and build server_xdp.o from source with make
-    {
-        next_info( "extracting xdp program source and building server_xdp.o" );
-
-        const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.o && tar -zxf server_xdp.tar.gz && make server_xdp.o";
-        FILE * file = popen( command, "r" );
-        char buffer[1024];
-        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
-        pclose( file );
-    }
-
-    // clean up after ourselves
-    {
-        const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.tar.gz";
-        FILE * file = popen( command, "r" );
-        char buffer[1024];
-        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
-        pclose( file );
-    }
-
-    // load the server_xdp program and attach it to the network interface
-
-    next_info( "loading server_xdp.o" );
-
-    server->program = xdp_program__open_file( "server_xdp.o", "server_xdp", NULL );
-    if ( libxdp_get_error( server->program ) ) 
-    {
-        next_error( "could not load server_xdp program" );
-        next_server_destroy( server );
-        return NULL;
-    }
-
-    next_info( "server_xdp loaded successfully" );
-
-    next_info( "attaching server_xdp to network interface %s", interface_name );
-
-    int ret = xdp_program__attach( server->program, server->interface_index, XDP_MODE_NATIVE, 0 );
-    if ( ret == 0 )
-    {
-        server->attached_native = true;
-    } 
-    else
-    {
-        next_info( "falling back to skb mode..." );
-        ret = xdp_program__attach( server->program, server->interface_index, XDP_MODE_SKB, 0 );
-        if ( ret == 0 )
-        {
-            server->attached_skb = true;
-        }
-        else
-        {
-            next_error( "failed to attach server_xdp program to interface" );
-            next_server_destroy( server );
-            return NULL;
-        }
-    }
-
     // allow unlimited locking of memory, so all memory needed for packet buffers can be locked
 
     struct rlimit rlim = { RLIM_INFINITY, RLIM_INFINITY };
@@ -720,19 +599,6 @@ void next_server_destroy( next_server_t * server )
     next_platform_mutex_destroy( &server->client_payload_mutex );
 
 #ifdef __linux__
-
-    if ( server->program != NULL )
-    {
-        if ( server->attached_native )
-        {
-            xdp_program__detach( server->program, server->interface_index, XDP_MODE_NATIVE, 0 );
-        }
-        if ( server->attached_skb )
-        {
-            xdp_program__detach( server->program, server->interface_index, XDP_MODE_SKB, 0 );
-        }
-        xdp_program__close( server->program );
-    }
 
     next_platform_mutex_destroy( &server->frame_mutex );
 
