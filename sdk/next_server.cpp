@@ -984,6 +984,8 @@ void next_server_send_packets( struct next_server_t * server )
                 return;
             }
 
+            // todo: if we couldn't reserve all entries we need to free some frames here
+
             // setup descriptors for packets to be sent
 
             for ( int i = 0; i < batch_packets; i++ )
