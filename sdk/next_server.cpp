@@ -751,7 +751,7 @@ void next_server_destroy( next_server_t * server )
 
     for ( int i = 0; i < NUM_SERVER_XDP_SOCKETS; i++ )
     {
-        next_server_xdp_socket_t * socket = &server->sockets[i];
+        next_server_xdp_socket_t * socket = &server->socket[i];
 
         if ( socket->xsk )
         {
