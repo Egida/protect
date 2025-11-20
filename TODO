@@ -65,25 +65,22 @@ DONE
 
     Without this, you can't just 
 
+    Verify the client user space receives packets sent to it from AF_XDP
+
+    What's the next step?
+
+    We need to only look at packets to the correct address and port and pass them down
+
+    We need to consider support for multiple queues and how that will work (poll?)
+
+    Need to implement the actual processing of packets by client.cpp and marking processed packets as finished (ready to re-use in fill queue...)
+
+    Decision. Get everything working with one queue up to packet processing via the userspace application.
+
+    Next, 
+
 TODO
 
-
-
-    -------------
-
-    Verify the client receives packets sent to it from AF_XDP
-
-    -------------
-
-    Implement receive with AF_XDP
-
-    -------------
-
-    Verify the server receives packets sent to it from the client via AF_XDP
-
-    -------------
-
-    *** Good stopping point here ***
 
 
 

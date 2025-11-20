@@ -104,11 +104,11 @@ struct next_server_t
 #else // #ifdef __linux__
 
     next_platform_socket_t * socket;
-    next_server_receive_buffer_t receive_buffer;
 
 #endif // #ifdef __linux__
 
     next_server_send_buffer_t send_buffer;
+    next_server_receive_buffer_t receive_buffer;
 };
 
 void next_server_destroy( next_server_t * server );
@@ -1258,14 +1258,6 @@ struct next_server_process_packets_t * next_server_process_packets_begin( struct
 {
     next_assert( server );
 
-#ifdef __linux__
-
-    // todo: AF_XDP
-    memset( &server->process_packets, 0, sizeof(server->process_packets) );
-    return &server->process_packets;
-
-#else // #ifdef __linux__
-
     next_assert( !server->receive_buffer.processing_packets );          // IMPORTANT: You must always call next_server_process_packets_finish
 
     const int num_packets = server->receive_buffer.current_packet;
@@ -1286,8 +1278,6 @@ struct next_server_process_packets_t * next_server_process_packets_begin( struct
     server->receive_buffer.processing_packets = true;
 
     return &server->process_packets;
-
-#endif // #ifdef __linux__
 }
 
 void next_server_packet_processed( struct next_server_t * server, uint8_t * packet_data )
@@ -1295,33 +1285,16 @@ void next_server_packet_processed( struct next_server_t * server, uint8_t * pack
     next_assert( server );
     next_assert( packet_data );
 
-#ifdef __linux__
-
-    // todo: AF_XDP
-
-#else // #ifdef __linux__
-
     // ...
 
     (void) server;
     (void) packet_data;
-
-#endif // #ifdef __linux__
 }
 
 void next_server_process_packets_end( struct next_server_t * server )
 {
     next_assert( server );
-
-#ifdef __linux__
-
-    // todo: AF_XDP
-
-#else // #ifdef __linux__
-
     next_assert( server->receive_buffer.processing_packets );
     server->receive_buffer.processing_packets = false;
     server->process_packets.num_packets = 0;
-
-#endif // #ifdef __linux__
 }
