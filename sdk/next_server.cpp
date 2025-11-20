@@ -26,6 +26,7 @@
 #include <linux/if_link.h>
 #include <linux/if_ether.h>
 #include <errno.h>
+#include <atomic>
 
 #include "next_server_xdp.h"
 
@@ -37,6 +38,13 @@
 #ifdef __linux__
 
 #define NUM_SERVER_XDP_SOCKETS 2
+
+struct next_server_xdp_receive_buffer_t
+{
+    int current_packet;
+    size_t packet_bytes[NEXT_SERVER_MAX_RECEIVE_PACKETS];
+    uint8_t packet_data[NEXT_MAX_PACKET_BYTES*NEXT_XDP_RECV_QUEUE_SIZE];
+};
 
 struct next_server_xdp_socket_t
 {
@@ -50,6 +58,9 @@ struct next_server_xdp_socket_t
     struct xsk_ring_cons complete_queue;
     struct xsk_ring_prod fill_queue;
     struct xsk_socket * xsk;
+
+    std::atomic<int> receive_index;
+    struct next_server_xdp_receive_buffer_t receive_buffer[2];
 };
 
 #else // #ifdef __linux__

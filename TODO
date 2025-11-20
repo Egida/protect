@@ -18,8 +18,6 @@ DONE
 
         4. Move packet sends to multiple threads (but then the question is how to wake up the send packet threads to do work?)
 
-TODO
-
     I think that implementing receive packets across multiple threads, and working out what core to pin those threads to is an important step. 
 
     What needs to be done to implement receive packets across multiple threads?
@@ -28,7 +26,15 @@ TODO
 
     The sync point happens with main thread (receive packets) and the main thread flips that atomic ptr to the other one, and then does the regular receive on the main.
 
-    Start here, it's complex enough to be interesting.
+    Start here, it's complex enough to be interesting. It still requires copying (not zero copy), but it's only one copy and receive is not a hot path really.
+
+TODO
+
+    Setup the double buffer receive buffer per-socket thing, and then start doing the atomic ptr swap.
+
+    Then move the receive to its own thread per-
+
+    Then work out which core to pin the receive to.
 
 
 
