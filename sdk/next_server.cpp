@@ -1259,3 +1259,38 @@ void next_server_process_packets_end( struct next_server_t * server )
 
 #endif // #ifdef __linux__
 }
+
+
+#if 0
+
+// todo: clean up receive packets garbage below
+
+    // 4. Receive packets
+    printf("Receiving packets on %s queue %d...\n", ifname, queue_id);
+    while (1) {
+        uint32_t rx_idx;
+        uint32_t num_pkts = xsk_ring_cons__peek(&xsk_info.xsk->rx, UMEM_NUM_FRAMES, &rx_idx);
+        if (num_pkts > 0) {
+            for (uint32_t i = 0; i < num_pkts; ++i) {
+                const struct xdp_desc *desc = xsk_ring_cons__rx_desc(&xsk_info.xsk->rx, rx_idx + i);
+                void *pkt_data = xsk_umem__get_data(xsk_info.umem_buffer, desc->addr);
+                // Process the packet data (pkt_data, desc->len)
+                printf("Received packet, length: %u\n", desc->len);
+
+                // Re-add frame to fill ring for reuse
+                uint32_t fill_idx;
+                if (xsk_ring_prod__reserve(&xsk_info.xsk->fill, 1, &fill_idx) == 1) {
+                    *xsk_ring_prod__fill_desc(&xsk_info.xsk->fill, fill_idx) = desc->addr;
+                    xsk_ring_prod__submit(&xsk_info.xsk->fill, 1);
+                }
+            }
+            xsk_ring_cons__release(&xsk_info.xsk->rx, num_pkts);
+        } else {
+            // No packets received, poll for events
+            poll_fd.fd = xsk_socket__fd(xsk_info.xsk);
+            poll_fd.events = POLLIN;
+            poll(&poll_fd, 1, -1); // Wait indefinitely
+        }
+    }
+
+#endif // #if 0
