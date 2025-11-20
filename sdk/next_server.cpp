@@ -645,7 +645,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             uint64_t frames[NEXT_XDP_FILL_QUEUE_SIZE];
             for ( int i = 0; i < NEXT_XDP_FILL_QUEUE_SIZE; i++ ) 
             {
-                frames[i] = next_server_alloc_frame( server );
+                frames[i] = next_xdp_socket_alloc_frame( socket );
                 if ( frames[i] == INVALID_FRAME )
                 {
                     next_error( "server could not allocate frame for fill queue" );
@@ -713,12 +713,16 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
+#ifndef __linux__
+
     if ( !next_platform_mutex_create( &server->send_buffer.mutex ) )
     {
         next_error( "server failed to create send buffer mutex" );
         next_server_destroy( server );
         return NULL;
     }
+
+#endif // #ifndef __linux__
 
     return server;    
 }
@@ -769,9 +773,9 @@ void next_server_destroy( next_server_t * server )
         next_platform_socket_destroy( server->socket );
     }
 
-#endif // #ifdef __linux__
-
     next_platform_mutex_destroy( &server->send_buffer.mutex );
+
+#endif // #ifdef __linux__
 
     next_clear_and_free( server->context, server, sizeof(next_server_t) );
 }
