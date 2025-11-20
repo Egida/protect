@@ -461,7 +461,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             return NULL;
         }
 
-        fwrite( ___cmd_server_xdp_server_xdp_source_tar_gz, sizeof(___cmd_server_xdp_server_xdp_source_tar_gz), 1, file );
+        fwrite( next_server_xdp_tar_gz, sizeof(next_server_xdp_tar_gz), 1, file );
 
         fclose( file );
     }
