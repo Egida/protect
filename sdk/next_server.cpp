@@ -1143,14 +1143,13 @@ void next_server_receive_packets( next_server_t * server )
 
             next_info( "received %d byte packet", packet_bytes );
 
-            /*
             if ( packet_bytes > 18 )
             {
                 const int index = server->receive_buffer.current_packet++;
                 server->receive_buffer.packet_data[index] = server->receive_buffer.data + index * NEXT_MAX_PACKET_BYTES;
                 server->receive_buffer.packet_bytes[index] = packet_bytes;
+                memcpy( server->receive_buffer.packet_data[index], packet_data, packet_bytes );
             }
-            */
 
             // todo: batch prod__submit -> num_packets
             uint32_t fill_index;
