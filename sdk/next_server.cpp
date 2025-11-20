@@ -453,7 +453,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // get file descriptors for maps so we can communicate with the server_xdp program running in kernel space
 
-    server->socket_map_fd = bpf_obj_get( "/sys/fs/bpf/xsk_map" );
+    server->socket_map_fd = bpf_obj_get( "xsk_map" );
     if ( server->socket_map_fd <= 0 )
     {
         next_error( "server could not get socket map: %s\n\n", strerror(errno) );
