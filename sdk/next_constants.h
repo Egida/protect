@@ -18,8 +18,7 @@
 
 #define NEXT_SERVER_MAX_RECEIVE_PACKETS        ( NEXT_RECEIVE_PACKETS_PER_CLIENT * NEXT_MAX_CLIENTS )
 
-// todo: rename
-#define NEXT_NUM_CLIENT_FRAMES                                       1024
+#define NEXT_NUM_CLIENT_PACKETS                                      1024
 
 #define NEXT_XDP_FRAME_SIZE                                      ( 2 * 1024 )
 #define NEXT_XDP_SEND_QUEUE_SIZE                                 ( 8 * 1024 )

@@ -31,12 +31,12 @@ struct next_client_receive_buffer_t
 {
     int current_frame;
     bool processing_packets;
-    next_address_t from[NEXT_NUM_CLIENT_FRAMES];
-    double receive_time[NEXT_NUM_CLIENT_FRAMES];
-    uint64_t sequence[NEXT_NUM_CLIENT_FRAMES];
-    uint8_t * packet_data[NEXT_NUM_CLIENT_FRAMES];
-    size_t packet_bytes[NEXT_NUM_CLIENT_FRAMES];
-    uint8_t data[NEXT_MAX_PACKET_BYTES*NEXT_NUM_CLIENT_FRAMES];
+    next_address_t from[NEXT_NUM_CLIENT_PACKETS];
+    double receive_time[NEXT_NUM_CLIENT_PACKETS];
+    uint64_t sequence[NEXT_NUM_CLIENT_PACKETS];
+    uint8_t * packet_data[NEXT_NUM_CLIENT_PACKETS];
+    size_t packet_bytes[NEXT_NUM_CLIENT_PACKETS];
+    uint8_t data[NEXT_MAX_PACKET_BYTES*NEXT_NUM_CLIENT_PACKETS];
 };
 
 struct next_client_t
@@ -672,7 +672,7 @@ void next_client_receive_packets( next_client_t * client )
 
     while ( 1 )
     {
-        if ( client->receive_buffer.current_frame >= NEXT_NUM_CLIENT_FRAMES )
+        if ( client->receive_buffer.current_frame >= NEXT_NUM_CLIENT_PACKETS )
             break;
 
         uint8_t * packet_data = client->receive_buffer.data + NEXT_MAX_PACKET_BYTES * client->receive_buffer.current_frame;
