@@ -87,11 +87,31 @@ DONE
 
 TODO
 
-    Extend to support reading from n background threads, querying the NIC to see how many queues exist.
+    Design how multiple threads will exist.
 
+    From a read side it is straightforward, we have n sockets and as packets come in on the fill buffer, we copy them off to a per-thread receive buffer.
 
+    Then when we read we can do a double buffer pointer swap (atomic) and the reads are synchronized without a lock.
 
+    For sending packets again, I think we need a double buffer pointer swap.
 
+    There is one send buffer (per-thread...), double buffered.
+
+    When we are finished writing packets to the send buffer, we can atomic pointer swap.
+
+    This way we can have the main thread staying out of the way of the n*2 worker threads.
+
+    Should the worker threads be pinned to cores?
+
+    Should the worker threads be doing both read and write?
+
+    We will need to run separate read and write threads.
+
+    This means that although they are backed by the same UMEM, we should have separate allocators for the read and write threads.
+
+    This way we don't have any contention between them when we allocate frames.
+
+    There is a LOT of work here...
 
 
 
