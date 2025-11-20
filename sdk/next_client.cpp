@@ -29,7 +29,7 @@ struct next_client_backend_init_data_t
 
 struct next_client_receive_buffer_t
 {
-    int current_frame;
+    int current_packet;
     bool processing_packets;
     next_address_t from[NEXT_NUM_CLIENT_PACKETS];
     double receive_time[NEXT_NUM_CLIENT_PACKETS];
@@ -556,7 +556,7 @@ void next_client_update_refresh_backend_token( next_client_t * client )
 
 void next_client_update_process_packets( next_client_t * client )
 {
-    const int num_packets = client->receive_buffer.current_frame;
+    const int num_packets = client->receive_buffer.current_packet;
 
     next_platform_mutex_acquire( &client->mutex );
 
@@ -565,7 +565,7 @@ void next_client_update_process_packets( next_client_t * client )
         next_client_process_packet( client, &client->receive_buffer.from[i], client->receive_buffer.packet_data[i], client->receive_buffer.packet_bytes[i] );
     }
 
-    client->receive_buffer.current_frame = 0;
+    client->receive_buffer.current_packet = 0;
 
     next_platform_mutex_release( &client->mutex );
 }
@@ -672,10 +672,10 @@ void next_client_receive_packets( next_client_t * client )
 
     while ( 1 )
     {
-        if ( client->receive_buffer.current_frame >= NEXT_NUM_CLIENT_PACKETS )
+        if ( client->receive_buffer.current_packet >= NEXT_NUM_CLIENT_PACKETS )
             break;
 
-        uint8_t * packet_data = client->receive_buffer.data + NEXT_MAX_PACKET_BYTES * client->receive_buffer.current_frame;
+        uint8_t * packet_data = client->receive_buffer.data + NEXT_MAX_PACKET_BYTES * client->receive_buffer.current_packet;
 
         struct next_address_t from;
         int packet_bytes = next_platform_socket_receive_packet( client->socket, &from, packet_data, NEXT_MAX_PACKET_BYTES );
@@ -689,7 +689,7 @@ void next_client_receive_packets( next_client_t * client )
 
         const uint8_t packet_type = packet_data[0];
 
-        const int index = client->receive_buffer.current_frame;
+        const int index = client->receive_buffer.current_packet;
 
         if ( packet_type == NEXT_PACKET_DIRECT )
         {
@@ -707,7 +707,7 @@ void next_client_receive_packets( next_client_t * client )
         client->receive_buffer.receive_time[index] = receive_time;
         client->receive_buffer.packet_data[index] = packet_data;
         client->receive_buffer.packet_bytes[index] = packet_bytes;
-        client->receive_buffer.current_frame++;
+        client->receive_buffer.current_packet++;
     }
 
     next_platform_mutex_release( &client->mutex );

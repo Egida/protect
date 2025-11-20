@@ -36,7 +36,7 @@
 struct next_server_send_buffer_t
 {
     next_platform_mutex_t mutex;
-    size_t current_frame;
+    size_t current_packet;
     next_address_t to[NEXT_SERVER_MAX_SEND_PACKETS];
     size_t packet_bytes[NEXT_SERVER_MAX_SEND_PACKETS];
     uint8_t packet_type[NEXT_SERVER_MAX_SEND_PACKETS];
@@ -45,7 +45,7 @@ struct next_server_send_buffer_t
 
 struct next_server_receive_buffer_t
 {
-    int current_frame;
+    int current_packet;
     bool processing_packets;
     int client_index[NEXT_SERVER_MAX_RECEIVE_PACKETS];
     uint64_t sequence[NEXT_SERVER_MAX_RECEIVE_PACKETS];
@@ -741,11 +741,11 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
     next_platform_mutex_acquire( &server->send_buffer.mutex );
 
     uint8_t * packet_data = NULL;
-    int frame = server->send_buffer.current_frame ;
-    if ( server->send_buffer.current_frame < NEXT_SERVER_MAX_SEND_PACKETS )
+    int packet = server->send_buffer.current_packet ;
+    if ( server->send_buffer.current_packet < NEXT_SERVER_MAX_SEND_PACKETS )
     {
-        packet_data = server->send_buffer.data + frame * NEXT_MAX_PACKET_BYTES;
-        server->send_buffer.current_frame++;
+        packet_data = server->send_buffer.data + packet * NEXT_MAX_PACKET_BYTES;
+        server->send_buffer.current_packet++;
     }
 
     next_platform_mutex_release( &server->send_buffer.mutex );
@@ -757,9 +757,9 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
 
     next_assert( packet_info );
 
-    server->send_buffer.to[frame] = *to;
-    server->send_buffer.packet_type[frame] = packet_type;
-    server->send_buffer.packet_bytes[frame] = 0;
+    server->send_buffer.to[packet] = *to;
+    server->send_buffer.packet_type[packet] = packet_type;
+    server->send_buffer.packet_bytes[packet] = 0;
 
     return packet_data;
 }
@@ -816,25 +816,25 @@ void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_
 
     next_assert( offset < NEXT_MAX_PACKET_BYTES*NEXT_SERVER_MAX_SEND_PACKETS );
 
-    const int frame = (int) ( offset / NEXT_MAX_PACKET_BYTES );
+    const int packet = (int) ( offset / NEXT_MAX_PACKET_BYTES );
 
-    next_assert( frame >= 0 );  
-    next_assert( frame < NEXT_SERVER_MAX_SEND_PACKETS );  
+    next_assert( packet >= 0 );  
+    next_assert( packet < NEXT_SERVER_MAX_SEND_PACKETS );  
 
     next_assert( packet_data );
     next_assert( packet_bytes > 0 );
     next_assert( packet_bytes <= NEXT_MTU );
 
-    server->send_buffer.packet_bytes[frame] = packet_bytes + NEXT_HEADER_BYTES;
+    server->send_buffer.packet_bytes[packet] = packet_bytes + NEXT_HEADER_BYTES;
 
     // write the packet header
 
     packet_data -= 18;
 
-    packet_data[0] = server->send_buffer.packet_type[frame];
+    packet_data[0] = server->send_buffer.packet_type[packet];
 
     uint8_t to_address_data[32];
-    next_address_data( &server->send_buffer.to[frame], to_address_data );
+    next_address_data( &server->send_buffer.to[packet], to_address_data );
 
     uint8_t from_address_data[32];
     next_address_data( &server->public_address, from_address_data );
@@ -859,12 +859,12 @@ void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_d
 
     next_assert( offset < NEXT_MAX_PACKET_BYTES*NEXT_SERVER_MAX_SEND_PACKETS );
 
-    const int frame = (int) ( offset / NEXT_MAX_PACKET_BYTES );
+    const int packet = (int) ( offset / NEXT_MAX_PACKET_BYTES );
 
-    next_assert( frame >= 0 );  
-    next_assert( frame < NEXT_SERVER_MAX_SEND_PACKETS );  
+    next_assert( packet >= 0 );  
+    next_assert( packet < NEXT_SERVER_MAX_SEND_PACKETS );  
 
-    server->send_buffer.packet_bytes[frame] = 0;
+    server->send_buffer.packet_bytes[packet] = 0;
 }
 
 void next_server_send_packets( struct next_server_t * server )
@@ -1007,7 +1007,7 @@ void next_server_send_packets( struct next_server_t * server )
 
 #else // #ifdef __linux__
 
-    const int num_packets = (int) server->send_buffer.current_frame;
+    const int num_packets = (int) server->send_buffer.current_packet;
 
     for ( int i = 0; i < num_packets; i++ )
     {
@@ -1023,7 +1023,7 @@ void next_server_send_packets( struct next_server_t * server )
         }
     }
 
-    server->send_buffer.current_frame = 0;
+    server->send_buffer.current_packet = 0;
 
 #endif // #ifdef __linux__
 }
@@ -1061,14 +1061,14 @@ void next_server_receive_packets( next_server_t * server )
 
 #else // #ifdef __linux__
 
-    server->receive_buffer.current_frame = 0;
+    server->receive_buffer.current_packet = 0;
 
     while ( 1 )
     {
-        if ( server->receive_buffer.current_frame >= NEXT_SERVER_MAX_RECEIVE_PACKETS )
+        if ( server->receive_buffer.current_packet >= NEXT_SERVER_MAX_RECEIVE_PACKETS )
             break;
 
-        uint8_t * packet_data = server->receive_buffer.data + NEXT_MAX_PACKET_BYTES * server->receive_buffer.current_frame;
+        uint8_t * packet_data = server->receive_buffer.data + NEXT_MAX_PACKET_BYTES * server->receive_buffer.current_packet;
 
         struct next_address_t from;
         int packet_bytes = next_platform_socket_receive_packet( server->socket, &from, packet_data, NEXT_MAX_PACKET_BYTES );
@@ -1131,7 +1131,7 @@ void next_server_receive_packets( next_server_t * server )
 
             server->client_last_packet_receive_time[client_index] = next_platform_time();
 
-            const int index = server->receive_buffer.current_frame;
+            const int index = server->receive_buffer.current_packet;
 
             uint64_t sequence;
             memcpy( (char*) &sequence, packet_data + NEXT_HEADER_BYTES, 8 );
@@ -1147,7 +1147,7 @@ void next_server_receive_packets( next_server_t * server )
             server->receive_buffer.packet_data[index] = packet_data;
             server->receive_buffer.packet_bytes[index] = packet_bytes;
 
-            server->receive_buffer.current_frame++;
+            server->receive_buffer.current_packet++;
         }
         else
         {
@@ -1172,7 +1172,7 @@ struct next_server_process_packets_t * next_server_process_packets_begin( struct
 
     next_assert( !server->receive_buffer.processing_packets );          // IMPORTANT: You must always call next_server_process_packets_finish
 
-    const int num_packets = server->receive_buffer.current_frame;
+    const int num_packets = server->receive_buffer.current_packet;
 
     if ( num_packets == 0 )
         return NULL;
