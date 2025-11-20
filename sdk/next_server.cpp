@@ -1316,15 +1316,15 @@ void next_server_receive_packets( next_server_t * server )
 
         uint32_t receive_index;
         
-        uint32_t num_packets = xsk_ring_cons__peek( &server->receive_queue, NEXT_XDP_RECV_QUEUE_SIZE, &receive_index );
+        uint32_t num_packets = xsk_ring_cons__peek( &socket->receive_queue, NEXT_XDP_RECV_QUEUE_SIZE, &receive_index );
 
         if ( num_packets > 0 )
         {
             for ( uint32_t i = 0; i < num_packets; i++ ) 
             {
-                const struct xdp_desc * desc = xsk_ring_cons__rx_desc( &server->receive_queue, receive_index + i );
+                const struct xdp_desc * desc = xsk_ring_cons__rx_desc( &socket->receive_queue, receive_index + i );
 
-                uint8_t * packet_data = (uint8_t*)server->buffer + desc->addr;
+                uint8_t * packet_data = (uint8_t*)socket->buffer + desc->addr;
 
                 int packet_bytes = desc->len - ( sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr) );
 
@@ -1332,25 +1332,25 @@ void next_server_receive_packets( next_server_t * server )
 
                 // todo: disable for the moment. we need n receive buffers, one per-socket queue for this to work
                 /*
-                if ( packet_bytes > 18 && server->receive_buffer.current_packet < NEXT_SERVER_MAX_RECEIVE_PACKETS )
+                if ( packet_bytes > 18 && socket->receive_buffer.current_packet < NEXT_SERVER_MAX_RECEIVE_PACKETS )
                 {
-                    const int index = server->receive_buffer.current_packet++;
-                    server->receive_buffer.packet_data[index] = server->receive_buffer.data + index * NEXT_MAX_PACKET_BYTES;
-                    server->receive_buffer.packet_bytes[index] = packet_bytes;
-                    memcpy( server->receive_buffer.packet_data[index], packet_data, packet_bytes );
+                    const int index = socket->receive_buffer.current_packet++;
+                    socket->receive_buffer.packet_data[index] = socket->receive_buffer.data + index * NEXT_MAX_PACKET_BYTES;
+                    socket->receive_buffer.packet_bytes[index] = packet_bytes;
+                    memcpy( socket->receive_buffer.packet_data[index], packet_data, packet_bytes );
                 }
                 */
 
                 // todo: batch prod__submit -> num_packets
                 uint32_t fill_index;
-                if ( xsk_ring_prod__reserve( &server->fill_queue, 1, &fill_index ) == 1 ) 
+                if ( xsk_ring_prod__reserve( &socket->fill_queue, 1, &fill_index ) == 1 ) 
                 {
-                    *xsk_ring_prod__fill_addr( &server->fill_queue, fill_index ) = desc->addr;
-                    xsk_ring_prod__submit( &server->fill_queue, 1 );
+                    *xsk_ring_prod__fill_addr( &socket->fill_queue, fill_index ) = desc->addr;
+                    xsk_ring_prod__submit( &socket->fill_queue, 1 );
                 }
             }
 
-            xsk_ring_cons__release( &server->receive_queue, num_packets );
+            xsk_ring_cons__release( &socket->receive_queue, num_packets );
         }
     }
 
