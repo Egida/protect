@@ -34,6 +34,26 @@
 #include <memory.h>
 #include <stdio.h>
 
+#ifdef __linux__
+
+#define NUM_SERVER_XDP_SOCKETS 2
+
+struct next_server_xdp_socket_t
+{
+    uint32_t num_free_frames;
+    uint64_t frames[NEXT_XDP_NUM_FRAMES];
+
+    void * buffer;
+    struct xsk_umem * umem;
+    struct xsk_ring_cons receive_queue;
+    struct xsk_ring_prod send_queue;
+    struct xsk_ring_cons complete_queue;
+    struct xsk_ring_prod fill_queue;
+    struct xsk_socket * xsk;
+};
+
+#else // #ifdef __linux__
+
 struct next_server_send_buffer_t
 {
     next_platform_mutex_t mutex;
@@ -55,25 +75,7 @@ struct next_server_receive_buffer_t
     uint8_t data[NEXT_MAX_PACKET_BYTES*NEXT_SERVER_MAX_RECEIVE_PACKETS];
 };
 
-#ifdef __linux__
-
-#define NUM_SERVER_XDP_SOCKETS 2
-
-struct next_server_xdp_socket_t
-{
-    uint32_t num_free_frames;
-    uint64_t frames[NEXT_XDP_NUM_FRAMES];
-
-    void * buffer;
-    struct xsk_umem * umem;
-    struct xsk_ring_cons receive_queue;
-    struct xsk_ring_prod send_queue;
-    struct xsk_ring_cons complete_queue;
-    struct xsk_ring_prod fill_queue;
-    struct xsk_socket * xsk;
-};
-
-#endif // #if __linux__
+#endif // #ifdef __linux__
 
 struct next_server_t
 {
@@ -119,11 +121,10 @@ struct next_server_t
 #else // #ifdef __linux__
 
     next_platform_socket_t * socket;
-
-#endif // #ifdef __linux__
-
     next_server_send_buffer_t send_buffer;
     next_server_receive_buffer_t receive_buffer;
+
+#endif // #ifdef __linux__
 };
 
 void next_server_destroy( next_server_t * server );
@@ -939,6 +940,8 @@ int generate_packet_header( void * data, uint8_t * server_ethernet_address, uint
 
 #endif // #ifdef __linux__
 
+#ifndef __linux__
+
 uint8_t * next_server_start_packet_internal( struct next_server_t * server, next_address_t * to, uint8_t packet_type )
 {
     next_assert( server );
@@ -971,6 +974,8 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
     return packet_data;
 }
 
+#endif // #ifndef __linux__
+
 uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * out_sequence )
 {
     next_assert( server );
@@ -980,6 +985,13 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
 
     if ( !server->client_connected[client_index] )
         return NULL;
+
+#ifdef __linux__
+
+    // todo: AF_XDP
+    return NULL;
+
+#else // #ifdef __linux__
 
     next_platform_mutex_acquire( &server->client_payload_mutex );
     uint64_t sequence = ++server->client_payload_sequence[client_index];
@@ -1009,6 +1021,8 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
 
         return NULL;
     }
+
+#endif // #ifdef __linux__
 }
 
 void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_data, int packet_bytes )
@@ -1016,6 +1030,12 @@ void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_
     next_assert( server );
     next_assert( packet_bytes >= 0 );
     next_assert( packet_bytes <= NEXT_MTU );
+
+#ifdef __linux__
+
+    // todo: AF_XDP
+
+#else // #ifdef __linux__
 
     size_t offset = ( packet_data - server->send_buffer.data );
 
@@ -1054,11 +1074,19 @@ void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_
 
     next_generate_pittle( a, from_address_data, to_address_data, packet_bytes );
     next_generate_chonkle( b, magic, from_address_data, to_address_data, packet_bytes );
+
+#endif // #ifdef __linux__
 }
 
 void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_data )
 {
     next_assert( server );
+
+#ifdef __linux__
+
+    // todo: AF_XDP
+
+#else // #ifdef __linux__
 
     size_t offset = ( packet_data - server->send_buffer.data );
 
@@ -1072,6 +1100,8 @@ void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_d
     next_assert( packet < NEXT_SERVER_MAX_SEND_PACKETS );  
 
     server->send_buffer.packet_bytes[packet] = 0;
+
+#endif // #ifdef __linux__
 }
 
 void next_server_send_packets( struct next_server_t * server )
