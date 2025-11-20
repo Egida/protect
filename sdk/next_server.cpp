@@ -1089,7 +1089,33 @@ void next_server_receive_packets( next_server_t * server )
 
 #ifdef __linux__
 
-    // todo: AF_XDP
+    uint32_t receive_index;
+    
+    uint32_t num_packets = xsk_ring_cons__peek( &server->receive_queue, NEXT_XDP_RECV_QUEUE_SIZE, &receive_index );
+
+    if ( num_packets > 0) 
+    {
+        next_info( "received %d packets", num_packets );
+
+        for ( uint32_t i = 0; i < num_packets; i++ ) 
+        {
+            const struct xdp_desc * desc = xsk_ring_cons__rx_desc( &server->receive_queue, receive_index + i );
+
+            uint8_t * packet_data = (uint8_t*) xsk_umem__get_data( server->umem_buffer, desc->addr );
+
+            next_info( "received %d byte packet", desc->len );
+
+            // todo: do we really want to return packets to fill one at a time? probably not
+            uint32_t fill_index;
+            if ( xsk_ring_prod__reserve( &server->fill_queue, 1, &fill_index ) == 1 ) 
+            {
+                *xsk_ring_prod__fill_desc( &server->fill_queue, fill_index ) = desc->addr;
+                xsk_ring_prod__submit( &xsk_info.xsk->fill, 1 );
+            }
+        }
+
+        xsk_ring_cons__release( &server->receive_queue, num_packets );
+    }
 
 #else // #ifdef __linux__
 
@@ -1261,38 +1287,3 @@ void next_server_process_packets_end( struct next_server_t * server )
 
 #endif // #ifdef __linux__
 }
-
-
-#if 0
-
-// todo: clean up receive packets garbage below
-
-    // 4. Receive packets
-    printf("Receiving packets on %s queue %d...\n", ifname, queue_id);
-    while (1) {
-        uint32_t rx_idx;
-        uint32_t num_pkts = xsk_ring_cons__peek(&xsk_info.xsk->rx, UMEM_NUM_FRAMES, &rx_idx);
-        if (num_pkts > 0) {
-            for (uint32_t i = 0; i < num_pkts; ++i) {
-                const struct xdp_desc *desc = xsk_ring_cons__rx_desc(&xsk_info.xsk->rx, rx_idx + i);
-                void *pkt_data = xsk_umem__get_data(xsk_info.umem_buffer, desc->addr);
-                // Process the packet data (pkt_data, desc->len)
-                printf("Received packet, length: %u\n", desc->len);
-
-                // Re-add frame to fill ring for reuse
-                uint32_t fill_idx;
-                if (xsk_ring_prod__reserve(&xsk_info.xsk->fill, 1, &fill_idx) == 1) {
-                    *xsk_ring_prod__fill_desc(&xsk_info.xsk->fill, fill_idx) = desc->addr;
-                    xsk_ring_prod__submit(&xsk_info.xsk->fill, 1);
-                }
-            }
-            xsk_ring_cons__release(&xsk_info.xsk->rx, num_pkts);
-        } else {
-            // No packets received, poll for events
-            poll_fd.fd = xsk_socket__fd(xsk_info.xsk);
-            poll_fd.events = POLLIN;
-            poll(&poll_fd, 1, -1); // Wait indefinitely
-        }
-    }
-
-#endif // #if 0
