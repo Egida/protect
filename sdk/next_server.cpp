@@ -900,7 +900,7 @@ void next_server_send_packets( struct next_server_t * server )
 
     int num_packets_to_send = 0;
 
-    const int num_packets = (int) server->send_buffer.current_frame;
+    const int num_packets = (int) server->send_buffer.current_packet;
 
     for ( int i = 0; i < num_packets; i++ )
     {
@@ -1003,7 +1003,7 @@ void next_server_send_packets( struct next_server_t * server )
 
     next_assert( num_packets_to_send == 0 );
 
-    server->send_buffer.current_frame = 0;
+    server->send_buffer.current_packet = 0;
 
 #else // #ifdef __linux__
 
