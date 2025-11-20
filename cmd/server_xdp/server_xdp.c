@@ -124,6 +124,14 @@ struct {
     __uint( pinning, LIBBPF_PIN_BY_NAME );
 } server_xdp_state_map SEC(".maps");
 
+struct {
+    __uint(type, BPF_MAP_TYPE_XSKMAP);
+    __type(key, __u32);
+    __type(value, __u32);
+    __uint(max_entries, 1);
+    __uint(pinning, LIBBPF_PIN_BY_NAME);
+} server_xdp_socket_map SEC(".maps");
+
 #define DEBUG 1
 
 #if DEBUG
@@ -333,11 +341,6 @@ static void reflect_packet( void * data, int payload_bytes, __u8 * magic )
 
 SEC("server_xdp") int server_xdp_filter( struct xdp_md *ctx ) 
 { 
-    // todo
-    return XDP_PASS;
-
-#if 0
-
     void * data = (void*) (long) ctx->data; 
 
     void * data_end = (void*) (long) ctx->data_end; 
@@ -370,7 +373,11 @@ SEC("server_xdp") int server_xdp_filter( struct xdp_md *ctx )
                         return XDP_PASS;
                     }
 
+                    // todo: config later
+                    /*
                     if ( ip->daddr == config->public_address && udp->dest == config->port )
+                    */
+                    if ( bpf_htons( udp->dest ) > 1000 )        // hack to just get packets sent down to AF_XDP socket
                     {
                         __u8 * packet_data = (unsigned char*) (void*)udp + sizeof(struct udphdr);
 
@@ -596,11 +603,11 @@ SEC("server_xdp") int server_xdp_filter( struct xdp_md *ctx )
 
 #endif // #if ADVANCED_PACKET_FILTER
 
-                        // todo: handling of ping packets
+                        int queue_id = 0;
 
-                        // todo: handling of session negotiation packets
+                        bpf_redirect_map( &server_xdp_socket_map, queue_id, 0 );
 
-                        return XDP_PASS;
+                        return XDP_REDIRECT;
                     }
                 }
             }
@@ -608,8 +615,6 @@ SEC("server_xdp") int server_xdp_filter( struct xdp_md *ctx )
     }
 
     return XDP_PASS;
-
-#endif // #if 0
 }
 
 char _license[] SEC("license") = "GPL";

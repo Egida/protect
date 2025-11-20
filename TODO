@@ -40,8 +40,6 @@ DONE
 
     Mocked up fill queue and receive queue stuff
 
-TODO
-
     I need to configure the NIC so it sends packets to a particular port to the same queue
 
         sudo ethtool -N <interface> rx-flow-hash udp4 fn
@@ -51,11 +49,17 @@ TODO
 
     And then setup the server to bind the umem and xdp socket to that specific queue, and set an entry in the map to send packets on port X to that xsk
 
-    -------------
+    Unfortunately, on my 10G NIC this is not working, so I have no choice but to do this:
+
+        sudo ethtool -L <interface> combined 1
+
+    OR, to have one XDP socket per-NIC queue.
+
+    Start with combined 1 for the moment, so I can just have it working at a basic level.
+
+TODO
 
     The next step is to setup the XDP program to redirect received UDP packets to port 40000 to the AF_XDP socket
-
-    I need to study how to do this. Also, I'm concerned that I might need a socket per-NIC queue, which would be painful.
 
     -------------
 
