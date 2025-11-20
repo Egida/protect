@@ -55,6 +55,26 @@ struct next_server_receive_buffer_t
     uint8_t data[NEXT_MAX_PACKET_BYTES*NEXT_SERVER_MAX_RECEIVE_PACKETS];
 };
 
+#ifdef __linux__
+
+#define NUM_SERVER_XDP_SOCKETS 2
+
+struct next_server_xdp_socket_t
+{
+    uint32_t num_free_frames;
+    uint64_t frames[NEXT_XDP_NUM_FRAMES];
+
+    void * buffer;
+    struct xsk_umem * umem;
+    struct xsk_ring_cons receive_queue;
+    struct xsk_ring_prod send_queue;
+    struct xsk_ring_cons complete_queue;
+    struct xsk_ring_prod fill_queue;
+    struct xsk_socket * xsk;
+};
+
+#endif // #if __linux__
+
 struct next_server_t
 {
     void * context;
@@ -86,18 +106,6 @@ struct next_server_t
     uint32_t client_address_big_endian[NEXT_MAX_CLIENTS];
     uint16_t client_port_big_endian[NEXT_MAX_CLIENTS];
 
-    next_platform_mutex_t frame_mutex;
-    uint32_t num_free_frames;
-    uint64_t frames[NEXT_XDP_NUM_FRAMES];
-
-    void * buffer;
-    struct xsk_umem * umem;
-    struct xsk_ring_cons receive_queue;
-    struct xsk_ring_prod send_queue;
-    struct xsk_ring_cons complete_queue;
-    struct xsk_ring_prod fill_queue;
-    struct xsk_socket * xsk;
-
     int interface_index;
     struct xdp_program * program;
     bool attached_native;
@@ -105,6 +113,8 @@ struct next_server_t
     int config_map_fd;
     int state_map_fd;
     int socket_map_fd;
+
+    next_server_xdp_socket_t socket[NUM_SERVER_XDP_SOCKETS];
 
 #else // #ifdef __linux__
 
@@ -249,27 +259,23 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
 
 #define INVALID_FRAME UINT64_MAX
 
-uint64_t next_server_alloc_frame( next_server_t * server )
+uint64_t next_server_xdp_socket_alloc_frame( next_server_xdp_socket_t * socket )
 {
-    next_platform_mutex_acquire( &server->frame_mutex );
     uint64_t frame = INVALID_FRAME;
-    if ( server->num_free_frames > 0 )
+    if ( socket->num_free_frames > 0 )
     {
-        server->num_free_frames--;
-        frame = server->frames[server->num_free_frames];
-        server->frames[server->num_free_frames] = INVALID_FRAME;
+        socket->num_free_frames--;
+        frame = socket->frames[socket->num_free_frames];
+        socket->frames[socket->num_free_frames] = INVALID_FRAME;
     }
-    next_platform_mutex_release( &server->frame_mutex );
     return frame;
 }
 
-void next_server_free_frame( next_server_t * server, uint64_t frame )
+void next_server_xdp_socket_free_frame( next_server_xdp_socket_t * server, uint64_t frame )
 {
-    next_platform_mutex_acquire( &server->frame_mutex );
-    next_assert( server->num_free_frames < NEXT_XDP_NUM_FRAMES );
-    server->frames[server->num_free_frames] = frame;
-    server->num_free_frames++;
-    next_platform_mutex_release( &server->frame_mutex );
+    next_assert( socket->num_free_frames < NEXT_XDP_NUM_FRAMES );
+    socket->frames[socket->num_free_frames] = frame;
+    socket->num_free_frames++;
 }
 
 #endif // #ifdef __linux__
@@ -532,47 +538,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
-    const int buffer_size = NEXT_XDP_NUM_FRAMES * NEXT_XDP_FRAME_SIZE;
-
-    if ( posix_memalign( &server->buffer, getpagesize(), buffer_size ) ) 
-    {
-        next_error( "server could allocate buffer" );
-        next_server_destroy( server );
-        return NULL;
-    }
-
-    // allocate umem
-
-    int result = xsk_umem__create( &server->umem, server->buffer, buffer_size, &server->fill_queue, &server->complete_queue, NULL );
-    if ( result ) 
-    {
-        next_error( "server could not create umem" );
-        next_server_destroy( server );
-        return NULL;
-    }
-
-    // create xdp socket and assign to network interface queue 0
-
-    struct xsk_socket_config xsk_config;
-
-    memset( &xsk_config, 0, sizeof(xsk_config) );
-
-    xsk_config.rx_size = NEXT_XDP_RECV_QUEUE_SIZE;
-    xsk_config.tx_size = NEXT_XDP_SEND_QUEUE_SIZE;
-    xsk_config.xdp_flags = XDP_ZEROCOPY;     
-    xsk_config.bind_flags = XDP_USE_NEED_WAKEUP;
-    xsk_config.libbpf_flags = XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD;
-
-    int queue_id = 0;
-
-    result = xsk_socket__create( &server->xsk, interface_name, queue_id, server->umem, &server->receive_queue, &server->send_queue, &xsk_config );
-    if ( result )
-    {
-        next_error( "server could not create xsk socket" );
-        next_server_destroy( server );
-        return NULL;
-    }
-
     // get file descriptors for maps so we can communicate with the server_xdp program running in kernel space
 
     server->config_map_fd = bpf_obj_get( "/sys/fs/bpf/server_xdp_config_map" );
@@ -599,71 +564,111 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
-    // configure the xdp socket to receive packets from the xdp program
+    // initialize server xdp sockets (one socket per-NIC queue)
 
-    __u32 key = queue_id;
-    __u32 value = xsk_socket__fd( server->xsk );
-
-    if ( bpf_map_update_elem( server->socket_map_fd, &key, &value, BPF_ANY ) < 0 ) 
+    for ( int i = 0; i < NUM_SERVER_XDP_SOCKETS; i++ )
     {
-        next_error( "server failed to add xdp socket to map" );
-        next_server_destroy( server );
-        return NULL;
-    }
+        next_server_xdp_socket_t * socket = &server->socket[i];
 
-    // initialize frame allocator
+        // allocate umem
 
-    if ( !next_platform_mutex_create( &server->frame_mutex ) )
-    {
-        next_error( "server failed to create frame mutex" );
-        next_server_destroy( server );
-        return NULL;
-    }
+        const int buffer_size = NEXT_XDP_NUM_FRAMES * NEXT_XDP_FRAME_SIZE;
 
-    for ( int j = 0; j < NEXT_XDP_NUM_FRAMES; j++ )
-    {
-        server->frames[j] = j * NEXT_XDP_FRAME_SIZE;
-    }
-
-    server->num_free_frames = NEXT_XDP_NUM_FRAMES;
-
-    // populate fill ring for packets to be received in
-    {
-        uint32_t index;
-        int result = xsk_ring_prod__reserve( &server->fill_queue, NEXT_XDP_FILL_QUEUE_SIZE, &index );
-        if ( result != NEXT_XDP_FILL_QUEUE_SIZE )
+        if ( posix_memalign( &socket->buffer, getpagesize(), buffer_size ) ) 
         {
-            next_error( "server failed to populate fill queue: %d", result );
+            next_error( "server could allocate buffer" );
             next_server_destroy( server );
             return NULL;
         }
 
-        uint64_t frames[NEXT_XDP_FILL_QUEUE_SIZE];
-        for ( int i = 0; i < NEXT_XDP_FILL_QUEUE_SIZE; i++ ) 
+        int result = xsk_umem__create( &socket->umem, socket->buffer, buffer_size, &socket->fill_queue, &socket->complete_queue, NULL );
+        if ( result ) 
         {
-            frames[i] = next_server_alloc_frame( server );
-            if ( frames[i] == INVALID_FRAME )
+            next_error( "server could not create umem" );
+            next_server_destroy( server );
+            return NULL;
+        }
+
+        // create xdp socket and assign to network interface queue 0
+
+        struct xsk_socket_config xsk_config;
+
+        memset( &xsk_config, 0, sizeof(xsk_config) );
+
+        xsk_config.rx_size = NEXT_XDP_RECV_QUEUE_SIZE;
+        xsk_config.tx_size = NEXT_XDP_SEND_QUEUE_SIZE;
+        xsk_config.xdp_flags = XDP_ZEROCOPY;     
+        xsk_config.bind_flags = XDP_USE_NEED_WAKEUP;
+        xsk_config.libbpf_flags = XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD;
+
+        int queue_id = 0;
+
+        result = xsk_socket__create( &socket->xsk, interface_name, queue_id, socket->umem, &socket->receive_queue, &socket->send_queue, &xsk_config );
+        if ( result )
+        {
+            next_error( "server could not create xsk socket" );
+            next_server_destroy( server );
+            return NULL;
+        }
+
+        // configure the xdp socket to receive packets from the xdp program
+
+        __u32 key = queue_id;
+        __u32 value = xsk_socket__fd( socket->xsk );
+
+        if ( bpf_map_update_elem( socket->socket_map_fd, &key, &value, BPF_ANY ) < 0 ) 
+        {
+            next_error( "server failed to add xdp socket to map" );
+            next_server_destroy( server );
+            return NULL;
+        }
+
+        // initialize frame allocator
+
+        for ( int j = 0; j < NEXT_XDP_NUM_FRAMES; j++ )
+        {
+            socket->frames[j] = j * NEXT_XDP_FRAME_SIZE;
+        }
+
+        socket->num_free_frames = NEXT_XDP_NUM_FRAMES;
+
+        // populate fill ring for packets to be received in
+        {
+            uint32_t index;
+            int result = xsk_ring_prod__reserve( &socket->fill_queue, NEXT_XDP_FILL_QUEUE_SIZE, &index );
+            if ( result != NEXT_XDP_FILL_QUEUE_SIZE )
             {
-                next_error( "server could not allocate frame for fill queue" );
+                next_error( "server failed to populate fill queue: %d", result );
                 next_server_destroy( server );
                 return NULL;
             }
-        }
 
-        for ( int i = 0; i < NEXT_XDP_FILL_QUEUE_SIZE; i++ ) 
-        {
-            uint64_t * frame = (uint64_t*) xsk_ring_prod__fill_addr( &server->fill_queue, index + i );
-            next_assert( frame );
-            *frame = frames[i];
-        }
+            uint64_t frames[NEXT_XDP_FILL_QUEUE_SIZE];
+            for ( int i = 0; i < NEXT_XDP_FILL_QUEUE_SIZE; i++ ) 
+            {
+                frames[i] = next_server_alloc_frame( server );
+                if ( frames[i] == INVALID_FRAME )
+                {
+                    next_error( "server could not allocate frame for fill queue" );
+                    next_server_destroy( server );
+                    return NULL;
+                }
+            }
 
-        xsk_ring_prod__submit( &server->fill_queue, NEXT_XDP_FILL_QUEUE_SIZE );
+            for ( int i = 0; i < NEXT_XDP_FILL_QUEUE_SIZE; i++ ) 
+            {
+                uint64_t * frame = (uint64_t*) xsk_ring_prod__fill_addr( &socket->fill_queue, index + i );
+                next_assert( frame );
+                *frame = frames[i];
+            }
+
+            xsk_ring_prod__submit( &socket->fill_queue, NEXT_XDP_FILL_QUEUE_SIZE );
+        }
     }
 
     // save the server public address and port in network order (big endian)
 
     server->server_address_big_endian = public_address_ipv4;
-
     server->server_port_big_endian = next_platform_htons( public_address.port );
 
     // todo: mock a client connected in slot 0
@@ -709,16 +714,12 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
-#ifndef __linux__
-
     if ( !next_platform_mutex_create( &server->send_buffer.mutex ) )
     {
         next_error( "server failed to create send buffer mutex" );
         next_server_destroy( server );
         return NULL;
     }
-
-#endif // #ifndef __linux__
 
     return server;    
 }
@@ -745,23 +746,24 @@ void next_server_destroy( next_server_t * server )
         xdp_program__close( server->program );
     }
 
-    next_platform_mutex_destroy( &server->frame_mutex );
-
-    if ( server->xsk )
+    for ( int i = 0; i < NUM_SERVER_XDP_SOCKETS; i++ )
     {
-        xsk_socket__delete( server->xsk );
-    }
+        next_server_xdp_socket_t * socket = &server->sockets[i];
 
-    if ( server->umem )
-    {
-        xsk_umem__delete( server->umem );
-    }
+        if ( socket->xsk )
+        {
+            xsk_socket__delete( socket->xsk );
+        }
 
-    free( server->buffer );
+        if ( socket->umem )
+        {
+            xsk_umem__delete( socket->umem );
+        }
+
+        free( socket->buffer );
+    }
 
 #else // #ifdef __linux__
-
-    next_platform_mutex_destroy( &server->send_buffer.mutex );
 
     if ( server->socket )
     {
@@ -769,6 +771,8 @@ void next_server_destroy( next_server_t * server )
     }
 
 #endif // #ifdef __linux__
+
+    next_platform_mutex_destroy( &server->send_buffer.mutex );
 
     next_clear_and_free( server->context, server, sizeof(next_server_t) );
 }
@@ -1076,140 +1080,148 @@ void next_server_send_packets( struct next_server_t * server )
 
 #ifdef __linux__
 
-    // mark any sent packet frames as free to be reused
-
-    while ( true )
+// todo: to make this work we need to scatter packets when sent across n send buffers, one per-XDP socket
+#if 0
+    for ( int s = 0; s < NUM_SERVER_XDP_SOCKETS; s++ )
     {
-        uint32_t complete_index;
+        next_server_xdp_socket_t * socket = &server->socket[s];
+    
+        // mark any sent packet frames as free to be reused
 
-        unsigned int num_completed = xsk_ring_cons__peek( &server->complete_queue, XSK_RING_CONS__DEFAULT_NUM_DESCS, &complete_index );
-
-        if ( num_completed == 0 )
-            break;
-
-        for ( int i = 0; i < num_completed; i++ )
+        while ( true )
         {
-            uint64_t frame = *xsk_ring_cons__comp_addr( &server->complete_queue, complete_index++ );
-            next_server_free_frame( server, frame );
-        }
+            uint32_t complete_index;
 
-        xsk_ring_cons__release( &server->complete_queue, num_completed );
-    }
+            unsigned int num_completed = xsk_ring_cons__peek( &server->complete_queue, XSK_RING_CONS__DEFAULT_NUM_DESCS, &complete_index );
 
-    // count how many valid packets we have to send in the send buffer (non-zero size)
+            if ( num_completed == 0 )
+                break;
 
-    int num_packets_to_send = 0;
-
-    const int num_packets = (int) server->send_buffer.current_packet;
-
-    for ( int i = 0; i < num_packets; i++ )
-    {
-        const int packet_bytes = (int) server->send_buffer.packet_bytes[i];
-
-        if ( packet_bytes > 0 )
-        {
-            num_packets_to_send++;
-        }
-    }
-
-    // send packets in batches
-
-    int index = 0;
-
-    while ( true )
-    {
-        if ( num_packets_to_send == 0 )
-            break;
-
-        int batch_packets = ( num_packets_to_send < NEXT_XDP_SEND_BATCH_SIZE ) ? num_packets_to_send : NEXT_XDP_SEND_BATCH_SIZE;
-
-        const int original_batch_packets = batch_packets;
-
-        uint64_t frames[NEXT_XDP_SEND_BATCH_SIZE];
-        for ( int i = 0; i < batch_packets; i++ )
-        {
-            // allocate frames up first, so we know 100% that we can send any frames that we reserve in the tx buffer
-
-            frames[i] = next_server_alloc_frame( server );
-            next_assert( frames[i] != INVALID_FRAME );
-            if ( frames[i] == INVALID_FRAME )
+            for ( int i = 0; i < num_completed; i++ )
             {
-                next_warn( "out of frames. can't send all packets..." );
-                for ( int j = 0; j < i; j++ )
+                uint64_t frame = *xsk_ring_cons__comp_addr( &server->complete_queue, complete_index++ );
+                next_server_free_frame( server, frame );
+            }
+
+            xsk_ring_cons__release( &server->complete_queue, num_completed );
+        }
+
+        // count how many valid packets we have to send in the send buffer (non-zero size)
+
+        int num_packets_to_send = 0;
+
+        const int num_packets = (int) server->send_buffer.current_packet;
+
+        for ( int i = 0; i < num_packets; i++ )
+        {
+            const int packet_bytes = (int) server->send_buffer.packet_bytes[i];
+
+            if ( packet_bytes > 0 )
+            {
+                num_packets_to_send++;
+            }
+        }
+
+        // send packets in batches
+
+        int index = 0;
+
+        while ( true )
+        {
+            if ( num_packets_to_send == 0 )
+                break;
+
+            int batch_packets = ( num_packets_to_send < NEXT_XDP_SEND_BATCH_SIZE ) ? num_packets_to_send : NEXT_XDP_SEND_BATCH_SIZE;
+
+            const int original_batch_packets = batch_packets;
+
+            uint64_t frames[NEXT_XDP_SEND_BATCH_SIZE];
+            for ( int i = 0; i < batch_packets; i++ )
+            {
+                // allocate frames up first, so we know 100% that we can send any frames that we reserve in the tx buffer
+
+                frames[i] = next_server_alloc_frame( server );
+                next_assert( frames[i] != INVALID_FRAME );
+                if ( frames[i] == INVALID_FRAME )
+                {
+                    next_warn( "out of frames. can't send all packets..." );
+                    for ( int j = 0; j < i; j++ )
+                    {
+                        next_server_free_frame( server, frames[j] );
+                    }
+                    if ( xsk_ring_prod__needs_wakeup( &server->send_queue ) )
+                    {
+                        sendto( xsk_socket__fd( server->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
+                    }
+                    return;
+                }
+
+                // reserve entries in the send queue. we *must* send all entries we reserve
+
+                uint32_t send_queue_index;
+                batch_packets = xsk_ring_prod__reserve( &server->send_queue, batch_packets, &send_queue_index );
+                if ( batch_packets == 0 ) 
+                {
+                    next_warn( "server send queue is full" );
+                    return;
+                }
+
+                // it's possible to reserve fewer entries in the send queue than we requested. when this happens we have to free some frames
+
+                for ( int j = batch_packets; j < original_batch_packets; j++ )
                 {
                     next_server_free_frame( server, frames[j] );
                 }
-                if ( xsk_ring_prod__needs_wakeup( &server->send_queue ) )
+
+                // setup descriptors for packets to be sent
+
+                for ( int i = 0; i < batch_packets; i++ )
                 {
-                    sendto( xsk_socket__fd( server->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
+                    while ( server->send_buffer.packet_bytes[index] == 0 )
+                    {
+                        index++;
+                    } 
+
+                    struct xdp_desc * desc = xsk_ring_prod__tx_desc( &server->send_queue, send_queue_index + i );
+
+                    uint8_t * packet_data = (uint8_t*)server->buffer + frames[i];
+
+                    const int payload_bytes = server->send_buffer.packet_bytes[index];
+
+                    memcpy( packet_data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr), server->send_buffer.data + index * NEXT_XDP_FRAME_SIZE, payload_bytes );
+
+                    // todo: get these from the client arrays according to client_index or whatever
+                    uint32_t client_address_big_endian = 0x0301a8c0;                            // batman IP on 10G LAN
+                    uint32_t client_port_big_endian = next_platform_htons( 30000 );
+
+                    int packet_bytes = generate_packet_header( packet_data, server->server_ethernet_address, server->gateway_ethernet_address, server->server_address_big_endian, client_address_big_endian, server->server_port_big_endian, client_port_big_endian, payload_bytes );
+
+                    desc->addr = frames[i];
+                    desc->len = packet_bytes;
                 }
-                return;
+
+                // submit send queue to driver
+
+                xsk_ring_prod__submit( &server->send_queue, batch_packets );
             }
 
-            // reserve entries in the send queue. we *must* send all entries we reserve
-
-            uint32_t send_queue_index;
-            batch_packets = xsk_ring_prod__reserve( &server->send_queue, batch_packets, &send_queue_index );
-            if ( batch_packets == 0 ) 
-            {
-                next_warn( "server send queue is full" );
-                return;
-            }
-
-            // it's possible to reserve fewer entries in the send queue than we requested. when this happens we have to free some frames
-
-            for ( int j = batch_packets; j < original_batch_packets; j++ )
-            {
-                next_server_free_frame( server, frames[j] );
-            }
-
-            // setup descriptors for packets to be sent
-
-            for ( int i = 0; i < batch_packets; i++ )
-            {
-                while ( server->send_buffer.packet_bytes[index] == 0 )
-                {
-                    index++;
-                } 
-
-                struct xdp_desc * desc = xsk_ring_prod__tx_desc( &server->send_queue, send_queue_index + i );
-
-                uint8_t * packet_data = (uint8_t*)server->buffer + frames[i];
-
-                const int payload_bytes = server->send_buffer.packet_bytes[index];
-
-                memcpy( packet_data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr), server->send_buffer.data + index * NEXT_XDP_FRAME_SIZE, payload_bytes );
-
-                // todo: get these from the client arrays according to client_index or whatever
-                uint32_t client_address_big_endian = 0x0301a8c0;                            // batman IP on 10G LAN
-                uint32_t client_port_big_endian = next_platform_htons( 30000 );
-
-                int packet_bytes = generate_packet_header( packet_data, server->server_ethernet_address, server->gateway_ethernet_address, server->server_address_big_endian, client_address_big_endian, server->server_port_big_endian, client_port_big_endian, payload_bytes );
-
-                desc->addr = frames[i];
-                desc->len = packet_bytes;
-            }
-
-            // submit send queue to driver
-
-            xsk_ring_prod__submit( &server->send_queue, batch_packets );
+            num_packets_to_send -= batch_packets;
         }
 
-        num_packets_to_send -= batch_packets;
+        // actually send the packets
+
+        if ( xsk_ring_prod__needs_wakeup( &server->send_queue ) )
+        {
+            sendto( xsk_socket__fd( server->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
+        }
+
+        // all packets have been sent
+
+        next_assert( num_packets_to_send == 0 );
+
+        server->send_buffer.current_packet = 0;
     }
-
-    // actually send the packets
-
-    if ( xsk_ring_prod__needs_wakeup( &server->send_queue ) )
-    {
-        sendto( xsk_socket__fd( server->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
-    }
-
-    // all packets have been sent
-
-    next_assert( num_packets_to_send == 0 );
-
-    server->send_buffer.current_packet = 0;
+#endif // #if 0
 
 #else // #ifdef __linux__
 
@@ -1263,42 +1275,51 @@ void next_server_receive_packets( next_server_t * server )
 
 #ifdef __linux__
 
-    server->receive_buffer.current_packet = 0;
+    // todo: need n receive buffers, not one
+    // server->receive_buffer.current_packet = 0;
 
-    uint32_t receive_index;
-    
-    uint32_t num_packets = xsk_ring_cons__peek( &server->receive_queue, NEXT_XDP_RECV_QUEUE_SIZE, &receive_index );
-
-    if ( num_packets > 0 )
+    for ( int queue = 0; queue < NUM_SERVER_XDP_SOCKETS; queue++ )
     {
-        for ( uint32_t i = 0; i < num_packets; i++ ) 
+        next_server_xdp_socket_t * socket = &server->socket[queue];
+
+        uint32_t receive_index;
+        
+        uint32_t num_packets = xsk_ring_cons__peek( &server->receive_queue, NEXT_XDP_RECV_QUEUE_SIZE, &receive_index );
+
+        if ( num_packets > 0 )
         {
-            const struct xdp_desc * desc = xsk_ring_cons__rx_desc( &server->receive_queue, receive_index + i );
-
-            uint8_t * packet_data = (uint8_t*)server->buffer + desc->addr;
-
-            int packet_bytes = desc->len - ( sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr) );
-
-            next_info( "received %d byte packet", packet_bytes );
-
-            if ( packet_bytes > 18 && server->receive_buffer.current_packet < NEXT_SERVER_MAX_RECEIVE_PACKETS )
+            for ( uint32_t i = 0; i < num_packets; i++ ) 
             {
-                const int index = server->receive_buffer.current_packet++;
-                server->receive_buffer.packet_data[index] = server->receive_buffer.data + index * NEXT_MAX_PACKET_BYTES;
-                server->receive_buffer.packet_bytes[index] = packet_bytes;
-                memcpy( server->receive_buffer.packet_data[index], packet_data, packet_bytes );
+                const struct xdp_desc * desc = xsk_ring_cons__rx_desc( &server->receive_queue, receive_index + i );
+
+                uint8_t * packet_data = (uint8_t*)server->buffer + desc->addr;
+
+                int packet_bytes = desc->len - ( sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr) );
+
+                next_info( "received %d byte packet on queue %d", packet_bytes, queue );
+
+                // todo: disable for the moment. we need n receive buffers, one per-socket queue for this to work
+                /*
+                if ( packet_bytes > 18 && server->receive_buffer.current_packet < NEXT_SERVER_MAX_RECEIVE_PACKETS )
+                {
+                    const int index = server->receive_buffer.current_packet++;
+                    server->receive_buffer.packet_data[index] = server->receive_buffer.data + index * NEXT_MAX_PACKET_BYTES;
+                    server->receive_buffer.packet_bytes[index] = packet_bytes;
+                    memcpy( server->receive_buffer.packet_data[index], packet_data, packet_bytes );
+                }
+                */
+
+                // todo: batch prod__submit -> num_packets
+                uint32_t fill_index;
+                if ( xsk_ring_prod__reserve( &server->fill_queue, 1, &fill_index ) == 1 ) 
+                {
+                    *xsk_ring_prod__fill_addr( &server->fill_queue, fill_index ) = desc->addr;
+                    xsk_ring_prod__submit( &server->fill_queue, 1 );
+                }
             }
 
-            // todo: batch prod__submit -> num_packets
-            uint32_t fill_index;
-            if ( xsk_ring_prod__reserve( &server->fill_queue, 1, &fill_index ) == 1 ) 
-            {
-                *xsk_ring_prod__fill_addr( &server->fill_queue, fill_index ) = desc->addr;
-                xsk_ring_prod__submit( &server->fill_queue, 1 );
-            }
+            xsk_ring_cons__release( &server->receive_queue, num_packets );
         }
-
-        xsk_ring_cons__release( &server->receive_queue, num_packets );
     }
 
 #else // #ifdef __linux__

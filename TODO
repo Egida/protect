@@ -1,119 +1,12 @@
 DONE
 
-    Now I'm getting weird hung and disconnected when I run the server xdp program?
-
-    I've requested a second IP address for the new york server, so I can load the XDP program on the second NIC (while SSH'ing in on the first NIC)
-
-    They just statically redirected the second IP to the first, doing nothing. So I cancelled the server.
-
-    I will setup my hulk linux machine and work in my lab instead.
-
-    Get hulk up and running so I can send packets with AF_XDP
-
-    Fixed the bug that was breaking the NIC. Bad offset values were crashing out the NIC.
-
-    Now check if we can send a subset of the frames we reserved and not run out of send queue.
-
-    We cannot. At this point I think it's correct to accept that we must reserve and send the number of packets we say.
-
-    This means we need two interfaces, a regular, memcpy once interface for sending packets. Looks just like the non-XDP way.
-
-    And then we have this zero copy interface, where you specifically have to call out the number of packets to send and you *must* send that many packets. 
-
-    OK I fixed the mac address byte order, it was reversed, and now the client on the mac receives the packets sent from the linux AF_XDP program.
-
-    Keep it simple and just do a non-zero copy (one copy) method of sending packets.
-
-    At the end of sending packets, the send packets call will do the XDP stuff. It's simple.
-
-    Later on if we need the zero copy stuff for some reason, we can add that, but it's probably overkill.
-
-    Might be cool to also do a "broadcast" eg. to all connected clients, and then we really can do some sweet XDP stuff with it.
-
-    We are also going to need to copy for the two multipath as well, so ...
-
-    OK. Recovered the simple send packet setup for the server, 
-
-    Now hook up AF_XDP to send the packets in batches in next_server_send_packets (send as much as it can... warn if it can't send all...
-
-    Cleaned up the server packet buffer sizes a lot, and increased the size for 
-
-    Mocked up fill queue and receive queue stuff
-
-    I need to configure the NIC so it sends packets to a particular port to the same queue
-
-        sudo ethtool -N <interface> rx-flow-hash udp4 fn
-        sudo ethtool -N <interface> flow-type udp4 src-port 4242 dst-port 4242 action 2
-
-    If I was to run multiple servers on the same machine, I would setup a queue number as a parameter of the server when it runs
-
-    And then setup the server to bind the umem and xdp socket to that specific queue, and set an entry in the map to send packets on port X to that xsk
-
-    Unfortunately, on my 10G NIC this is not working, so I have no choice but to do this:
-
-        sudo ethtool -L <interface> combined 1
-
-    OR, to have one XDP socket per-NIC queue.
-
-    Start with combined 1 for the moment, so I can just have it working at a basic level.
-
-    The next step is to setup the XDP program to redirect received UDP packets to port 40000 to the AF_XDP socket
-
-    One thing to watch for is that you need to set the pin path for maps when loading via xdp-loader:
-
-        xdp-loader load eth0 my_prog.o --pin-path /sys/fs/bpf/my-prog
-
-    Verify the client user space receives packets sent to it from AF_XDP
-
-    What's the next step?
-
-    We need to only look at packets to the correct address and port and pass them down
-
-    We need to consider support for multiple queues and how that will work (poll?)
-
-    Need to implement the actual processing of packets by client.cpp and marking processed packets as finished (ready to re-use in fill queue...)
-
-    Decision. Get everything working with one queue up to packet processing via the userspace application.
-
-    Bring back the receive buffer in AF_XDP mode on linux. We're going to copy from the ring buffers to our own receive buffer.
-
-    The reason is that the receive buffers and fill buffers in XDP are shorter than we need for storing packets between frames, so we can't reasonably rely on them to buffer everything.
-
-    Also, for a game server receiving packets (aside from dropped bad ones in XDP) is not a high bandwidth operation. Servers receive relatively little bandwidth vs. what they send.
-
-    Bring back the XDP program loaded by next_server.cpp
-
-    Copy from the XDP packets into the receive buffer. It's all on one thread so we don't need any locking for now.
-
 TODO
 
-    Design how multiple threads will exist.
+    Sketch out design for one socket and umem per-NIC queue
 
-    From a read side it is straightforward, we have n sockets and as packets come in on the fill buffer, we copy them off to a per-thread receive buffer.
+    And then setup with two NIC queues.
 
-    Then when we read we can do a double buffer pointer swap (atomic) and the reads are synchronized without a lock.
-
-    For sending packets again, I think we need a double buffer pointer swap.
-
-    There is one send buffer (per-thread...), double buffered.
-
-    When we are finished writing packets to the send buffer, we can atomic pointer swap.
-
-    This way we can have the main thread staying out of the way of the n*2 worker threads.
-
-    Should the worker threads be pinned to cores?
-
-    Should the worker threads be doing both read and write?
-
-    We will need to run separate read and write threads.
-
-    This means that although they are backed by the same UMEM, we should have separate allocators for the read and write threads.
-
-    This way we don't have any contention between them when we allocate frames.
-
-    There is a LOT of work here...
-
-
+    Manually poll them once per-frame (for now...)
 
 
 
