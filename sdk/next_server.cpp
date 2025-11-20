@@ -272,7 +272,7 @@ uint64_t next_server_xdp_socket_alloc_frame( next_server_xdp_socket_t * socket )
     return frame;
 }
 
-void next_server_xdp_socket_free_frame( next_server_xdp_socket_t * server, uint64_t frame )
+void next_server_xdp_socket_free_frame( next_server_xdp_socket_t * socket, uint64_t frame )
 {
     next_assert( socket->num_free_frames < NEXT_XDP_NUM_FRAMES );
     socket->frames[socket->num_free_frames] = frame;
