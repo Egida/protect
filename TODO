@@ -38,9 +38,24 @@ DONE
 
     Cleaned up the server packet buffer sizes a lot, and increased the size for 
 
+    Mocked up fill queue and receive queue stuff
+
 TODO
 
-    The next stepy 
+    I need to configure the NIC so it sends packets to a particular port to the same queue
+
+        sudo ethtool -N <interface> rx-flow-hash udp4 fn
+        sudo ethtool -N <interface> flow-type udp4 src-port 4242 dst-port 4242 action 2
+
+    If I was to run multiple servers on the same machine, I would setup a queue number as a parameter of the server when it runs
+
+    And then setup the server to bind the umem and xdp socket to that specific queue, and set an entry in the map to send packets on port X to that xsk
+
+    -------------
+
+    The next step is to setup the XDP program to redirect received UDP packets to port 40000 to the AF_XDP socket
+
+    I need to study how to do this. Also, I'm concerned that I might need a socket per-NIC queue, which would be painful.
 
     -------------
 
