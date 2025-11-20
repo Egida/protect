@@ -452,8 +452,8 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // get file descriptors for maps so we can communicate with the server_xdp program running in kernel space
 
-    server->socket_map = bpf_obj_get( "/sys/fs/bpf/server_xdp_socket_map" );
-    if ( server->socket_map <= 0 )
+    server->socket_map_fd = bpf_obj_get( "/sys/fs/bpf/server_xdp_socket_map" );
+    if ( server->socket_map_fd <= 0 )
     {
         next_error( "server could not get socket map: %s\n\n", strerror(errno) );
         next_server_destroy( server );
@@ -465,7 +465,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     __u32 key = queue_id;
     __u32 value = xsk_socket__fd( server->xsk );
 
-    if ( bpf_map_update_elem( server->socket_map, &key, &value, BPF_ANY ) < 0 ) 
+    if ( bpf_map_update_elem( server->socket_map_fd, &key, &value, BPF_ANY ) < 0 ) 
     {
         next_error( "server failed to add xdp socket to map" );
         next_server_destroy( server );
