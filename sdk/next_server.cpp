@@ -87,7 +87,7 @@ struct next_server_t
 
     next_platform_mutex_t frame_mutex;
     uint32_t num_free_frames;
-    uint64_t frames[NEXT_NUM_SERVER_FRAMES];
+    uint64_t frames[NEXT_XDP_NUM_FRAMES];
 
     void * buffer;
     struct xsk_umem * umem;
@@ -562,7 +562,7 @@ uint64_t next_server_alloc_frame( next_server_t * server )
 void next_server_free_frame( next_server_t * server, uint64_t frame )
 {
     next_platform_mutex_acquire( &server->frame_mutex );
-    next_assert( server->num_free_frames < NEXT_NUM_SERVER_FRAMES );
+    next_assert( server->num_free_frames < NEXT_XDP_NUM_FRAMES );
     server->frames[server->num_free_frames] = frame;
     server->num_free_frames++;
     next_platform_mutex_release( &server->frame_mutex );
@@ -814,12 +814,12 @@ void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_
 
     offset -= offset % NEXT_MAX_PACKET_BYTES;
 
-    next_assert( offset < NEXT_MAX_PACKET_BYTES*NEXT_NUM_SERVER_FRAMES );
+    next_assert( offset < NEXT_MAX_PACKET_BYTES*NEXT_SERVER_MAX_SEND_PACKETS );
 
     const int frame = (int) ( offset / NEXT_MAX_PACKET_BYTES );
 
     next_assert( frame >= 0 );  
-    next_assert( frame < NEXT_NUM_SERVER_FRAMES );  
+    next_assert( frame < NEXT_SERVER_MAX_SEND_PACKETS );  
 
     next_assert( packet_data );
     next_assert( packet_bytes > 0 );
@@ -857,12 +857,12 @@ void next_server_abort_packet( struct next_server_t * server, uint8_t * packet_d
 
     offset -= offset % NEXT_MAX_PACKET_BYTES;
 
-    next_assert( offset < NEXT_MAX_PACKET_BYTES*NEXT_NUM_SERVER_FRAMES );
+    next_assert( offset < NEXT_MAX_PACKET_BYTES*NEXT_SERVER_MAX_SEND_PACKETS );
 
     const int frame = (int) ( offset / NEXT_MAX_PACKET_BYTES );
 
     next_assert( frame >= 0 );  
-    next_assert( frame < NEXT_NUM_SERVER_FRAMES );  
+    next_assert( frame < NEXT_SERVER_MAX_SEND_PACKETS );  
 
     server->send_buffer.packet_bytes[frame] = 0;
 }
