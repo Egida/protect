@@ -437,9 +437,9 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         server->frames[j] = j * NEXT_XDP_FRAME_SIZE;
     }
 
-    // todo: allocate fill frames for receiving packets from driver
+    // todo: allocate fill frames for receiving packets from network driver
 
-    server->num_free_frames = NEXT_XDP_SERVER_FRAMES;
+    server->num_free_frames = NEXT_XDP_NUM_FRAMES;
 
     // save the server public address and port in network order (big endian)
 
