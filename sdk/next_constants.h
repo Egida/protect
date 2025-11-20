@@ -21,10 +21,10 @@
 #define NEXT_NUM_CLIENT_PACKETS                                      1024
 
 #define NEXT_XDP_FRAME_SIZE                                      ( 2 * 1024 )
-#define NEXT_XDP_SEND_QUEUE_SIZE                                 ( 8 * 1024 )
-#define NEXT_XDP_FILL_QUEUE_SIZE                                 ( 8 * 1024 )
-#define NEXT_XDP_RECV_QUEUE_SIZE                                 ( 8 * 1024 )
-#define NEXT_XDP_NUM_FRAMES                                     ( 32 * 1024 )
+#define NEXT_XDP_NUM_FRAMES                                          2048
+#define NEXT_XDP_SEND_QUEUE_SIZE                                     1024
+#define NEXT_XDP_FILL_QUEUE_SIZE                                     1024
+#define NEXT_XDP_RECV_QUEUE_SIZE                                     1024
 #define NEXT_XDP_SEND_BATCH_SIZE                                     1024
 
 #define NEXT_DIRECT_TIMEOUT                                           5.0

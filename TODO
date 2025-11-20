@@ -57,9 +57,17 @@ DONE
 
     Start with combined 1 for the moment, so I can just have it working at a basic level.
 
+    The next step is to setup the XDP program to redirect received UDP packets to port 40000 to the AF_XDP socket
+
+    One thing to watch for is that you need to set the pin path for maps when loading via xdp-loader:
+
+        xdp-loader load eth0 my_prog.o --pin-path /sys/fs/bpf/my-prog
+
+    Without this, you can't just 
+
 TODO
 
-    The next step is to setup the XDP program to redirect received UDP packets to port 40000 to the AF_XDP socket
+
 
     -------------
 
