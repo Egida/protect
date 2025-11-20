@@ -97,6 +97,8 @@ struct next_server_t
     struct xsk_ring_prod fill_queue;
     struct xsk_socket * xsk;
 
+    int socket_map_fd;
+
 #else // #ifdef __linux__
 
     next_platform_socket_t * socket;
@@ -426,7 +428,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
-    // create xsk socket and assign to network interface queue
+    // create xdp socket and assign to network interface queue 0
 
     struct xsk_socket_config xsk_config;
 
@@ -444,6 +446,28 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     if ( result )
     {
         next_error( "server could not create xsk socket" );
+        next_server_destroy( server );
+        return NULL;
+    }
+
+    // get file descriptors for maps so we can communicate with the server_xdp program running in kernel space
+
+    server->socket_map = bpf_obj_get( "/sys/fs/bpf/server_xdp_socket_map" );
+    if ( server->socket_map <= 0 )
+    {
+        next_error( "server could not get socket map: %s\n\n", strerror(errno) );
+        next_server_destroy( server );
+        return NULL;
+    }
+
+    // configure the xdp socket to receive packets from the xdp program
+
+    __u32 key = queue_id;
+    __u32 value = xsk_socket__fd( server->xsk );
+
+    if ( bpf_map_update_elem( server->socket_map, &key, &value, BPF_ANY ) < 0 ) 
+    {
+        next_error( "server failed to add xdp socket to map" );
         next_server_destroy( server );
         return NULL;
     }
