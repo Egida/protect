@@ -1138,7 +1138,7 @@ void next_server_receive_packets( next_server_t * server )
             if ( xsk_ring_prod__reserve( &server->fill_queue, 1, &fill_index ) == 1 ) 
             {
                 *xsk_ring_prod__fill_addr( &server->fill_queue, fill_index ) = desc->addr;
-                xsk_ring_prod__submit( &xsk_info.xsk->fill, 1 );
+                xsk_ring_prod__submit( &server->fill_queue, 1 );
             }
         }
 
