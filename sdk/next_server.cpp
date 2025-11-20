@@ -98,7 +98,12 @@ struct next_server_t
     struct xsk_ring_prod fill_queue;
     struct xsk_socket * xsk;
 
+    int interface_index;
+    struct xdp_program * program;
+    bool attached_native;
+    bool attached_skb;
     int config_map_fd;
+    int state_map_fd;
     int socket_map_fd;
 
 #else // #ifdef __linux__
@@ -340,6 +345,14 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
                 if ( sa->sin_addr.s_addr == public_address_ipv4 )
                 {
                     strncpy( interface_name, iap->ifa_name, sizeof(interface_name) );
+                    printf( "found network interface: '%s'\n", interface_name );
+                    server->interface_index = if_nametoindex( iap->ifa_name );
+                    if ( !server->interface_index ) 
+                    {
+                        next_error( "server if_nametoindex failed" );
+                        next_server_destroy( server );
+                        return NULL;
+                    }
                     found = true;
                     break;
                 }
@@ -400,6 +413,114 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         server->gateway_ethernet_address[5] 
     );
 
+
+    // be extra safe and let's make sure no xdp programs are running on this interface before we start
+    {
+        char command[2048];
+        snprintf( command, sizeof(command), "xdp-loader unload %s --all", network_interface_name );
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
+    // delete all bpf maps we use so stale data doesn't stick around
+    {
+        {
+            const char * command = "rm -f /sys/fs/bpf/server_xdp_config_map";
+            FILE * file = popen( command, "r" );
+            char buffer[1024];
+            while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+            pclose( file );
+        }
+
+        {
+            const char * command = "rm -f /sys/fs/bpf/server_xdp_state_map";
+            FILE * file = popen( command, "r" );
+            char buffer[1024];
+            while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+            pclose( file );
+        }
+
+        {
+            const char * command = "rm -f /sys/fs/bpf/server_xdp_socket_map";
+            FILE * file = popen( command, "r" );
+            char buffer[1024];
+            while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+            pclose( file );
+        }
+    }
+
+    // write out source tar.gz for server_xdp program
+    {
+        FILE * file = fopen( "server_xdp_source.tar.gz", "wb" );
+        if ( !file )
+        {
+            next_error( "could not open server_xdp_source.tar.gz for writing" );
+            next_server_destroy( server );
+            return NULL;
+        }
+
+        fwrite( ___cmd_server_xdp_server_xdp_source_tar_gz, sizeof(___cmd_server_xdp_server_xdp_source_tar_gz), 1, file );
+
+        fclose( file );
+    }
+
+    // unzip source and build server_xdp.o
+    {
+        const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.o && rm -f Makefile && tar -zxf server_xdp_source.tar.gz && make server_xdp.o";
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
+    // clean up after ourselves
+    {
+        const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.tar.gz";
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
+    // load the client_backend_xdp program and attach it to the network interface
+
+    next_info( "loading server_xdp..." );
+
+    server->program = xdp_program__open_file( "server_xdp.o", "server_xdp", NULL );
+    if ( libxdp_get_error( server->program ) ) 
+    {
+        printf( "\nerror: could not load server_xdp program\n\n");
+        next_server_destroy( server );
+        return NULL;
+    }
+
+    next_info( "server_xdp loaded successfully." );
+
+    next_info( "attaching server_xdp to network interface %s", interface_name );
+
+    int ret = xdp_program__attach( server->program, server->interface_index, XDP_MODE_NATIVE, 0 );
+    if ( ret == 0 )
+    {
+        server->attached_native = true;
+    } 
+    else
+    {
+        next_info( "falling back to skb mode..." );
+        ret = xdp_program__attach( server->program, server->interface_index, XDP_MODE_SKB, 0 );
+        if ( ret == 0 )
+        {
+            server->attached_skb = true;
+        }
+        else
+        {
+            next_error( "failed to attach server_xdp program to interface %s", interface_name );
+            next_server_destroy( server );
+            return NULL;
+        }
+    }
+
     // allow unlimited locking of memory, so all memory needed for packet buffers can be locked
 
     struct rlimit rlim = { RLIM_INFINITY, RLIM_INFINITY };
@@ -454,7 +575,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // get file descriptors for maps so we can communicate with the server_xdp program running in kernel space
 
-    server->config_map_fd = bpf_obj_get( "/sys/fs/bpf/server_xdp/config_map" );
+    server->config_map_fd = bpf_obj_get( "/sys/fs/bpf/server_xdp_config_map" );
     if ( server->config_map_fd <= 0 )
     {
         next_error( "server could not get config map: %s\n\n", strerror(errno) );
@@ -462,7 +583,15 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         return NULL;
     }
 
-    server->socket_map_fd = bpf_obj_get( "/sys/fs/bpf/server_xdp/socket_map" );
+    server->state_map_fd = bpf_obj_get( "/sys/fs/bpf/server_xdp_state_map" );
+    if ( server->state_map_fd <= 0 )
+    {
+        next_error( "server could not get state map: %s\n\n", strerror(errno) );
+        next_server_destroy( server );
+        return NULL;
+    }
+
+    server->socket_map_fd = bpf_obj_get( "/sys/fs/bpf/server_xdp_socket_map" );
     if ( server->socket_map_fd <= 0 )
     {
         next_error( "server could not get socket map: %s\n\n", strerror(errno) );
@@ -602,6 +731,19 @@ void next_server_destroy( next_server_t * server )
     next_platform_mutex_destroy( &server->client_payload_mutex );
 
 #ifdef __linux__
+
+    if ( server->program != NULL )
+    {
+        if ( server->attached_native )
+        {
+            xdp_program__detach( server->program, server->interface_index, XDP_MODE_NATIVE, 0 );
+        }
+        if ( server->attached_skb )
+        {
+            xdp_program__detach( server->program, server->interface_index, XDP_MODE_SKB, 0 );
+        }
+        xdp_program__close( server->program );
+    }
 
     next_platform_mutex_destroy( &server->frame_mutex );
 

@@ -114,7 +114,7 @@ struct {
     __type( value, struct server_xdp_config );
     __uint( max_entries, 1 );
     __uint( pinning, LIBBPF_PIN_BY_NAME );
-} config_map SEC(".maps");
+} server_xdp_config_map SEC(".maps");
 
 struct {
     __uint( type, BPF_MAP_TYPE_ARRAY );
@@ -122,7 +122,7 @@ struct {
     __type( value, struct server_xdp_state );
     __uint( max_entries, 1 );
     __uint( pinning, LIBBPF_PIN_BY_NAME );
-} state_map SEC(".maps");
+} server_xdp_state_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_XSKMAP);
@@ -130,7 +130,7 @@ struct {
     __type(value, __u32);
     __uint(max_entries, 64);
     __uint(pinning, LIBBPF_PIN_BY_NAME);
-} socket_map SEC(".maps");
+} server_xdp_socket_map SEC(".maps");
 
 #define DEBUG 1
 
