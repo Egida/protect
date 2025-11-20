@@ -1133,6 +1133,8 @@ void next_server_receive_packets( next_server_t * server )
 
     if ( num_packets > 0) 
     {
+        next_info( "received %d packets", num_packets );
+
         for ( uint32_t i = 0; i < num_packets; i++ ) 
         {
             const struct xdp_desc * desc = xsk_ring_cons__rx_desc( &server->receive_queue, receive_index + i );
