@@ -645,7 +645,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             uint64_t frames[NEXT_XDP_FILL_QUEUE_SIZE];
             for ( int i = 0; i < NEXT_XDP_FILL_QUEUE_SIZE; i++ ) 
             {
-                frames[i] = next_xdp_socket_alloc_frame( socket );
+                frames[i] = next_server_xdp_socket_alloc_frame( socket );
                 if ( frames[i] == INVALID_FRAME )
                 {
                     next_error( "server could not allocate frame for fill queue" );
