@@ -114,7 +114,7 @@ struct {
     __type( value, struct server_xdp_config );
     __uint( max_entries, 1 );
     __uint( pinning, LIBBPF_PIN_BY_NAME );
-} server_xdp_config_map SEC(".maps");
+} config_map SEC(".maps");
 
 struct {
     __uint( type, BPF_MAP_TYPE_ARRAY );
@@ -122,7 +122,7 @@ struct {
     __type( value, struct server_xdp_state );
     __uint( max_entries, 1 );
     __uint( pinning, LIBBPF_PIN_BY_NAME );
-} server_xdp_state_map SEC(".maps");
+} state_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_XSKMAP);
@@ -130,7 +130,7 @@ struct {
     __type(value, __u32);
     __uint(max_entries, 64);
     __uint(pinning, LIBBPF_PIN_BY_NAME);
-} server_xdp_socket_map SEC(".maps");
+} xsk_map SEC(".maps");
 
 #define DEBUG 1
 
@@ -366,7 +366,7 @@ SEC("server_xdp") int server_xdp_filter( struct xdp_md *ctx )
                 if ( (void*)udp + sizeof(struct udphdr) <= data_end )
                 {
                     int key = 0;
-                    struct server_xdp_config * config = (struct server_xdp_config*) bpf_map_lookup_elem( &server_xdp_config_map, &key );
+                    struct server_xdp_config * config = (struct server_xdp_config*) bpf_map_lookup_elem( &config_map, &key );
                     if ( config == NULL )
                     {
                         debug_printf( "config is null" );
@@ -609,7 +609,7 @@ SEC("server_xdp") int server_xdp_filter( struct xdp_md *ctx )
 
                         // __u32 queue_id = ctx->rx_queue_index; // Get the current queue ID
 
-                        bpf_redirect_map( &server_xdp_socket_map, queue_id, BPF_F_INGRESS);
+                        bpf_redirect_map( &xsk_map, queue_id, BPF_F_INGRESS);
 
                         return XDP_REDIRECT;
                     }
