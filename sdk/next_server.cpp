@@ -1395,7 +1395,10 @@ void next_server_process_direct_packet( next_server_t * server, next_address_t *
             server->client_connected[client_index] = true;
             server->client_direct[client_index] = true;
             server->client_address[client_index] = *from;
-            // todo: stash big endian address and port for XDP
+#ifdef __linux__
+            server->client_address_big_endian[client_index] = next_address_ipv4( from );
+            server->client_port_big_endian[client_index] = next_platform_htons( from->port );
+#endif // #ifdef __linux__
         }
         else
         {
