@@ -57,10 +57,6 @@ struct next_server_process_packets_t
     uint8_t * packet_data[NEXT_SERVER_MAX_RECEIVE_PACKETS];
 };
 
-struct next_server_process_packets_t * next_server_process_packets_begin( struct next_server_t * server );
-
-void next_server_packet_processed( struct next_server_t * server, uint8_t * packet_data );
-
-void next_server_process_packets_end( struct next_server_t * server );
+struct next_server_process_packets_t * next_server_process_packets( struct next_server_t * server );
 
 #endif // #ifndef NEXT_CLIENT_H

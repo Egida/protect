@@ -41,8 +41,9 @@
 
 struct next_server_xdp_receive_buffer_t
 {
-    int current_packet;
-    size_t packet_bytes[NEXT_SERVER_MAX_RECEIVE_PACKETS];
+    int num_packets;
+    next_address_t from[NEXT_XDP_RECV_QUEUE_SIZE];
+    size_t packet_bytes[NEXT_XDP_RECV_QUEUE_SIZE];
     uint8_t packet_data[NEXT_MAX_PACKET_BYTES*NEXT_XDP_RECV_QUEUE_SIZE];
 };
 
@@ -59,7 +60,8 @@ struct next_server_xdp_socket_t
     struct xsk_ring_prod fill_queue;
     struct xsk_socket * xsk;
 
-    std::atomic<int> receive_index;
+    next_platform_mutex_t receive_mutex;
+    int receive_buffer_index;
     struct next_server_xdp_receive_buffer_t receive_buffer[2];
 };
 
@@ -78,7 +80,6 @@ struct next_server_send_buffer_t
 struct next_server_receive_buffer_t
 {
     int current_packet;
-    bool processing_packets;
     int client_index[NEXT_SERVER_MAX_RECEIVE_PACKETS];
     uint64_t sequence[NEXT_SERVER_MAX_RECEIVE_PACKETS];
     uint8_t * packet_data[NEXT_SERVER_MAX_RECEIVE_PACKETS];
@@ -672,6 +673,13 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
                 *frame = frames[i];
             }
 
+            if ( !next_platform_mutex_create( &socket->receive_mutex ) )
+            {
+                next_error( "server failed to create receive mutex" );
+                next_server_destroy( server );
+                return NULL;
+            }
+
             xsk_ring_prod__submit( &socket->fill_queue, NEXT_XDP_FILL_QUEUE_SIZE );
         }
     }
@@ -763,6 +771,10 @@ void next_server_destroy( next_server_t * server )
     for ( int i = 0; i < NUM_SERVER_XDP_SOCKETS; i++ )
     {
         next_server_xdp_socket_t * socket = &server->socket[i];
+
+        // todo: delete receive thread
+
+        next_platform_mutex_destroy( &socket->receive_mutex );
 
         if ( socket->xsk )
         {
@@ -959,7 +971,6 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
 {
     next_assert( server );
     next_assert( to );
-    next_assert( client_index >= 0 );
 
     next_platform_mutex_acquire( &server->send_buffer.mutex );
 
@@ -977,8 +988,6 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
         return NULL;
 
     packet_data += NEXT_HEADER_BYTES;
-
-    next_assert( packet_info );
 
     server->send_buffer.to[packet] = *to;
     server->send_buffer.packet_type[packet] = packet_type;
@@ -1278,8 +1287,11 @@ void next_server_send_packets( struct next_server_t * server )
 
         if ( packet_bytes > 0 )
         {
+            // todo
+            next_info( "send packet type %d (%d bytes)", packet_data[0], packet_bytes );
+
             next_assert( packet_data );
-            next_assert( packet_bytes <= NET_MAX_PACKET_BYTES );
+            next_assert( packet_bytes <= NEXT_MAX_PACKET_BYTES );
             next_platform_socket_send_packet( server->socket, &server->send_buffer.to[i], packet_data, (int) server->send_buffer.packet_bytes[i] );
         }
     }
@@ -1312,24 +1324,113 @@ void next_server_process_packet_internal( next_server_t * server, next_address_t
     }
 }
 
+void next_server_process_direct_packet( next_server_t * server, next_address_t * from, uint8_t * packet_data, int packet_bytes )
+{
+    if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
+        return;
+
+    if ( server->process_packets.num_packets == NEXT_SERVER_MAX_RECEIVE_PACKETS )
+        return;
+
+    int client_index = -1;
+    int first_free_slot = -1;
+    for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
+    {
+        if ( first_free_slot == -1 && !server->client_connected[i] )
+        {
+            first_free_slot = i;
+        }
+        if ( next_address_equal( from, &server->client_address[i] ) )
+        {
+            client_index = i;
+            break;
+        }
+    }
+
+    if ( client_index == -1 )
+    {
+        if ( first_free_slot != -1 )
+        {
+            client_index = first_free_slot;
+            char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
+            next_info( "client %s connected in slot %d", next_address_to_string( from, buffer ) );
+            server->client_connected[client_index] = true;
+            server->client_direct[client_index] = true;
+            server->client_address[client_index] = *from;
+            // todo: stash big endian address and port for XDP
+        }
+        else
+        {
+            // all client slots are full
+            return;
+        }
+    }
+
+    server->client_last_packet_receive_time[client_index] = next_platform_time();
+
+    const int index = server->receive_buffer.current_packet;
+
+    uint64_t sequence;
+    memcpy( (char*) &sequence, packet_data + NEXT_HEADER_BYTES, 8 );
+    next_endian_fix( &sequence );
+
+    packet_data += NEXT_HEADER_BYTES + 8;
+    packet_bytes -= NEXT_HEADER_BYTES + 8;
+
+    next_assert( packet_bytes >= 0 );
+
+    server->process_packets.client_index[index] = client_index;
+    server->process_packets.sequence[index] = sequence;
+    server->process_packets.packet_data[index] = packet_data;
+    server->process_packets.packet_bytes[index] = packet_bytes;
+    server->process_packets.num_packets++;
+}
+
 void next_server_receive_packets( next_server_t * server )
 {
     next_assert( server );
+
+    // IMPORTANT: Each time you call next_server_receive_packets you throw away
+    // any packets ready for processing that you have not processed yet!
+    server->process_packets.num_packets = 0;
 
 #ifdef __linux__
 
     for ( int queue = 0; queue < NUM_SERVER_XDP_SOCKETS; queue++ )
     {
-        // double buffer the receive buffers via receive index
+        // double buffer via receive buffer index
 
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
-        int current_index = socket->receive_index;
-
+        next_platform_mutex_acquire( &socket->receive_mutex );
+        int current_index = socket->receive_buffer_index;
         socket->receive_index = current_index ? 0 : 1;
+        next_platform_mutex_release( &socket->receive_mutex );
 
-        // ...
+        // now we can access the off receive buffer without contention...
 
+        next_server_xdp_receive_buffer_t * receive_buffer = socket->receive_buffer[current_index];
+
+        for ( int i = 0; i < receive_buffer->num_packets; i++ )
+        {
+            const next_address_t from = receive_buffer->from[i];
+            uint8_t * packet_data = receive_buffer->packet_data + i * NEXT_MAX_PACKET_BYTES;
+            const int packet_bytes = receive_buffer->packet_bytes[i];
+
+            if ( packet_bytes < 18 )
+                continue;
+
+            const uint8_t packet_type = packet_data[0];
+
+            if ( packet_type == NEXT_PACKET_DIRECT )
+            {  
+                next_server_process_direct_packet( &from, packet_data, packet_bytes );
+            }
+            else
+            {
+                next_server_process_packet_internal( server, &from, packet_data, packet_bytes );            
+            }
+        }
     }
 
 // todo: this moves to a thread per-socket
@@ -1413,61 +1514,7 @@ void next_server_receive_packets( next_server_t * server )
 
         if ( packet_type == NEXT_PACKET_DIRECT )
         {  
-            if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
-                continue;
-
-            int client_index = -1;
-            int first_free_slot = -1;
-            for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
-            {
-                if ( first_free_slot == -1 && !server->client_connected[i] )
-                {
-                    first_free_slot = i;
-                }
-                if ( next_address_equal( &from, &server->client_address[i] ) )
-                {
-                    client_index = i;
-                    break;
-                }
-            }
-
-            if ( client_index == -1 )
-            {
-                if ( first_free_slot != -1 )
-                {
-                    client_index = first_free_slot;
-                    char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
-                    next_info( "client %s connected in slot %d", next_address_to_string( &from, buffer ) );
-                    server->client_connected[client_index] = true;
-                    server->client_direct[client_index] = true;
-                    server->client_address[client_index] = from;
-                }
-                else
-                {
-                    // all client slots are full
-                    continue;
-                }
-            }
-
-            server->client_last_packet_receive_time[client_index] = next_platform_time();
-
-            const int index = server->receive_buffer.current_packet;
-
-            uint64_t sequence;
-            memcpy( (char*) &sequence, packet_data + NEXT_HEADER_BYTES, 8 );
-            next_endian_fix( &sequence );
-
-            packet_data += NEXT_HEADER_BYTES + 8;
-            packet_bytes -= NEXT_HEADER_BYTES + 8;
-
-            next_assert( packet_bytes >= 0 );
-
-            server->receive_buffer.client_index[index] = client_index;
-            server->receive_buffer.sequence[index] = sequence;
-            server->receive_buffer.packet_data[index] = packet_data;
-            server->receive_buffer.packet_bytes[index] = packet_bytes;
-
-            server->receive_buffer.current_packet++;
+            next_server_process_direct_packet( server, &from, packet_data, packet_bytes );
         }
         else
         {
@@ -1478,65 +1525,8 @@ void next_server_receive_packets( next_server_t * server )
 #endif // #ifdef __linux__
 }
 
-struct next_server_process_packets_t * next_server_process_packets_begin( struct next_server_t * server )
+struct next_server_process_packets_t * next_server_process_packets( struct next_server_t * server )
 {
     next_assert( server );
-
-#ifdef __linux__
-
-    // todo: AF_XDP
-
-#else // #ifdef __linux__
-
-    next_assert( !server->receive_buffer.processing_packets );          // IMPORTANT: You must always call next_server_process_packets_finish
-
-    const int num_packets = server->receive_buffer.current_packet;
-
-    if ( num_packets == 0 )
-        return NULL;
-
-    for ( int i = 0; i < num_packets; i++ )
-    {
-        server->process_packets.sequence[i] = server->receive_buffer.sequence[i];
-        server->process_packets.client_index[i] = server->receive_buffer.client_index[i];
-        server->process_packets.packet_bytes[i] = server->receive_buffer.packet_bytes[i];
-        server->process_packets.packet_data[i] = server->receive_buffer.packet_data[i];
-    }
-
-    server->process_packets.num_packets = num_packets;
-
-    server->receive_buffer.processing_packets = true;
-
-#endif // #ifdef __linux__
-
     return &server->process_packets;
-}
-
-void next_server_packet_processed( struct next_server_t * server, uint8_t * packet_data )
-{
-    next_assert( server );
-    next_assert( packet_data );
-
-    // ...
-
-    (void) server;
-    (void) packet_data;
-}
-
-void next_server_process_packets_end( struct next_server_t * server )
-{
-    next_assert( server );
-    next_assert( server->receive_buffer.processing_packets );
-
-#ifdef __linux__
-
-    // todo: AF_XDP
-
-#else // #ifdef __linux__
-
-    server->receive_buffer.processing_packets = false;
-
-#endif // #ifdef __linux__
-
-    server->process_packets.num_packets = 0;
 }

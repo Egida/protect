@@ -102,7 +102,7 @@ static void next_client_thread_function( void * data );
 
 next_client_t * next_client_create( void * context, const char * connect_token_string, const uint8_t * buyer_public_key, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes, uint64_t sequence ) )
 {
-    next_assert( connect_token );
+    next_assert( connect_token_string );
     next_assert( buyer_public_key );
     next_assert( packet_received_callback );
 
@@ -397,7 +397,7 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
 
     if ( from->type != NEXT_ADDRESS_IPV4 )
     {
-        next_debug( "ignored packet from non-ipv4 address" );
+        next_info( "ignored packet from non-ipv4 address" );
         return;
     }
 
@@ -405,7 +405,7 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
 
     if ( !next_basic_packet_filter( packet_data, packet_bytes ) )
     {
-        next_debug( "basic packet filter dropped packet" );
+        next_info( "basic packet filter dropped packet" );
         return;
     }
 
@@ -419,12 +419,19 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
 
     const uint8_t packet_type = packet_data[0];
 
+    next_info( "packet type is %d", packet_type );
+
     if ( client->state == NEXT_CLIENT_CONNECTED )
     {
         // common case: client is connected
 
+        next_info( "connected" );
+
         if ( packet_type == NEXT_PACKET_DIRECT && next_address_equal( from, &client->direct_address ) )
         {
+            // todo
+            next_info( "direct packet" );
+
             if ( packet_bytes > 18 + 8 )
             {
                 uint64_t sequence;
@@ -666,7 +673,7 @@ static void next_client_thread_function( void * data )
 
 void next_client_receive_packets( next_client_t * client )
 {
-    next_assert( server );
+    next_assert( client );
 
     next_platform_mutex_acquire( &client->mutex );
 
@@ -675,15 +682,12 @@ void next_client_receive_packets( next_client_t * client )
         if ( client->receive_buffer.current_packet >= NEXT_NUM_CLIENT_PACKETS )
             break;
 
-        uint8_t * packet_data = client->receive_buffer.data + NEXT_MAX_PACKET_BYTES * client->receive_buffer.current_packet;
+        uint8_t * packet_data = client->receive_buffer.data + client->receive_buffer.current_packet * NEXT_MAX_PACKET_BYTES;
 
         struct next_address_t from;
         int packet_bytes = next_platform_socket_receive_packet( client->socket, &from, packet_data, NEXT_MAX_PACKET_BYTES );
         if ( packet_bytes == 0 )
             break;
-
-        // todo
-        next_info( "client received %d byte packet", packet_bytes );
 
         double receive_time = next_platform_time();
 
@@ -693,6 +697,9 @@ void next_client_receive_packets( next_client_t * client )
 
         if ( packet_type == NEXT_PACKET_DIRECT )
         {
+            // todo
+            next_info( "direct packet" );
+
             if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
                 continue;
 
@@ -702,11 +709,17 @@ void next_client_receive_packets( next_client_t * client )
 
             client->receive_buffer.sequence[index] = sequence;
         }
+        else
+        {
+            // todo
+            next_info( "not direct (%d)", packet_type );
+        }
 
         client->receive_buffer.from[index] = from;
         client->receive_buffer.receive_time[index] = receive_time;
         client->receive_buffer.packet_data[index] = packet_data;
         client->receive_buffer.packet_bytes[index] = packet_bytes;
+
         client->receive_buffer.current_packet++;
     }
 

@@ -27,7 +27,8 @@ int main()
         return 1;        
     }
 
-    next_server_t * server = next_server_create( NULL, "0.0.0.0:40000", "192.168.1.4:40000" );      // hulk 10G
+    next_server_t * server = next_server_create( NULL, "0.0.0.0:40000", "127.0.0.1:40000" );
+    // next_server_t * server = next_server_create( NULL, "0.0.0.0:40000", "192.168.1.4:40000" );      // hulk 10G
     if ( !server )
     {
         next_error( "could not create server" );
@@ -38,18 +39,12 @@ int main()
     {
         next_server_receive_packets( server );
 
-        // todo
-        /*
-        next_server_process_packets_t * packets = next_server_process_packets_begin( server );
+        next_server_process_packets_t * packets = next_server_process_packets( server );
 
         for ( int i = 0; i < packets->num_packets; i++ )
         {
-            // next_info( "server received packet %" PRId64 " from client %d (%d bytes)", packets->sequence[i], packets->client_index[i], packets->packet_bytes[i] );
-            next_server_packet_processed( server, packets->packet_data[i] );
+            next_info( "server received packet %" PRId64 " from client %d (%d bytes)", packets->sequence[i], packets->client_index[i], packets->packet_bytes[i] );
         }
-
-        next_server_process_packets_end( server );
-        */
 
         next_server_update( server );
 
