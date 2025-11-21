@@ -1422,7 +1422,7 @@ static void xdp_receive_thread_function( void * data )
             sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
         }
 
-        int poll_result = poll( fds, 1, -1 );
+        int poll_result = poll( fds, 1, 10 );
         if ( poll_result < 0 ) 
         {
             next_error( "poll error on socket queue %d (%d)", socket->queue, poll_result );
