@@ -28,15 +28,17 @@ DONE
 
     Start here, it's complex enough to be interesting. It still requires copying (not zero copy), but it's only one copy and receive is not a hot path really.
 
-TODO
-
     Setup the double buffer receive buffer per-socket thing, and then start doing the atomic ptr swap.
 
-    Then move the receive to its own thread per-
+    Modify how process packet is done with XDP so the process packets is just ptrs to packets in various socket receive buffers.
 
-    Then work out which core to pin the receive to.
+    Clean up and start testing the client and server on localhost.
 
+TODO
 
+    Debug why the server is sending packet type 0 when it should be sending NEXT_PACKET_DIRECT (6)
+
+    This is causing the client to timeout.
 
 
 
