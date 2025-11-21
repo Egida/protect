@@ -694,7 +694,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         socket->queue = queue;
 
         socket->receive_thread = next_platform_thread_create( NULL, xdp_receive_thread_function, socket );
-        if ( !socket->thread )
+        if ( !socket->receive_thread )
         {
             next_error( "server could not create receive thread" );
             next_server_destroy( server );
@@ -791,11 +791,8 @@ void next_server_destroy( next_server_t * server )
         next_server_xdp_socket_t * socket = &server->socket[i];
 
         socket->quit = true;
-
         next_platform_thread_join( socket->receive_thread );
-
         next_platform_thread_destroy( socket->receive_thread );
-
         next_platform_mutex_destroy( &socket->receive_mutex );
 
         if ( socket->xsk )
