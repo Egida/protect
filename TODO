@@ -48,6 +48,8 @@ DONE
 
     Spin until we return all received frames to the fill queue, otherwise we break (have no choice).
 
+    Add an event fd so we can wakeup the receive thread when it needs to be shut down.
+
 TODO
 
     Extract the from address and port from the iphdr and udphdr structs

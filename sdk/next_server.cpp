@@ -690,6 +690,16 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             xsk_ring_prod__submit( &socket->fill_queue, NEXT_XDP_FILL_QUEUE_SIZE );
         }
 
+        // create event fd to wake up poll in the receive thread on quit
+        
+        socket->event_fd = eventfd( 0, 0 );
+        if ( socket->event_fd == -1 )
+        {
+            next_error( "server failed to create event fd" );
+            next_server_destroy( server );
+            return NULL;
+        }
+
         // start receive thread for queue
 
         socket->queue = queue;
@@ -794,8 +804,13 @@ void next_server_destroy( next_server_t * server )
         next_server_xdp_socket_t * socket = &server->socket[i];
 
         socket->quit = true;
+
+        uint64_t value = 1;
+        write( socket->event_fd, &value, sizeof(uint64_t) );
+
         next_platform_thread_join( socket->receive_thread );
         next_platform_thread_destroy( socket->receive_thread );
+
         next_platform_mutex_destroy( &socket->receive_mutex );
 
         if ( socket->xsk )
@@ -1411,23 +1426,28 @@ static void xdp_receive_thread_function( void * data )
 {
     next_server_xdp_socket_t * socket = (next_server_xdp_socket_t*) data;
 
-    struct pollfd fds[1];
-    fds[0].fd = xsk_socket__fd( socket-> xsk );
+    struct pollfd fds[2];
+    fds[0].fd = xsk_socket__fd( socket->xsk );
     fds[0].events = POLLIN;
+    fds[1].fd = socket->event_fd;
+    fds[1].events = POLLIN;
 
-    while ( !socket->quit )
+    while ( true )
     {
         if ( xsk_ring_prod__needs_wakeup( &socket->fill_queue ) ) 
         {
             sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
         }
 
-        int poll_result = poll( fds, 1, 100 );
+        int poll_result = poll( fds, 2, -1 );
         if ( poll_result < 0 ) 
         {
             next_error( "poll error on socket queue %d (%d)", socket->queue, poll_result );
             break;
         }
+
+        if ( socket->quit )
+            break;
 
         if ( ( fds[0].revents & POLLIN ) == 0 ) 
         {
