@@ -693,6 +693,8 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
         socket->queue = queue;
 
+        next_info( "starting receive thread for socket queue %d", socket->queue );
+
         socket->receive_thread = next_platform_thread_create( NULL, xdp_receive_thread_function, socket );
         if ( !socket->receive_thread )
         {
@@ -1407,8 +1409,6 @@ void next_server_process_direct_packet( next_server_t * server, next_address_t *
 static void xdp_receive_thread_function( void * data )
 {
     next_server_xdp_socket_t * socket = (next_server_xdp_socket_t*) data;
-
-    next_info( "started receive thread for socket queue %d", socket->queue );
 
     while ( !socket->quit )
     {
