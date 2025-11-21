@@ -26,6 +26,7 @@
 #include <linux/if_link.h>
 #include <linux/if_ether.h>
 #include <errno.h>
+#include <poll.h>
 #include <atomic>
 
 #include "next_server_xdp.h"
