@@ -1410,7 +1410,7 @@ void next_server_receive_packets( next_server_t * server )
 
         for ( int i = 0; i < receive_buffer->num_packets; i++ )
         {
-            const next_address_t from = receive_buffer->from[i];
+            next_address_t from = receive_buffer->from[i];
             uint8_t * packet_data = receive_buffer->packet_data + i * NEXT_MAX_PACKET_BYTES;
             const int packet_bytes = receive_buffer->packet_bytes[i];
 
