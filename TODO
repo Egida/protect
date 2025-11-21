@@ -44,13 +44,19 @@ DONE
 
     Next? Run with poll so the receive threads don't take 100% CPU.
 
+    Batch the return received descriptors to fill queue.
+
+    Spin until we return all received frames to the fill queue, otherwise we break (have no choice).
+
 TODO
 
-    Batch the return received descriptors to fill queue.
+    Extract the from address and port from the iphdr and udphdr structs
 
     ----------
 
     Create a separate frame allocator for receive packets vs. send packets, this way they can be on different threads.
+
+    The first half of the umem will have frames for packet sends, the second half will be frames for packet receives.
 
     ----------
 
