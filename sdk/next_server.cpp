@@ -1421,7 +1421,7 @@ void next_server_receive_packets( next_server_t * server )
 
             if ( packet_type == NEXT_PACKET_DIRECT )
             {  
-                next_server_process_direct_packet( &from, packet_data, packet_bytes );
+                next_server_process_direct_packet( server, &from, packet_data, packet_bytes );
             }
             else
             {
