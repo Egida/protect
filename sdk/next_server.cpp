@@ -1446,9 +1446,13 @@ static void xdp_receive_thread_function( void * data )
 
         if ( num_packets > 0 )
         {
+            uint64_t frame[NEXT_XDP_RECV_QUEUE_SIZE];
+
             for ( uint32_t i = 0; i < num_packets; i++ ) 
             {
                 const struct xdp_desc * desc = xsk_ring_cons__rx_desc( &socket->receive_queue, receive_index + i );
+
+                frame[i] = desc->addr;
 
                 uint8_t * packet_data = (uint8_t*)socket->buffer + desc->addr;
 
@@ -1468,16 +1472,18 @@ static void xdp_receive_thread_function( void * data )
                 }
             }
 
-            // todo: we can't really handle any error in reserving fill queue below can we?
-            uint32_t fill_index;
-            int num_reserved = xsk_ring_prod__reserve( &socket->fill_queue, num_packets, &fill_index );
-            next_assert( num_reserved == num_packets );
-            for ( int i = 0; i < num_reserved; i++ )
+            // todo: we can't really handle any error in reserving fill queue below. we have to keep reserving until we can return all fill queue entries. we have no choice.
             {
-                *xsk_ring_prod__fill_addr( &socket->fill_queue, fill_index + i ) = desc->addr;
-            }
+                uint32_t fill_index;
+                int num_reserved = xsk_ring_prod__reserve( &socket->fill_queue, num_packets, &fill_index );
+                next_assert( num_reserved == num_packets );
+                for ( int i = 0; i < num_reserved; i++ )
+                {
+                    *xsk_ring_prod__fill_addr( &socket->fill_queue, fill_index + i ) = desc->addr;
+                }
 
-            xsk_ring_prod__submit( &socket->fill_queue, num_reserved );
+                xsk_ring_prod__submit( &socket->fill_queue, num_reserved );
+            }
 
             xsk_ring_cons__release( &socket->receive_queue, num_packets );
         }
