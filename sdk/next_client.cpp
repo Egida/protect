@@ -419,19 +419,12 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
 
     const uint8_t packet_type = packet_data[0];
 
-    next_info( "packet type is %d", packet_type );
-
     if ( client->state == NEXT_CLIENT_CONNECTED )
     {
         // common case: client is connected
 
-        next_info( "connected" );
-
         if ( packet_type == NEXT_PACKET_DIRECT && next_address_equal( from, &client->direct_address ) )
         {
-            // todo
-            next_info( "direct packet" );
-
             if ( packet_bytes > 18 + 8 )
             {
                 uint64_t sequence;
@@ -697,9 +690,6 @@ void next_client_receive_packets( next_client_t * client )
 
         if ( packet_type == NEXT_PACKET_DIRECT )
         {
-            // todo
-            next_info( "direct packet" );
-
             if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
                 continue;
 
@@ -708,11 +698,6 @@ void next_client_receive_packets( next_client_t * client )
             next_endian_fix( &sequence );
 
             client->receive_buffer.sequence[index] = sequence;
-        }
-        else
-        {
-            // todo
-            next_info( "not direct (%d)", packet_type );
         }
 
         client->receive_buffer.from[index] = from;

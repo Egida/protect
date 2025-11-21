@@ -1015,6 +1015,7 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
 
 #else // #ifdef __linux__
 
+    // todo: this can actually be atomic increment
     next_platform_mutex_acquire( &server->client_payload_mutex );
     uint64_t sequence = ++server->client_payload_sequence[client_index];
     next_platform_mutex_release( &server->client_payload_mutex );
@@ -1074,11 +1075,11 @@ void next_server_finish_packet( struct next_server_t * server, uint8_t * packet_
     next_assert( packet_bytes > 0 );
     next_assert( packet_bytes <= NEXT_MTU );
 
-    server->send_buffer.packet_bytes[packet] = packet_bytes + NEXT_HEADER_BYTES;
+    server->send_buffer.packet_bytes[packet] = packet_bytes + NEXT_HEADER_BYTES + 8;
 
     // write the packet header
 
-    packet_data -= 18;
+    packet_data -= NEXT_HEADER_BYTES + 8;
 
     packet_data[0] = server->send_buffer.packet_type[packet];
 
@@ -1281,15 +1282,12 @@ void next_server_send_packets( struct next_server_t * server )
 
     for ( int i = 0; i < num_packets; i++ )
     {
-        uint8_t * packet_data = server->send_buffer.data + i*NEXT_MAX_PACKET_BYTES;
+        uint8_t * packet_data = server->send_buffer.data + i * NEXT_MAX_PACKET_BYTES;
 
         const int packet_bytes = (int) server->send_buffer.packet_bytes[i];
 
         if ( packet_bytes > 0 )
         {
-            // todo
-            next_info( "send packet type %d (%d bytes)", packet_data[0], packet_bytes );
-
             next_assert( packet_data );
             next_assert( packet_bytes <= NEXT_MAX_PACKET_BYTES );
             next_platform_socket_send_packet( server->socket, &server->send_buffer.to[i], packet_data, (int) server->send_buffer.packet_bytes[i] );

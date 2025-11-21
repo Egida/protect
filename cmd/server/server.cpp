@@ -58,7 +58,7 @@ int main()
                 {
                     memset( packet_data, 0, 100 );
                     next_server_finish_packet( server, packet_data, 100 );
-                    next_info( "server sent packet %" PRId64 " to client %d", sequence, i );
+                    // next_info( "server sent packet %" PRId64 " to client %d", sequence, i );
                 }
             }
         }
