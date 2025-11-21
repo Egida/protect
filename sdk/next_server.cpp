@@ -52,7 +52,6 @@ struct next_server_xdp_receive_buffer_t
 struct next_server_xdp_socket_t
 {
     int queue;
-    int event_fd;
     std::atomic<bool> quit;
 
     uint32_t num_free_frames;
@@ -66,10 +65,13 @@ struct next_server_xdp_socket_t
     struct xsk_ring_prod fill_queue;
     struct xsk_socket * xsk;
 
+    int receive_event_fd;
     next_platform_thread_t * receive_thread;
     next_platform_mutex_t receive_mutex;
     int receive_buffer_index;
     struct next_server_xdp_receive_buffer_t receive_buffer[2];
+
+    // todo: send buffer
 };
 
 #else // #ifdef __linux__
@@ -695,10 +697,10 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
         // create event fd to wake up poll in the receive thread on quit
         
-        socket->event_fd = eventfd( 0, 0 );
-        if ( socket->event_fd == -1 )
+        socket->receive_event_fd = eventfd( 0, 0 );
+        if ( socket->receive_event_fd == -1 )
         {
-            next_error( "server failed to create event fd" );
+            next_error( "server failed to create receive event fd" );
             next_server_destroy( server );
             return NULL;
         }
@@ -809,13 +811,13 @@ void next_server_destroy( next_server_t * server )
         socket->quit = true;
 
         uint64_t value = 1;
-        int result = write( socket->event_fd, &value, sizeof(uint64_t) );
+        int result = write( socket->receive_event_fd, &value, sizeof(uint64_t) );
         (void) result;
 
         next_platform_thread_join( socket->receive_thread );
         next_platform_thread_destroy( socket->receive_thread );
 
-        close( socket->event_fd );
+        close( socket->receive_event_fd );
 
         next_platform_mutex_destroy( &socket->receive_mutex );
 
@@ -1435,7 +1437,7 @@ static void xdp_receive_thread_function( void * data )
     struct pollfd fds[2];
     fds[0].fd = xsk_socket__fd( socket->xsk );
     fds[0].events = POLLIN;
-    fds[1].fd = socket->event_fd;
+    fds[1].fd = socket->receive_event_fd;
     fds[1].events = POLLIN;
 
     while ( true )
@@ -1485,8 +1487,12 @@ static void xdp_receive_thread_function( void * data )
                 {
                     const int index = receive_buffer->num_packets++;
 
-                    // todo: extract from address from ip and udp headers
-                    next_address_parse( &receive_buffer->from[index], "192.168.1.3:30000" );
+                    struct ethhdr * eth = (ethhdr*) packet_data;
+                    struct iphdr  * ip  = (iphdr*) ( (uint8_t*)data + sizeof( struct ethhdr ) );
+                    struct udphdr * udp = (udphdr*) ( (uint8_t*)ip + sizeof( struct iphdr ) );
+
+                    next_address_load_ipv4( &receive_buffer->from[index], &iphdr->daddr );
+                    receive->buffer->from[index].port = udphdr->dest;
                     
                     receive_buffer->packet_bytes[index] = packet_bytes;
                     memcpy( receive_buffer->packet_data + index * NEXT_MAX_PACKET_BYTES, packet_data, packet_bytes );
