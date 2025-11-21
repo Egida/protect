@@ -1406,7 +1406,7 @@ void next_server_receive_packets( next_server_t * server )
 
         // ... now we can access the off receive buffer without contention
 
-        next_server_xdp_receive_buffer_t * receive_buffer = socket->receive_buffer[current_index];
+        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[current_index];
 
         for ( int i = 0; i < receive_buffer->num_packets; i++ )
         {
