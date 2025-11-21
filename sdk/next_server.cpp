@@ -1439,11 +1439,6 @@ static void xdp_receive_thread_function( void * data )
 
     while ( true )
     {
-        if ( xsk_ring_prod__needs_wakeup( &socket->fill_queue ) ) 
-        {
-            sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
-        }
-
         int poll_result = poll( fds, 2, -1 );
         if ( poll_result < 0 ) 
         {
