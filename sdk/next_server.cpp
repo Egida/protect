@@ -1438,7 +1438,7 @@ void next_server_receive_packets( next_server_t * server )
 
         next_platform_mutex_acquire( &socket->receive_mutex );
 
-        next_server_xdp_receive_buffer_t * receive_buffer = socket->receive_buffer[socket->receive_buffer_index];
+        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[socket->receive_buffer_index];
 
         uint32_t receive_index;
         
@@ -1458,14 +1458,14 @@ void next_server_receive_packets( next_server_t * server )
 
                 if ( packet_bytes > 18 && receive_buffer->num_packets < NEXT_XDP_RECV_QUEUE_SIZE )
                 {
-                    const int index = receive_buffer.num_packets++;
+                    const int index = receive_buffer->num_packets++;
 
                     // todo: extract from address from ip and udp headers
-                    next_address_parse( &receive_buffer.from[index], "192.168.1.3:30000" );
+                    next_address_parse( &receive_buffer->from[index], "192.168.1.3:30000" );
                     
-                    receive_buffer.packet_data[index] = socket->receive_buffer.data + index * NEXT_MAX_PACKET_BYTES;
-                    receive_buffer.packet_bytes[index] = packet_bytes;
-                    memcpy( receive_buffer.packet_data[index], packet_data, packet_bytes );
+                    receive_buffer->packet_data[index] = socket->receive_buffer.data + index * NEXT_MAX_PACKET_BYTES;
+                    receive_buffer->packet_bytes[index] = packet_bytes;
+                    memcpy( receive_buffer->packet_data[index], packet_data, packet_bytes );
                 }
 
                 // todo: batch prod__submit -> num_packets
