@@ -1366,7 +1366,7 @@ void next_server_process_direct_packet( next_server_t * server, next_address_t *
 
     server->client_last_packet_receive_time[client_index] = next_platform_time();
 
-    const int index = server->receive_buffer.current_packet;
+    const int index = server->process_packets.num_packets++;
 
     uint64_t sequence;
     memcpy( (char*) &sequence, packet_data + NEXT_HEADER_BYTES, 8 );
@@ -1381,7 +1381,6 @@ void next_server_process_direct_packet( next_server_t * server, next_address_t *
     server->process_packets.sequence[index] = sequence;
     server->process_packets.packet_data[index] = packet_data;
     server->process_packets.packet_bytes[index] = packet_bytes;
-    server->process_packets.num_packets++;
 }
 
 void next_server_receive_packets( next_server_t * server )

@@ -27,8 +27,8 @@ int main()
         return 1;        
     }
 
-    next_server_t * server = next_server_create( NULL, "0.0.0.0:40000", "127.0.0.1:40000" );
-    // next_server_t * server = next_server_create( NULL, "0.0.0.0:40000", "192.168.1.4:40000" );      // hulk 10G
+    // next_server_t * server = next_server_create( NULL, "0.0.0.0:40000", "127.0.0.1:40000" );
+    next_server_t * server = next_server_create( NULL, "0.0.0.0:40000", "192.168.1.4:40000" );      // hulk 10G
     if ( !server )
     {
         next_error( "could not create server" );
