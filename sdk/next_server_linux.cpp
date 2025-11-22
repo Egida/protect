@@ -1323,10 +1323,7 @@ static void xdp_send_thread_function( void * data )
             for ( int i = start_index; i < num_packets; i++ )
             {
                 if ( num_packets_to_send >= NEXT_XDP_BATCH_SIZE )
-                {
-                    receive_buffer->packet_start_index = i;
                     break;
-                }
                 const int packet_bytes = (int) send_buffer->packet_bytes[i];
                 if ( packet_bytes > 0 )
                 {
@@ -1341,17 +1338,23 @@ static void xdp_send_thread_function( void * data )
                 break;
             }
 
-            num_packets_to_send
-
             next_info( "send thread %d waking up to do work. send %d packets [%d]", socket->queue, num_packets_to_send, socket->send_buffer_on_index );
 
             // todo: mock sending the packets
-            for ( int i = 0; i < num_packets; i++ )
+            for ( int i = 0; i < num_packets_to_send; i++ )
             {
+                int index = send_packet_index[i];
                 send_buffer->packet_bytes[i] = 0;
             }
 
-            next_platform_mutex_release( &socket->send_mutex );            
+            receive_buffer->packet_start_index = send_packet_index[num_packets]
+
+            bool stop = receive_buffer->packet_start_index >= receive_buffer->num_packets;
+
+            next_platform_mutex_release( &socket->send_mutex );
+
+            if ( stop )
+                break;
         }
 
 #if 0
