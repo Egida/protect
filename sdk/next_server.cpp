@@ -1264,11 +1264,15 @@ void next_server_send_packets( struct next_server_t * server )
         socket->send_buffer_index = current_index ? 0 : 1;
         next_platform_mutex_release( &socket->send_mutex );
 
-        // trigger the send queue to wake up and send the packets
+        // trigger the send queue to wake up and send the packets in the off send buffer
 
         uint64_t value = 1;
         int result = write( socket->send_event_fd, &value, sizeof(uint64_t) );
         (void) result;
+
+        // reset the on send buffer to zero for the application to queue up more packets to send
+
+        socket->send_buffer[current_index].num_packets = 0;
     }
 
 #else // #ifdef __linux__
@@ -1400,8 +1404,15 @@ static void xdp_send_thread_function( void * data )
             break;
         }
 
+        uint64_t value;
+        ssize_t bytes_read = read( socket->send_event_fd, &value, sizeof(uint64_t) );
+        (void) bytes_read;
+
         if ( socket->quit )
+        {
+            next_info( "send thread %d shutting down", socket->queue );
             break;
+        }
 
         if ( ( fds[0].revents & POLLIN ) == 0 ) 
         {
