@@ -1274,7 +1274,7 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t sequence
     packet_data[0] = send_buffer->packet_type[packet_index];
 
     uint8_t to_address_data[32];
-    next_address_data( &send_buffer->to[packet], to_address_data );
+    next_address_data( &send_buffer->to[packet_index], to_address_data );
 
     uint8_t from_address_data[32];
     next_address_data( &server->public_address, from_address_data );
