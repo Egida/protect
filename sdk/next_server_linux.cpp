@@ -1296,6 +1296,7 @@ static void xdp_send_thread_function( void * data )
 
             // todo
             next_info( "==========================================================" );
+            next_info( "on index is %d", socket->send_buffer_on_index );
 
             next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_on_index];
 
