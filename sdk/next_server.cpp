@@ -1475,37 +1475,27 @@ static void xdp_send_thread_function( void * data )
         (void) bytes_read;
 
         if ( socket->quit )
-        {
-            next_info( "send thread %d shutting down", socket->queue );
             break;
-        }
 
         if ( ( fds[0].revents & POLLIN ) == 0 ) 
         {
             continue;
         }
 
-        next_platform_mutex_acquire( &socket->send_mutex );
-
-        next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_index];
-
-        // IMPORTANT: We have to do this because with atomic increment on num_packets
-        // it's possible that across multiple threads we incr it past the max value
-        if ( send_buffer->num_packets > NEXT_XDP_SEND_QUEUE_SIZE )
-        {
-            send_buffer->num_packets = NEXT_XDP_SEND_QUEUE_SIZE;
-        }
-
-        next_info( "send thread %d waking up to do work (send %d packets)", socket->queue, (int) send_buffer->num_packets );
-
-        next_platform_mutex_release( &socket->send_mutex );
-
-#if 0
         while ( true )
         {
             next_platform_mutex_acquire( &socket->send_mutex );
 
             next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_index];
+
+            // IMPORTANT: We have to do this because with atomic increment on num_packets
+            // it's possible that across multiple threads we incr it past the max value
+            if ( send_buffer->num_packets > NEXT_XDP_SEND_QUEUE_SIZE )
+            {
+                send_buffer->num_packets = NEXT_XDP_SEND_QUEUE_SIZE;
+            }
+
+            next_info( "send thread %d waking up to do work", socket->queue );
 
             // mark any sent packet frames as free to be reused
 
@@ -1542,6 +1532,24 @@ static void xdp_send_thread_function( void * data )
 
             if ( num_packets_to_send == 0 )
                 break;                                   // no more work to do. go back to poll...
+
+            // todo: mock sending the packets
+            for ( int i = 0; i < num_packets; i++ )
+            {
+                send_buffer->packet_bytes[i] = 0;
+            }
+
+            next_platform_mutex_release( &socket->send_mutex );            
+        }
+
+#if 0
+        while ( true )
+        {
+            next_platform_mutex_acquire( &socket->send_mutex );
+
+            next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_index];
+
+            // ...
 
             // send a batch of packets
 
