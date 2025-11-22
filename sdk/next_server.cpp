@@ -104,7 +104,6 @@ struct next_server_xdp_socket_t
 struct next_server_send_buffer_t
 {
     next_platform_mutex_t mutex;
-    std::atomic<uint64_t> sequence;
     size_t current_packet;
     next_address_t to[NEXT_SERVER_MAX_SEND_PACKETS];
     size_t packet_bytes[NEXT_SERVER_MAX_SEND_PACKETS];
@@ -142,7 +141,7 @@ struct next_server_t
     next_platform_mutex_t client_payload_mutex;
     uint64_t client_payload_sequence[NEXT_MAX_CLIENTS];
 
-    next_server_process_packets_t process_packets;
+    std::atomic<uint64_t> send_sequence;
 
 #ifdef __linux__
 
@@ -172,6 +171,8 @@ struct next_server_t
     next_server_receive_buffer_t receive_buffer;
 
 #endif // #ifdef __linux__
+
+    next_server_process_packets_t process_packets;
 };
 
 void next_server_destroy( next_server_t * server );
@@ -1134,8 +1135,6 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
     next_assert( server );
     next_assert( to );
 
-    // todo: we can probably use atomic send buffer index to avoid this mutex lock
-
     next_platform_mutex_acquire( &server->send_buffer.mutex );
 
     uint8_t * packet_data = NULL;
@@ -1174,11 +1173,7 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
 
 #ifdef __linux__
 
-    const int index = socket->send_buffer_index ? 0 : 1;            // IMPORTANT: get the off buffer that is not currently being sent by the send thread
-
-    next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[index];
-
-    uint64_t sequence = send_buffer->sequence.fetch_add(1);
+    uint64_t sequence = server->send_sequence.fetch_add(1);
 
     int queue = sequence % NUM_SERVER_XDP_SOCKETS;
 
@@ -1209,7 +1204,7 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
 
 #else // #ifdef __linux__
 
-    uint64_t sequence = server->send_buffer.sequence.fetch_add(1);
+    uint64_t sequence = server->send_sequence.fetch_add(1);
 
     if ( server->client_direct[client_index] )
     {
