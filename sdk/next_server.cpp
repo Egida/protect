@@ -1508,7 +1508,7 @@ void next_server_process_direct_packet( next_server_t * server, next_address_t *
 
 #ifdef __linux__
 
-static void xdp_receive_thread_function( void * data )
+static void xdp_send_thread_function( void * data )
 {
     next_server_xdp_socket_t * socket = (next_server_xdp_socket_t*) data;
 
