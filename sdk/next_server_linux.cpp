@@ -1019,7 +1019,7 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, int 
 
     int packet_index = send_buffer->num_packets.fetch_add(1);
 
-    if ( packet_index >= NEXT_SERVER_MAX_SEND_PACKETS )
+    if ( packet_index >= NEXT_XDP_SEND_QUEUE_SIZE )
         return NULL;
 
     uint8_t * packet_data = send_buffer->packet_data + packet_index * NEXT_MAX_PACKET_BYTES;
@@ -1091,12 +1091,12 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t sequence
 
     offset -= offset % NEXT_MAX_PACKET_BYTES;
 
-    next_assert( offset < NEXT_MAX_PACKET_BYTES*NEXT_SERVER_MAX_SEND_PACKETS );
+    next_assert( offset < NEXT_MAX_PACKET_BYTES*NEXT_XDP_SEND_QUEUE_SIZE );
 
     const int packet_index = (int) ( offset / NEXT_MAX_PACKET_BYTES );
 
     next_assert( packet_index >= 0 );  
-    next_assert( packet_index < NEXT_SERVER_MAX_SEND_PACKETS );  
+    next_assert( packet_index < NEXT_XDP_SEND_QUEUE_SIZE );  
 
     next_assert( packet_data );
     next_assert( packet_bytes > 0 );
@@ -1142,12 +1142,12 @@ void next_server_abort_packet( struct next_server_t * server, uint64_t sequence,
 
     offset -= offset % NEXT_MAX_PACKET_BYTES;
 
-    next_assert( offset < NEXT_MAX_PACKET_BYTES*NEXT_SERVER_MAX_SEND_PACKETS );
+    next_assert( offset < NEXT_MAX_PACKET_BYTES*NEXT_XDP_SEND_QUEUE_SIZE );
 
     const int packet_index = (int) ( offset / NEXT_MAX_PACKET_BYTES );
 
     next_assert( packet_index >= 0 );  
-    next_assert( packet_index < NEXT_SERVER_MAX_SEND_PACKETS );  
+    next_assert( packet_index < NEXT_XDP_SEND_QUEUE_SIZE );  
 
     send_buffer->packet_bytes[packet_index] = 0;
 }
