@@ -971,7 +971,7 @@ void next_server_update_timeout( next_server_t * server )
             }
             else
             {
-                // todo: next timeout                
+                // todo: next timeout
             }
         }
     }
@@ -1253,7 +1253,23 @@ void next_server_send_packets( struct next_server_t * server )
 
 #ifdef __linux__
 
-    // todo: go across each queue and double buffer flip then wake up the send thread via event_fd
+    for ( int queue = 0; queue < NUM_SERVER_XDP_SOCKETS; queue++ )
+    {
+        next_server_xdp_socket_t * socket = &server->socket[queue];
+
+        // double buffer the send buffer
+
+        next_platform_mutex_acquire( &socket->send_mutex );
+        const int current_index = socket->send_buffer_index;
+        socket->send_buffer_index = current_index ? 0 : 1;
+        next_platform_mutex_release( &socket->send_mutex );
+
+        // trigger the send queue to wake up and send the packets
+
+        uint64_t value = 1;
+        int result = write( socket->send_event_fd, &value, sizeof(uint64_t) );
+        (void) result;
+    }
 
 #else // #ifdef __linux__
 
@@ -1391,6 +1407,9 @@ static void xdp_send_thread_function( void * data )
         {
             continue;
         }
+
+        // todo
+        next_info( "send thread %d waking up to do work", socket->queue );
 
         while ( true )
         {
