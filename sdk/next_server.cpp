@@ -1485,8 +1485,13 @@ static void xdp_send_thread_function( void * data )
             continue;
         }
 
-        // todo
-        next_info( "send thread %d waking up to do work", socket->queue );
+        next_platform_mutex_acquire( &socket->send_mutex );
+
+        next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_index];
+
+        next_info( "send thread %d waking up to do work (send %d packets)", socket->queue, send_buffer.num_packets );
+
+        next_platform_mutex_release( &socket->send_mutex );
 
 #if 0
         while ( true )
