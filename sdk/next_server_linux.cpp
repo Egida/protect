@@ -42,6 +42,7 @@ struct next_server_xdp_send_buffer_t
     uint8_t padding_0[1024];
 
     std::atomic<int> num_packets;
+    int packet_start_index;
     next_address_t to[NEXT_XDP_SEND_QUEUE_SIZE];
     uint8_t packet_type[NEXT_XDP_SEND_QUEUE_SIZE];
     size_t packet_bytes[NEXT_XDP_SEND_QUEUE_SIZE];
@@ -1020,9 +1021,6 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, int 
     if ( packet_index >= NEXT_XDP_SEND_QUEUE_SIZE )
         return NULL;
 
-    // todo
-    next_info( "start packet %d", packet_index );
-
     uint8_t * packet_data = send_buffer->packet_data + packet_index * NEXT_MAX_PACKET_BYTES;
 
     packet_data += NEXT_HEADER_BYTES;
@@ -1101,9 +1099,6 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t sequence
     next_assert( packet_bytes > 0 );
     next_assert( packet_bytes <= NEXT_MTU );
 
-    // todo
-    next_info( "finish packet %d", packet_index );
-
     send_buffer->packet_bytes[packet_index] = packet_bytes + NEXT_HEADER_BYTES + 8;
 
     // write the packet header
@@ -1166,6 +1161,7 @@ void next_server_send_packets( struct next_server_t * server )
         socket->send_buffer_off_index = socket->send_buffer_off_index ? 0 : 1;
         socket->send_buffer_on_index = socket->send_buffer_off_index ? 0 : 1;
         socket->send_buffer[socket->send_buffer_off_index].num_packets = 0;
+        socket->send_buffer[socket->send_buffer_on_index].current_send_index = 0;
         next_platform_mutex_release( &socket->send_mutex );
 
         // trigger the send queue to wake up and send the packets in the off send buffer
@@ -1289,10 +1285,6 @@ static void xdp_send_thread_function( void * data )
         {
             next_platform_mutex_acquire( &socket->send_mutex );
 
-            // todo
-            next_info( "==========================================================" );
-            next_info( "on index is %d", socket->send_buffer_on_index );
-
             next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_on_index];
 
             // IMPORTANT: We have to do this because with atomic increment on num_packets
@@ -1321,31 +1313,35 @@ static void xdp_send_thread_function( void * data )
 
             // count how many packets we have to send in the send buffer
 
-            int num_packets_to_send = 0;
+            const int start_index = receive_buffer->packet_start_index;
 
             const int num_packets = (int) send_buffer->num_packets;
 
-            for ( int i = 0; i < num_packets; i++ )
-            {
-                const int packet_bytes = (int) send_buffer->packet_bytes[i];
+            int num_packets_to_send = 0;
+            int send_packet_index[NEXT_XDP_SEND_BATCH_SIZE];
 
+            for ( int i = start_index; i < num_packets; i++ )
+            {
+                if ( num_packets_to_send >= NEXT_XDP_BATCH_SIZE )
+                {
+                    receive_buffer->packet_start_index = i;
+                    break;
+                }
+                const int packet_bytes = (int) send_buffer->packet_bytes[i];
                 if ( packet_bytes > 0 )
                 {
+                    send_packet_index[num_packets_to_send] = i;
                     num_packets_to_send++;
-                }
-                else
-                {
-                    next_info( "packet %d is zero bytes? [%d]", i, socket->send_buffer_on_index );
                 }
             }
 
             if ( num_packets_to_send == 0 )
             {
-                // todo
-                next_info( "==========================================================" );
-                next_platform_mutex_release( &socket->send_mutex );            
+                next_platform_mutex_release( &socket->send_mutex );   
                 break;
             }
+
+            num_packets_to_send
 
             next_info( "send thread %d waking up to do work. send %d packets [%d]", socket->queue, num_packets_to_send, socket->send_buffer_on_index );
 
@@ -1354,9 +1350,6 @@ static void xdp_send_thread_function( void * data )
             {
                 send_buffer->packet_bytes[i] = 0;
             }
-
-            // todo
-            next_info( "==========================================================" );
 
             next_platform_mutex_release( &socket->send_mutex );            
         }
