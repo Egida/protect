@@ -10,6 +10,17 @@
 
 #include "next.h"
 
+#ifdef __linux__
+
+#define NEXT_XDP_FRAME_SIZE                                      ( 2 * 1024 )
+#define NEXT_XDP_NUM_FRAMES                                          4096
+#define NEXT_XDP_SEND_QUEUE_SIZE                                     1024
+#define NEXT_XDP_FILL_QUEUE_SIZE                                     1024
+#define NEXT_XDP_RECV_QUEUE_SIZE                                     1024
+#define NEXT_XDP_SEND_BATCH_SIZE                                      256
+
+#else // #ifdef __linux__
+
 #define NEXT_SEND_PACKETS_PER_CLIENT                                   64
 
 #define NEXT_RECEIVE_PACKETS_PER_CLIENT                                16
@@ -18,14 +29,9 @@
 
 #define NEXT_SERVER_MAX_RECEIVE_PACKETS        ( NEXT_RECEIVE_PACKETS_PER_CLIENT * NEXT_MAX_CLIENTS )
 
-#define NEXT_NUM_CLIENT_PACKETS                                      1024
+#endif // #ifdef __linux__
 
-#define NEXT_XDP_FRAME_SIZE                                      ( 2 * 1024 )
-#define NEXT_XDP_NUM_FRAMES                                          4096
-#define NEXT_XDP_SEND_QUEUE_SIZE                                     1024
-#define NEXT_XDP_FILL_QUEUE_SIZE                                     1024
-#define NEXT_XDP_RECV_QUEUE_SIZE                                     1024
-#define NEXT_XDP_SEND_BATCH_SIZE                                      256
+#define NEXT_NUM_CLIENT_PACKETS                                      1024
 
 #define NEXT_DIRECT_TIMEOUT                                           5.0
 
