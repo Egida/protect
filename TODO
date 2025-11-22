@@ -54,34 +54,55 @@ DONE
 
     Extract the from address and port from the iphdr and udphdr structs
 
-TODO
-
     Create send thread per-xdp socket
 
     Setup an event_fd so the send threads know to wake up when they have finished work
-
-    ----------
-
-    Create a separate frame allocator for receive packets vs. send packets, this way they can be on different threads.
-
-    The first half of the umem will have frames for packet sends, the second half will be frames for packet receives.
-
-    ----------
 
     Create separate send buffers per-socket
 
     Make these send buffers double buffered like receive.
 
-    This way we can distribute packets sent across multiple thread send queues without mutexes per-packet send
+    Verify that send threads wake up to do work.
+
+    Needed to read 8 bytes on the event_fd so it keeps working, otherwise one of the threads doesn't wake up.
+
+TODO
+
+    Implement the send buffer queue up for server start packet, finish packet abort packet etc.
+
+    Modulo number of queues and distribute packets across different send queues.
 
     ----------
 
-    Move the send packets onto its own thread. Ask the question how can we wake up when there are packets to be sent, but not do work when there is not?
+    Create a separate frame allocator for receive packets vs. send packets.
 
-    Design the send packets thread operation.
+    The first half of the umem will have frames for packet sends, the second half will be frames for packet receives.
 
+    ----------
 
+    Bring across as much code as possible to prep-packets and frames for sending, but don't actually send
 
+    ----------
+
+    Each socket needs to know the ethernet addresses, and the server ipv4 and port big endian.
+
+    ----------
+
+    Actually implement the packet send
+
+    ----------
+
+    Verify the client receives packets from the server.
+
+    ----------
+
+    Extend so we need multiple packets per-frame.
+
+    Verify that packets are sent across both send threads.
+
+    ----------
+
+    Server AF_XDP is basically working at this point!
 
 
 
