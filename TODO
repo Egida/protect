@@ -6,19 +6,29 @@ DONE
 
     Make sure we clamp num_packets for XDP, since it will be using atomic increment, it can increment past the max packets sent
 
-TODO
-
     OK we do have a major problem, which is that we don't have an easy way to get back from packet_data to the send queue
 
     We need the sequence # passed back in to finish packet / abort packet
-
-    ----------
 
     Implement finish packet XDP
 
     Implement abort packet XDP
 
     We should now see each thread wanting to send 50 packets again
+
+
+TODO
+
+    Instead, they now each want to send 49 packets. Off by one somewhere?
+
+    ----------
+
+    It's getting complex enough that I think we should have different server implementations
+
+        next_server_portable.cpp
+        next_server_linux.cpp
+
+    If the portable server is limited to direct only, it's not going to have too much duplication with the linux server.
 
     ----------
 

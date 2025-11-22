@@ -1589,6 +1589,10 @@ static void xdp_send_thread_function( void * data )
                 {
                     num_packets_to_send++;
                 }
+                else
+                {
+                    next_info( "packet %d is zero bytes?", i );
+                }
             }
 
             if ( num_packets_to_send == 0 )
