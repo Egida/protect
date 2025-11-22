@@ -313,6 +313,7 @@ void next_server_xdp_socket_free_frame( next_server_xdp_socket_t * socket, uint6
     socket->num_free_frames++;
 }
 
+static void xdp_send_thread_function( void * data );
 static void xdp_receive_thread_function( void * data );
 
 #endif // #ifdef __linux__
