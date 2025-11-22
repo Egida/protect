@@ -1396,7 +1396,7 @@ static void xdp_send_thread_function( void * data )
         {
             next_platform_mutex_acquire( &socket->send_mutex );
 
-            next_server_xdp_send_buffer_t * send_buffer = socket->send_queue[socket->send_buffer_index];
+            next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_index];
 
             // mark any sent packet frames as free to be reused
 
