@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <atomic>
 
-#define NUM_SERVER_XDP_SOCKETS 2
+#define NUM_SERVER_XDP_SOCKETS 1 // 2
 
 struct next_server_xdp_send_buffer_t
 {
