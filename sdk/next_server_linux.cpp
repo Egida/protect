@@ -1015,6 +1015,9 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, int 
 
     const int index = socket->send_buffer_off_index;
 
+    // todo
+    next_info( "start packet %" PRId64 " [%d]", sequence, index );
+
     next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[index];
 
     int packet_index = send_buffer->num_packets.fetch_add(1);
@@ -1085,6 +1088,9 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t sequence
 
     const int index = socket->send_buffer_off_index;
 
+    // todo
+    next_info( "finish packet %" PRId64 " [%d]", sequence,index );
+
     next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[index];
 
     size_t offset = ( packet_data - send_buffer->packet_data );
@@ -1135,6 +1141,9 @@ void next_server_abort_packet( struct next_server_t * server, uint64_t sequence,
     next_server_xdp_socket_t * socket = &server->socket[queue];
 
     const int index = socket->send_buffer_off_index;
+
+    // todo
+    next_info( "abort packet %" PRId64 " [%d]", sequence, index );
 
     next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[index];
 
@@ -1339,7 +1348,7 @@ static void xdp_send_thread_function( void * data )
                 }
                 else
                 {
-                    next_info( "packet %d is zero bytes?", i );
+                    next_info( "packet %d is zero bytes? [%d]", i, socket->send_buffer_on_index );
                 }
             }
 
@@ -1351,7 +1360,7 @@ static void xdp_send_thread_function( void * data )
                 break;
             }
 
-            next_info( "send thread %d waking up to do work. send %d packets", socket->queue, num_packets_to_send );
+            next_info( "send thread %d waking up to do work. send %d packets [%d]", socket->queue, num_packets_to_send, socket->send_buffer_on_index );
 
             // todo: mock sending the packets
             for ( int i = 0; i < num_packets; i++ )
