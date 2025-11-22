@@ -1294,6 +1294,9 @@ static void xdp_send_thread_function( void * data )
         {
             next_platform_mutex_acquire( &socket->send_mutex );
 
+            // todo
+            next_info( "==========================================================")
+
             next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_on_index];
 
             // IMPORTANT: We have to do this because with atomic increment on num_packets
@@ -1342,6 +1345,8 @@ static void xdp_send_thread_function( void * data )
 
             if ( num_packets_to_send == 0 )
             {
+                // todo
+                next_info( "==========================================================")
                 next_platform_mutex_release( &socket->send_mutex );            
                 break;
             }
@@ -1353,6 +1358,9 @@ static void xdp_send_thread_function( void * data )
             {
                 send_buffer->packet_bytes[i] = 0;
             }
+
+            // todo
+            next_info( "==========================================================")
 
             next_platform_mutex_release( &socket->send_mutex );            
         }
