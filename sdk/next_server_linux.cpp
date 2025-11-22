@@ -68,7 +68,6 @@ struct next_server_xdp_socket_t
     uint8_t padding_0[1024];
 
     int queue;
-    std::atomic<bool> quit;
 
     uint8_t padding_1[1024];
 
@@ -87,6 +86,7 @@ struct next_server_xdp_socket_t
 
     uint8_t padding_3[1024];
 
+    std::atomic<bool> receive_quit;
     int receive_event_fd;
     next_platform_thread_t * receive_thread;
     next_platform_mutex_t receive_mutex;
@@ -95,6 +95,11 @@ struct next_server_xdp_socket_t
 
     uint8_t padding_4[1024];
 
+    std::atomic<bool> send_quit;
+    uint8_t server_ethernet_address[ETH_ALEN];
+    uint8_t gateway_ethernet_address[ETH_ALEN];
+    uint32_t server_address_big_endian;
+    uint16_t server_port_big_endian;
     int send_event_fd;
     next_platform_thread_t * send_thread;
     next_platform_mutex_t send_mutex;
@@ -619,7 +624,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             return NULL;
         }
 
-        // create xdp socket and assign to network interface queue 0
+        // create xdp socket
 
         struct xsk_socket_config xsk_config;
 
@@ -650,6 +655,13 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             next_server_destroy( server );
             return NULL;
         }
+
+        // copy across data needed by the socket
+
+        memcpy( socket->server_ethernet_address, server->server_ethernet_address, ETH_ALEN );
+        memcpy( socket->gateway_ethernet_address, server->gateway_ethernet_address, ETH_ALEN );
+        socket->server_address_big_endian; = server->server_address_big_endian;
+        socket->server_port_big_endian; = server->server_port_big_endian;
     }
 
     // setup send threads
@@ -811,7 +823,8 @@ void next_server_destroy( next_server_t * server )
     {
         next_server_xdp_socket_t * socket = &server->socket[i];
 
-        socket->quit = true;
+        socket->send_quit = true;
+        socket->receive_quit = true;
 
         // stop send thread
 
@@ -1278,7 +1291,7 @@ static void xdp_send_thread_function( void * data )
         ssize_t bytes_read = read( socket->send_event_fd, &value, sizeof(uint64_t) );
         (void) bytes_read;
 
-        if ( socket->quit )
+        if ( socket->send_quit )
             break;
 
         while ( true )
@@ -1469,7 +1482,7 @@ static void xdp_receive_thread_function( void * data )
             break;
         }
 
-        if ( socket->quit )
+        if ( socket->receive_quit )
             break;
 
         if ( ( fds[0].revents & POLLIN ) == 0 ) 

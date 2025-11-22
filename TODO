@@ -37,13 +37,13 @@ DONE
 
 TODO
 
-    Create a separate frame allocator for receive packets vs. send packets.
-
-    The first half of the umem will have frames for packet sends, the second half will be frames for packet receives.
+    Each socket needs to know the ethernet addresses, and the server ipv4 and port big endian.
 
     ----------
 
-    Each socket needs to know the ethernet addresses, and the server ipv4 and port big endian.
+    Create a separate frame allocator for receive packets vs. send packets.
+
+    The first half of the umem will have frames for packet sends, the second half will be frames for packet receives.
 
     ----------
 
