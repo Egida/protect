@@ -1337,45 +1337,23 @@ static void xdp_send_thread_function( void * data )
                 break;
             }
 
-            next_info( "send thread %d waking up to do work. send %d packets [%d]", socket->queue, num_packets_to_send, socket->send_buffer_on_index );
-
+            /*
             // todo: mock sending the packets
             for ( int i = 0; i < num_packets_to_send; i++ )
             {
                 int index = send_packet_index[i];
                 send_buffer->packet_bytes[i] = 0;
             }
+            */
 
-            send_buffer->packet_start_index = send_packet_index[num_packets];
-
-            bool stop = send_buffer->packet_start_index >= send_buffer->num_packets;
-
-            next_platform_mutex_release( &socket->send_mutex );
-
-            if ( stop )
-                break;
-        }
-
-#if 0
-        while ( true )
-        {
-            next_platform_mutex_acquire( &socket->send_mutex );
-
-            next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_index];
-
-            // ...
-
-            // send a batch of packets
+            // allocate frames up front
 
             int index = 0;
 
-            int batch_packets = ( num_packets_to_send < NEXT_XDP_SEND_BATCH_SIZE ) ? num_packets_to_send : NEXT_XDP_SEND_BATCH_SIZE;
-
-            const int original_batch_packets = batch_packets;
-
             uint64_t frames[NEXT_XDP_SEND_BATCH_SIZE];
 
-            // allocate frames up first, so we know 100% that we can send any frames that we reserve in the tx buffer
+/*
+            // allocate frames up first so we know 100% that we can send any frames that we reserve in the tx buffer
 
             int cant_alloc_frames = -1;
 
@@ -1392,15 +1370,15 @@ static void xdp_send_thread_function( void * data )
 
             if ( cant_alloc_frames )
             {
-                next_warn( "out of frames. can't send packets on queue %d", socket->queue );
+                next_warn( "out of frames on send queue %d", socket->queue );
                 for ( int i = 0; i < cant_alloc_frames; i++ )
                 {
                     next_server_xdp_socket_free_frame( socket, frames[i] );
                 }
+                next_platform_mutex_release( &socket->send_mutex );   
+                break;
             }
 
-// todo
-#if 0
             // reserve entries in the send queue. we *must* send all entries we reserve
 
             uint32_t send_queue_index;
@@ -1457,11 +1435,18 @@ static void xdp_send_thread_function( void * data )
             {
                 sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
             }
-#endif // #if 0
+*/
+
+
+            send_buffer->packet_start_index = send_packet_index[num_packets];
+
+            bool stop = send_buffer->packet_start_index >= send_buffer->num_packets;
 
             next_platform_mutex_release( &socket->send_mutex );
+
+            if ( stop )
+                break;
         }
-#endif // #if 0
     }
 }
 
