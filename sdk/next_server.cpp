@@ -1607,8 +1607,6 @@ static void xdp_send_thread_function( void * data )
                 send_buffer->packet_bytes[i] = 0;
             }
 
-            send_buffer->num_packets = 0;
-
             next_platform_mutex_release( &socket->send_mutex );            
         }
 
