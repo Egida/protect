@@ -1450,7 +1450,7 @@ static void xdp_send_thread_function( void * data )
 
             for ( int i = 0; i < num_packets; i++ )
             {
-                frames[i] = next_server_alloc_frame( server );
+                frames[i] = next_server_xdp_socket_alloc_frame( socket );
                 next_assert( frames[i] != INVALID_FRAME );
                 if ( frames[i] == INVALID_FRAME )
                 {
