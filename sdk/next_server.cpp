@@ -1110,18 +1110,18 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, int 
 
     next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[index];
 
-    int packet_index = server->send_buffer.num_packets.fetch_add(1);
+    int packet_index = send_buffer->num_packets.fetch_add(1);
 
     if ( packet_index >= NEXT_SERVER_MAX_SEND_PACKETS )
         return NULL;
 
-    uint8_t * packet_data = server->send_buffer.packet_data + packet_index * NEXT_MAX_PACKET_BYTES;
+    uint8_t * packet_data = send_buffer->packet_data + packet_index * NEXT_MAX_PACKET_BYTES;
 
     packet_data += NEXT_HEADER_BYTES;
 
-    server->send_buffer.to[packet] = *to;
-    server->send_buffer.packet_type[packet] = packet_type;
-    server->send_buffer.packet_bytes[packet] = 0;
+    send_buffer->to[packet] = *to;
+    send_buffer->packet_type[packet] = packet_type;
+    send_buffer->packet_bytes[packet] = 0;
 
     return packet_data;
 }
