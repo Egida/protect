@@ -1446,7 +1446,7 @@ static void xdp_send_thread_function( void * data )
 
             // allocate frames up first, so we know 100% that we can send any frames that we reserve in the tx buffer
 
-            bool cant_alloc_frames = false;
+            int cant_alloc_frames = -1;
 
             for ( int i = 0; i < num_packets; i++ )
             {
@@ -1454,7 +1454,7 @@ static void xdp_send_thread_function( void * data )
                 next_assert( frames[i] != INVALID_FRAME );
                 if ( frames[i] == INVALID_FRAME )
                 {
-                    cant_alloc_frames = true;
+                    cant_alloc_frames = i;
                     break;
                 }
             }
@@ -1462,9 +1462,9 @@ static void xdp_send_thread_function( void * data )
             if ( cant_alloc_frames )
             {
                 next_warn( "out of frames. can't send packets on queue %d", socket->queue );
-                for ( int i = 0; j < i; j++ )
+                for ( int i = 0; i < cant_alloc_frames; i++ )
                 {
-                    next_server_xdp_socket_free_frame( socket, frames[j] );
+                    next_server_xdp_socket_free_frame( socket, frames[i] );
                 }
             }
 
