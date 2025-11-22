@@ -620,6 +620,8 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     {
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
+        socket->queue = queue;
+
         // allocate umem
 
         const int buffer_size = NEXT_XDP_NUM_FRAMES * NEXT_XDP_FRAME_SIZE;
@@ -780,8 +782,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         }
 
         // start receive thread for queue
-
-        socket->queue = queue;
 
         next_info( "starting receive thread for socket queue %d", socket->queue );
 
