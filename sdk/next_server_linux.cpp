@@ -1103,9 +1103,6 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t sequence
 
     send_buffer->packet_bytes[packet_index] = packet_bytes + NEXT_HEADER_BYTES + 8;
 
-    // todo
-    next_info( "finish packet %" PRId64 " (%d bytes)", sequence, send_buffer->packet_bytes[packet_index] );
-
     // write the packet header
 
     packet_data -= NEXT_HEADER_BYTES + 8;
@@ -1167,7 +1164,6 @@ void next_server_send_packets( struct next_server_t * server )
         next_platform_mutex_acquire( &socket->send_mutex );
         const int current_index = socket->send_buffer_index;
         socket->send_buffer_index = current_index ? 0 : 1;
-        socket->send_buffer[socket->send_buffer_index].num_packets = 0;
         next_platform_mutex_release( &socket->send_mutex );
 
         // trigger the send queue to wake up and send the packets in the off send buffer
@@ -1355,6 +1351,8 @@ static void xdp_send_thread_function( void * data )
             {
                 send_buffer->packet_bytes[i] = 0;
             }
+
+            send_buffer->num_packets = 0;
 
             next_platform_mutex_release( &socket->send_mutex );            
         }
