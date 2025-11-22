@@ -1489,7 +1489,7 @@ static void xdp_send_thread_function( void * data )
 
         next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_index];
 
-        next_info( "send thread %d waking up to do work (send %d packets)", socket->queue, send_buffer->num_packets.fetch() );
+        next_info( "send thread %d waking up to do work (send %d packets)", socket->queue, (int) send_buffer->num_packets );
 
         next_platform_mutex_release( &socket->send_mutex );
 
