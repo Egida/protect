@@ -72,23 +72,19 @@ DONE
 
     Implement the send buffer queue up for server start packet XDP
 
-TODO
-
     Swap out send_mutex for atomic increment
 
+    Verify that the send threads wake up and want to send 50 packets each (100 sent total)
+
+TODO
+
     Make sure we clamp num_packets for XDP, since it will be using atomic increment, it can increment past the max packets sent
-
-    ----------
-
-    Verify that packets
 
     ----------
 
     Implement abort packet XDP
 
     Implement finish packet XDP
-
-    Verify that the send threads wake up and want to send n packets
 
     ----------
 
