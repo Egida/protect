@@ -1013,12 +1013,7 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, int 
 {
     next_server_xdp_socket_t * socket = &server->socket[queue];
 
-    const int index = socket->send_buffer_off_index;
-
-    // todo
-    next_info( "start packet [%d]", index );
-
-    next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[index];
+    next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_off_index];
 
     int packet_index = send_buffer->num_packets.fetch_add(1);
 
@@ -1029,9 +1024,9 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, int 
 
     packet_data += NEXT_HEADER_BYTES;
 
-    send_buffer->to[index] = *to;
-    send_buffer->packet_type[index] = packet_type;
-    send_buffer->packet_bytes[index] = 0;
+    send_buffer->to[packet_index] = *to;
+    send_buffer->packet_type[packet_index] = packet_type;
+    send_buffer->packet_bytes[packet_index] = 0;
 
     return packet_data;
 }
@@ -1086,12 +1081,7 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t sequence
 
     next_server_xdp_socket_t * socket = &server->socket[queue];
 
-    const int index = socket->send_buffer_off_index;
-
-    // todo
-    next_info( "finish packet %" PRId64 " [%d]", sequence,index );
-
-    next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[index];
+    next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_off_index];
 
     size_t offset = ( packet_data - send_buffer->packet_data );
 
@@ -1140,12 +1130,7 @@ void next_server_abort_packet( struct next_server_t * server, uint64_t sequence,
 
     next_server_xdp_socket_t * socket = &server->socket[queue];
 
-    const int index = socket->send_buffer_off_index;
-
-    // todo
-    next_info( "abort packet %" PRId64 " [%d]", sequence, index );
-
-    next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[index];
+    next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_off_index];
 
     size_t offset = ( packet_data - send_buffer->packet_data );
 
