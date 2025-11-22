@@ -1409,7 +1409,7 @@ static void xdp_send_thread_function( void * data )
                 for ( int i = 0; i < num_completed; i++ )
                 {
                     uint64_t frame = *xsk_ring_cons__comp_addr( &socket->complete_queue, complete_index++ );
-                    next_server_free_frame( server, frame );
+                    next_server_xdp_socket_free_frame( socket, frame );
                 }
 
                 xsk_ring_cons__release( &socket->complete_queue, num_completed );
@@ -1464,7 +1464,7 @@ static void xdp_send_thread_function( void * data )
                 next_warn( "out of frames. can't send packets on queue %d", socket->queue );
                 for ( int i = 0; j < i; j++ )
                 {
-                    next_server_free_frame( server, frames[j] );
+                    next_server_xdp_socket_free_frame( socket, frames[j] );
                 }
             }
 
