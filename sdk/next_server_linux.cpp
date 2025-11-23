@@ -1210,14 +1210,8 @@ void next_server_process_packet_internal( next_server_t * server, next_address_t
 {
     const uint8_t packet_type = packet_data[0];
 
-    // todo
-    next_info( "process packet internal: packet type = %d", packet_type );
-
     if ( packet_type == NEXT_PACKET_DISCONNECT && packet_bytes == sizeof(next_disconnect_packet_t) )
     {
-        // todo
-        next_info( "process disconnect packet" );
-
         int client_index = -1;
         for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
         {
