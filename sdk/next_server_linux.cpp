@@ -83,7 +83,7 @@ struct next_server_xdp_socket_t
 
     std::atomic<bool> receive_quit;
     uint32_t num_free_receive_frames;
-    uint64_t receive_frames[NEXT_XDP_RECV_QUEUE_SIZE];
+    uint64_t receive_frames[NEXT_XDP_NUM_FRAMES/2];
     int receive_event_fd;
     next_platform_thread_t * receive_thread;
     next_platform_mutex_t receive_mutex;
@@ -94,7 +94,7 @@ struct next_server_xdp_socket_t
 
     std::atomic<bool> send_quit;
     uint32_t num_free_send_frames;
-    uint64_t send_frames[NEXT_XDP_SEND_QUEUE_SIZE];
+    uint64_t send_frames[NEXT_XDP_NUM_FRAMES/2];
     uint8_t server_ethernet_address[ETH_ALEN];
     uint8_t gateway_ethernet_address[ETH_ALEN];
     uint32_t server_address_big_endian;
@@ -690,15 +690,15 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
         // initialize send frame allocator
 
-        next_assert( NEXT_XDP_SEND_QUEUE_SIZE <= NEXT_XDP_NUM_FRAMES / 2 );
-        next_assert( NEXT_XDP_RECV_QUEUE_SIZE <= NEXT_XDP_NUM_FRAMES / 2 );
+        next_assert( NEXT_XDP_SEND_QUEUE_SIZE <= NEXT_XDP_NUM_FRAMES / 4 );
+        next_assert( NEXT_XDP_RECV_QUEUE_SIZE <= NEXT_XDP_NUM_FRAMES / 4 );
 
-        for ( int j = 0; j < NEXT_XDP_SEND_QUEUE_SIZE; j++ )
+        for ( int j = 0; j < NEXT_XDP_NUM_FRAMES / 2; j++ )
         {
             socket->send_frames[j] = j * NEXT_XDP_FRAME_SIZE;
         }
 
-        socket->num_free_send_frames = NEXT_XDP_SEND_QUEUE_SIZE;
+        socket->num_free_send_frames = NEXT_XDP_NUM_FRAMES / 2;
 
         // create event fd to wake up poll in the send thread on quit
         
@@ -740,12 +740,12 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
         // initialize receive frame allocator
 
-        for ( int j = 0; j < NEXT_XDP_RECV_QUEUE_SIZE; j++ )
+        for ( int j = 0; j < NEXT_XDP_NUM_FRAMES / 2; j++ )
         {
             socket->receive_frames[j] = ( NEXT_XDP_NUM_FRAMES / 2 + j ) * NEXT_XDP_FRAME_SIZE;
         }
 
-        socket->num_free_receive_frames = NEXT_XDP_RECV_QUEUE_SIZE;
+        socket->num_free_receive_frames = NEXT_XDP_NUM_FRAMES / 2;
 
         // populate fill ring for packets to be received in
         {
