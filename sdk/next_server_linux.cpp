@@ -1534,7 +1534,7 @@ static void xdp_receive_thread_function( void * data )
                     const int index = receive_buffer->num_packets++;
 
                     struct ethhdr * eth = (ethhdr*) packet_data;
-                    struct iphdr  * ip  = (iphdr*) ( (uint8_t*)data + sizeof( struct ethhdr ) );
+                    struct iphdr  * ip  = (iphdr*) ( (uint8_t*)packet_data + sizeof( struct ethhdr ) );
                     struct udphdr * udp = (udphdr*) ( (uint8_t*)ip + sizeof( struct iphdr ) );
 
                     uint32_t source_ipv4 = (uint32_t) ip->daddr;

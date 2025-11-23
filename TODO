@@ -2,10 +2,16 @@ DONE
 
     Get 10gbps packet send working with AF_XDP!
 
-TODO
-
     Now it's time to land the plane
 
     Get the xdp server processing direct packets, adding new connections, doing timeouts etc.
 
     Once this is done I can bring this code across to a test project and test it in-place in a real game engine.
+
+TODO
+
+    Server is not getting the from address or port right for packets received from XDP.
+
+    Address comes through as 0.0.0.0:0
+
+    Where is it wrong?
