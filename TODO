@@ -42,32 +42,20 @@ DONE
 
     That's pretty much working.
 
-TODO
-
     The next thing to try is to enable busy polling on the sender.
 
         sudo bash -c "echo 0 > /sys/class/net/enp8s0f0/napi_defer_hard_irqs"
         sudo bash -c "echo 0 > /sys/class/net/enp8s0f0/gro_flush_timeout"
 
-    ----------
+    Didn't make much of a difference.
 
-    Now we need to start profiling. I need some way to have a test XDP receiver (linux) which will count how many packets are received per-second and display them
+    16 threads just made stuff worse, and the ksoftirq bumped up to 100% now and then.
 
-    It needs to be linux and xdp because we'll need to fake many connected clients (1000) and send many packets
+    Go back to 8 NIC queues.
 
-    ----------
+TODO
 
-
-
-
-
-
-
-
-
-    -------------
-
-    Implement rate limiting in XDP x requests per-y seconds keyed on IP address
+    Try pinning the send and receive threads to the CPU.
 
     -------------
 
@@ -94,6 +82,3 @@ TODO
     Double this route and implement multipath
 
     -------------
-
-
-

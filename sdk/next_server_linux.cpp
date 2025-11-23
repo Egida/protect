@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include <atomic>
 
-#define NUM_SERVER_XDP_SOCKETS 16
+#define NUM_SERVER_XDP_SOCKETS 8
 
 struct next_server_xdp_send_buffer_t
 {
@@ -1311,9 +1311,26 @@ void next_server_process_direct_packet( next_server_t * server, next_address_t *
     server->process_packets.packet_bytes[index] = packet_bytes;
 }
 
+static bool pin_thread_to_cpu( int cpu ) 
+{
+    int num_cpus = sysconf( _SC_NPROCESSORS_ONLN );
+    if ( cpu < 0 || cpu >= num_cpus  )
+        return false;
+
+    cpu_set_t cpuset;
+    CPU_ZERO( &cpuset );
+    CPU_SET( cpu, &cpuset );
+
+    pthread_t current_thread = pthread_self();    
+
+    pthread_setaffinity_np( current_thread, sizeof(cpu_set_t), &cpuset );
+}
+
 static void xdp_send_thread_function( void * data )
 {
     next_server_xdp_socket_t * socket = (next_server_xdp_socket_t*) data;
+
+    pin_thread_to_cpu( socket->queue );
 
     struct pollfd fds[1];
     fds[0].fd = socket->send_event_fd;
@@ -1474,6 +1491,8 @@ static void xdp_send_thread_function( void * data )
 static void xdp_receive_thread_function( void * data )
 {
     next_server_xdp_socket_t * socket = (next_server_xdp_socket_t*) data;
+
+    pin_thread_to_cpu( socket->queue );
 
     struct pollfd fds[2];
     fds[0].fd = xsk_socket__fd( socket->xsk );
