@@ -1468,7 +1468,7 @@ static void xdp_send_thread_function( void * data )
 
             // go to next iteration or stop if there are no more packets to send
 
-            send_buffer->packet_start_index = send_packet_index[num_packets];
+            send_buffer->packet_start_index = send_packet_index[batch_packets-1] + 1;
 
             bool stop = send_buffer->packet_start_index >= send_buffer->num_packets;
 
