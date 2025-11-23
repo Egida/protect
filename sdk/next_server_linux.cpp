@@ -25,6 +25,7 @@
 #include <net/if.h>
 #include <linux/if_link.h>
 #include <linux/if_ether.h>
+#include <linux/if_xdp.h>
 #include <sys/eventfd.h>
 #include <errno.h>
 #include <poll.h>
