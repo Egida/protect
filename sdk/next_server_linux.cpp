@@ -1605,6 +1605,9 @@ void next_server_receive_packets( next_server_t * server )
 
             const uint8_t packet_type = packet_data[0];
 
+            // todo
+            next_info( "packet type is %d", packet_type );
+
             if ( packet_type == NEXT_PACKET_DIRECT )
             { 
                 next_server_process_direct_packet( server, &from, packet_data, packet_bytes );
