@@ -897,6 +897,8 @@ void next_server_update_timeout( next_server_t * server )
 {
     double current_time = next_platform_time();
 
+    // todo: disable client timeout temporarily
+    /*
     for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
     {
         if ( server->client_connected[i] )
@@ -914,6 +916,7 @@ void next_server_update_timeout( next_server_t * server )
             }
         }
     }
+    */
 }
 
 void next_server_update( next_server_t * server )
