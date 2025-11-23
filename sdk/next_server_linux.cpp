@@ -1368,7 +1368,7 @@ static void xdp_send_thread_function( void * data )
 
             if ( batch_packets < num_packets_to_send )
             {
-                socket->packet_start_index = send_packet_index[batch_packets];
+                send_buffer->packet_start_index = send_packet_index[batch_packets];
                 if ( batch_packets == 0 )
                 {
                     next_platform_mutex_release( &socket->send_mutex );   
@@ -1392,7 +1392,7 @@ static void xdp_send_thread_function( void * data )
                     exit(1);
                 }
 
-                uint8_t * packet_data = (uint8_t*)socket->buffer + frames[i];
+                uint8_t * packet_data = (uint8_t*)socket->buffer + frame;
 
                 const int payload_bytes = send_buffer->packet_bytes[index];
 
