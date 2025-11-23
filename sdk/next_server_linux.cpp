@@ -609,7 +609,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     server->server_port_big_endian = next_platform_htons( public_address.port );
 
     // todo: mock 1000 connected clients
-    for ( int i = 0; i < 10; i++ )
+    for ( int i = 0; i < 100; i++ )
     {
         server->client_connected[i] = true;
         server->client_direct[i] = true;
@@ -1338,8 +1338,7 @@ static void xdp_send_thread_function( void * data )
 
             next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_on_index];
 
-            // IMPORTANT: We have to do this because with atomic increment on num_packets
-            // it's possible that across multiple threads we incr it past the max value
+            // IMPORTANT: We have to clamp this because of atomic increment
             if ( send_buffer->num_packets > NEXT_XDP_SEND_QUEUE_SIZE )
             {
                 send_buffer->num_packets = NEXT_XDP_SEND_QUEUE_SIZE;
@@ -1366,7 +1365,13 @@ static void xdp_send_thread_function( void * data )
 
             const int start_index = send_buffer->packet_start_index;
 
+            next_assert( start_index >= 0 );
+            next_assert( start_index < NEXT_XDP_SEND_QUEUE_SIZE );
+
             const int num_packets = (int) send_buffer->num_packets;
+
+            next_assert( num_packets >= 0 );
+            next_assert( num_packets <= NEXT_XDP_SEND_QUEUE_SIZE );
 
             int num_packets_to_send = 0;
             int send_packet_index[NEXT_XDP_SEND_BATCH_SIZE];
