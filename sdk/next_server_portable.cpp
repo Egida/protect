@@ -114,11 +114,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     next_info( "server id is %016" PRIx64, server->server_id );
     next_info( "match id is %016" PRIx64, server->match_id );
 
-    // todo: mock a client connected in slot 0
-    server->client_connected[0] = true;
-    server->client_direct[0] = true;
-    next_address_parse( &server->client_address[0], "192.168.1.3:30000" );
-
     return server;    
 }
 

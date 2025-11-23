@@ -1208,9 +1208,6 @@ void next_server_send_packets( struct next_server_t * server )
 
 void next_server_process_packet_internal( next_server_t * server, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {
-    // todo
-    next_info( "process packet internal" );
-
     const uint8_t packet_type = packet_data[0];
 
     if ( packet_type == NEXT_PACKET_DISCONNECT && packet_bytes == sizeof(next_disconnect_packet_t) )
@@ -1234,10 +1231,6 @@ void next_server_process_packet_internal( next_server_t * server, next_address_t
 
 void next_server_process_direct_packet( next_server_t * server, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {   
-    // todo
-    next_info( "process direct packet" );
-
-
     if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
         return;
 
@@ -1606,9 +1599,6 @@ void next_server_receive_packets( next_server_t * server )
                 continue;
 
             const uint8_t packet_type = packet_data[0];
-
-            // todo
-            next_info( "packet type is %d", packet_type );
 
             if ( packet_type == NEXT_PACKET_DIRECT )
             { 
