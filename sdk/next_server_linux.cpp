@@ -436,19 +436,12 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // look up the gateway ethernet address for the network interface
 
-    // batman mac address on LAN
-    uint8_t batman_mac[] = { 0xd0, 0x81, 0x7a, 0xd8, 0x3a, 0xec };
-    memcpy( server->gateway_ethernet_address, batman_mac, 6 );
-
-    // todo
-    /*
     if ( !get_gateway_mac_address( interface_name, server->gateway_ethernet_address ) )
     {
         next_error( "server could not get gateway mac address" );
         next_server_destroy( server );
         return NULL;
     }
-    */
 
     next_info( "gateway ethernet address is %02x.%02x.%02x.%02x.%02x.%02x", 
         server->gateway_ethernet_address[0], 
@@ -609,17 +602,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     server->server_address_big_endian = public_address_ipv4;
     server->server_port_big_endian = next_platform_htons( public_address.port );
 
-    // todo: mock 1000 connected clients
-    for ( int i = 0; i < 1000; i++ )
-    {
-        server->client_connected[i] = true;
-        server->client_direct[i] = true;
-        next_address_parse( &server->client_address[i], "192.168.1.3" );
-        server->client_address[i].port = 30000 + i;
-        server->client_address_big_endian[i] = next_address_ipv4( &server->client_address[i] );
-        server->client_port_big_endian[i] = next_platform_htons( server->client_address[i].port );
-    }
-
     // initialize server xdp sockets (one socket per-NIC queue)
 
     for ( int queue = 0; queue < NUM_SERVER_XDP_SOCKETS; queue++ )
@@ -666,20 +648,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             next_server_destroy( server );
             return NULL;
         }
-
-        // enable busy polling on the socket
-
-        // todo: not sure about this!?
-        /*
-        #define SO_PREFER_BUSY_POLL 69
-        int option_value = 64;
-        if ( setsockopt( xsk_socket__fd( socket->xsk ), SOL_XDP, SO_PREFER_BUSY_POLL, &option_value, sizeof(option_value) ) < 0 ) 
-        {
-            next_error( "server failed to set busy poll socket option for queue %d", queue );
-            next_server_destroy( server );
-            return NULL;
-        }
-        */
 
         // configure the xdp socket to receive packets from the xdp program
 
@@ -949,8 +917,6 @@ void next_server_update_timeout( next_server_t * server )
 {
     double current_time = next_platform_time();
 
-    // todo: disable client timeout temporarily
-    /*
     for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
     {
         if ( server->client_connected[i] )
@@ -968,7 +934,6 @@ void next_server_update_timeout( next_server_t * server )
             }
         }
     }
-    */
 }
 
 void next_server_update( next_server_t * server )
@@ -1466,12 +1431,10 @@ static void xdp_send_thread_function( void * data )
 
                 memcpy( packet_data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr), send_buffer->packet_data + packet_index * NEXT_MAX_PACKET_BYTES, payload_bytes );
 
-                // todo: get these from the client arrays according to client_index or whatever
-                uint32_t client_address_big_endian = 0x0301a8c0;                            // batman IP on 10G LAN
-                uint32_t client_port_big_endian = next_platform_htons( 30000 );
+                uint32_t to_address_big_endian = next_address_ipv4( &send_buffer->to[packet_index] );
+                uint16_t to_port_big_endian = next_platform_htons( send_buffer->to[packet_index].port );
 
-                // todo: we need address stuff here...
-                int packet_bytes = generate_packet_header( packet_data, socket->server_ethernet_address, socket->gateway_ethernet_address, socket->server_address_big_endian, client_address_big_endian, socket->server_port_big_endian, client_port_big_endian, payload_bytes );
+                int packet_bytes = generate_packet_header( packet_data, socket->server_ethernet_address, socket->gateway_ethernet_address, socket->server_address_big_endian, to_address_big_endian, socket->server_port_big_endian, to_port_big_endian, payload_bytes );
 
                 desc->addr = frame;
                 desc->len = packet_bytes;

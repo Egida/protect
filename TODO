@@ -1,98 +1,11 @@
 DONE
 
-    Create a separate frame allocator for receive packets vs. send packets.
-
-    The first half of the umem will have frames for packet sends, the second half will be frames for packet receives.
-
-    It seems that the send and receive queue sizes both overlap, as well as send/complete
-
-    So the reality is that we really only need 8k frames, if it is 4k per-queue.
-
-    Updated and added asserts which check that actually both send and receive queue sizes must be num frames / 2.
-
-    Verify the new frame allocators compile and work
-
-    Had to double the frame allocators, since you can have worst case n in fill queue, and n in complete queue, so you actually need n*2 for receive, and same for send.
-
-    Increase to 8 NIC queues and see that NEXT_MTU (max packet bytes) can be sent for one client.
-
-    Mock 1000 clients with incrementing port numbers to see how many packets we can send before it blows up
-
-    The different port numbers should scale RSS on the receive side
-
-    Stats on my mac (with 10G NIC) says that we are sending around 700 megabytes per-second, or 5.6 gigabits per-second.
-
-    Now go to the sending side, and calculate if this is what we are actually sending, or if we are dropping some packets somewhere, or not able to send them fast enough
-
-    Packets received per-second are around 570k packets per-second.
-
-    Calculating this... it's close enough to be correct.
-
-    Try increasing sent packets per-client. doubled.
-
-    It can actually send less.
-
-    We're definitely hitting a bottleneck, likely, it's the fastest a single CPU can queue up packets.
-
-    Increased send queue size and I'm definitely getting more packets through
-
-    1.21gigabyte per-second
-
-    It's 9.68 gigabits per-second.
-
-    That's pretty much working.
-
-    The next thing to try is to enable busy polling on the sender.
-
-        sudo bash -c "echo 0 > /sys/class/net/enp8s0f0/napi_defer_hard_irqs"
-        sudo bash -c "echo 0 > /sys/class/net/enp8s0f0/gro_flush_timeout"
-
-    Didn't make much of a difference.
-
-    16 threads just made stuff worse, and the ksoftirq bumped up to 100% now and then.
-
-    Go back to 8 NIC queues.
-
-    Try pinning the send and receive threads to the CPU.
+    Get 10gbps packet send working with AF_XDP!
 
 TODO
 
-    Searching keeps telling me I need to set SO_PREFER_BUSY_POLL on the socket, but I can't find any definition of this SO in the headers?
+    Now it's time to land the plane
 
-    Some info here: https://docs.kernel.org/networking/napi.html
+    Get the xdp server processing direct packets, adding new connections, doing timeouts etc.
 
-    -------------
-
-    Fix the connect token so we never send the user hash over un-encrypted channels
-
-    This involves doing key exchange and switching over to more advanced crypto primitive
-
-    Add these primitives to proton and then upgrade the code in protect to do the key exchange at the same time as processing the connect token
-
-    -------------
-
-    Implement ip2location in client backend
-
-    -------------
-
-    Implement the client ping near relay design
-
-    -------------
-
-    Implement requesting a route and sending packets across it
-
-    -------------
-
-    Double this route and implement multipath
-
-    -------------
-
-
-
-
-# Set busy_budget to 256 for a specific interface
-echo 256 | sudo tee /sys/class/net/ens786f1/busy_budget
-
-# Set napi_defer_hard_irqs and gro_flush_timeout for the interface
-echo 2 | sudo tee /sys/class/net/ens786f1/napi_defer_hard_irqs
-echo 200000 | sudo tee /sys/class/net/ens786f1/gro_flush_timeout
+    Once this is done I can bring this code across to a test project and test it in-place in a real game engine.
