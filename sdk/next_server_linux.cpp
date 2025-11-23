@@ -88,7 +88,8 @@ struct next_server_xdp_socket_t
     int receive_event_fd;
     next_platform_thread_t * receive_thread;
     next_platform_mutex_t receive_mutex;
-    int receive_buffer_index;
+    int receive_buffer_on_index;
+    int receive_buffer_off_index;
     struct next_server_xdp_receive_buffer_t receive_buffer[2];
 
     uint8_t padding_3[1024];
@@ -1505,7 +1506,7 @@ static void xdp_receive_thread_function( void * data )
 
         next_platform_mutex_acquire( &socket->receive_mutex );
 
-        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[socket->receive_buffer_index];
+        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[socket->receive_buffer_on_index];
 
         uint32_t receive_index;
         
@@ -1586,13 +1587,13 @@ void next_server_receive_packets( next_server_t * server )
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
         next_platform_mutex_acquire( &socket->receive_mutex );
-        const int current_index = socket->receive_buffer_index;
-        socket->receive_buffer_index = current_index ? 0 : 1;
+        socket->send_buffer_off_index = socket->send_buffer_off_index ? 0 : 1;
+        socket->send_buffer_on_index = socket->send_buffer_off_index ? 0 : 1;
         next_platform_mutex_release( &socket->receive_mutex );
 
         // now we can access the off receive buffer without contention with the receive thread
 
-        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[current_index];
+        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[socket->send_buffer_off_index];
 
         for ( int i = 0; i < receive_buffer->num_packets; i++ )
         {
