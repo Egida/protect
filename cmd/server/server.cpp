@@ -43,7 +43,7 @@ int main()
 
         for ( int i = 0; i < packets->num_packets; i++ )
         {
-            next_info( "server received packet %" PRId64 " from client %d (%d bytes)", packets->sequence[i], packets->client_index[i], packets->packet_bytes[i] );
+            // next_info( "server received packet %" PRId64 " from client %d (%d bytes)", packets->sequence[i], packets->client_index[i], packets->packet_bytes[i] );
         }
 
         next_server_update( server );
