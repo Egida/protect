@@ -1587,13 +1587,14 @@ void next_server_receive_packets( next_server_t * server )
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
         next_platform_mutex_acquire( &socket->receive_mutex );
-        socket->send_buffer_off_index = socket->send_buffer_off_index ? 0 : 1;
-        socket->send_buffer_on_index = socket->send_buffer_off_index ? 0 : 1;
+        socket->receive_buffer_off_index = socket->receive_buffer_off_index ? 0 : 1;
+        socket->receive_buffer_on_index = socket->receive_buffer_off_index ? 0 : 1;
+        socket->receive_buffer[socket->receive_buffer_on_index].num_packets = 0;
         next_platform_mutex_release( &socket->receive_mutex );
 
         // now we can access the off receive buffer without contention with the receive thread
 
-        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[socket->send_buffer_off_index];
+        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[socket->receive_buffer_off_index];
 
         for ( int i = 0; i < receive_buffer->num_packets; i++ )
         {
