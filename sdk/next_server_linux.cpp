@@ -1537,9 +1537,9 @@ static void xdp_receive_thread_function( void * data )
                     struct iphdr  * ip  = (iphdr*) ( (uint8_t*)packet_data + sizeof( struct ethhdr ) );
                     struct udphdr * udp = (udphdr*) ( (uint8_t*)ip + sizeof( struct iphdr ) );
 
-                    uint32_t source_ipv4 = (uint32_t) ip->daddr;
+                    uint32_t source_ipv4 = (uint32_t) ip->saddr;
     
-                    next_address_load_ipv4( &receive_buffer->from[index], source_ipv4, next_platform_ntohs( udp->dest ) );
+                    next_address_load_ipv4( &receive_buffer->from[index], source_ipv4, udp->dest );
                     
                     receive_buffer->packet_bytes[index] = packet_bytes;
 
