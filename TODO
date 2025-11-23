@@ -8,10 +8,14 @@ DONE
 
     Once this is done I can bring this code across to a test project and test it in-place in a real game engine.
 
+    Fixed some issues around from address and port
+
+    Fixed disconnect packet not getting through by changing to packet_bytes >= 18
+
 TODO
 
-    Server is not getting the from address or port right for packets received from XDP.
+    Client should be receiving packets sent from the server
 
-    Address comes through as 0.0.0.0:0
+    Without this the client is timing out.
 
-    Where is it wrong?
+    Why is the client not receiving packets sent from the server?
