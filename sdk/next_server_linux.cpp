@@ -609,7 +609,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     server->server_port_big_endian = next_platform_htons( public_address.port );
 
     // todo: mock 1000 connected clients
-    for ( int i = 0; i < 100; i++ )
+    for ( int i = 0; i < 1000; i++ )
     {
         server->client_connected[i] = true;
         server->client_direct[i] = true;
