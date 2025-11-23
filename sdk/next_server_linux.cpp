@@ -860,26 +860,28 @@ void next_server_destroy( next_server_t * server )
 
         // stop send thread
 
-        uint64_t value = 1;
-        int result = write( socket->send_event_fd, &value, sizeof(uint64_t) );
-        (void) result;
-
-        next_platform_thread_join( socket->send_thread );
-        next_platform_thread_destroy( socket->send_thread );
-
-        close( socket->send_event_fd );
+        if ( socket->send_thread )
+        {
+            uint64_t value = 1;
+            int result = write( socket->send_event_fd, &value, sizeof(uint64_t) );
+            (void) result;
+            next_platform_thread_join( socket->send_thread );
+            next_platform_thread_destroy( socket->send_thread );
+            close( socket->send_event_fd );
+        }
 
         next_platform_mutex_destroy( &socket->send_mutex );
 
         // stop receive thread
 
-        result = write( socket->receive_event_fd, &value, sizeof(uint64_t) );
-        (void) result;
-
-        next_platform_thread_join( socket->receive_thread );
-        next_platform_thread_destroy( socket->receive_thread );
-
-        close( socket->receive_event_fd );
+        if ( socket->receive_thread )
+        {
+            result = write( socket->receive_event_fd, &value, sizeof(uint64_t) );
+            (void) result;
+            next_platform_thread_join( socket->receive_thread );
+            next_platform_thread_destroy( socket->receive_thread );
+            close( socket->receive_event_fd );
+        }
 
         next_platform_mutex_destroy( &socket->receive_mutex );
 
