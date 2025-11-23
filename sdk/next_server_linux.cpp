@@ -614,9 +614,9 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         server->client_connected[i] = true;
         server->client_direct[i] = true;
         next_address_parse( &server->client_address[i], "192.168.1.3" );
-        server->client_address[i] = 30000 + i;
+        server->client_address[i].port = 30000 + i;
         server->client_address_big_endian[i] = next_address_ipv4( &server->client_address[i] );
-        server->client_port_big_endian[i] = next_platform_htons( server->client_address[i] );
+        server->client_port_big_endian[i] = next_platform_htons( server->client_address[i].port );
     }
 
     // initialize server xdp sockets (one socket per-NIC queue)
