@@ -1,0 +1,33 @@
+FUTURE
+
+    -------------
+
+    Searching keeps telling me I need to set SO_PREFER_BUSY_POLL on the socket, but I can't find any definition of this SO in the headers?
+
+    Some info here: https://docs.kernel.org/networking/napi.html
+
+    -------------
+
+    Fix the connect token so we never send the user hash over un-encrypted channels
+
+    This involves doing key exchange and switching over to more advanced crypto primitive
+
+    Add these primitives to proton and then upgrade the code in protect to do the key exchange at the same time as processing the connect token
+
+    -------------
+
+    Implement ip2location in client backend
+
+    -------------
+
+    Implement the client ping near relay design
+
+    -------------
+
+    Implement requesting a route and sending packets across it
+
+    -------------
+
+    Double this route and implement multipath
+
+    -------------
