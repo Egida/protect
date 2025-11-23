@@ -1393,15 +1393,6 @@ static void xdp_send_thread_function( void * data )
                 break;
             }
 
-            /*
-            // todo: mock sending the packets
-            for ( int i = 0; i < num_packets_to_send; i++ )
-            {
-                int index = send_packet_index[i];
-                send_buffer->packet_bytes[i] = 0;
-            }
-            */
-
             // reserve entries in the send queue. we *must* send all entries we reserve
 
             uint32_t send_queue_index;

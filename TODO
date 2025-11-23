@@ -28,11 +28,15 @@ DONE
 
     Calculating this... it's close enough to be correct.
 
-    Try increasing sent packets per-client.
+    Try increasing sent packets per-client. doubled.
 
+    It can actually send less.
+
+    We're definitely hitting a bottleneck, likely, it's the fastest a single CPU can queue up packets.
 
 TODO
 
+    Try doing 10 threads packet writing in server.cpp
 
     ----------
 
