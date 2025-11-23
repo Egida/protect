@@ -1207,6 +1207,9 @@ void next_server_send_packets( struct next_server_t * server )
 
 void next_server_process_packet_internal( next_server_t * server, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {
+    // todo
+    next_info( "process packet internal" );
+
     const uint8_t packet_type = packet_data[0];
 
     if ( packet_type == NEXT_PACKET_DISCONNECT && packet_bytes == sizeof(next_disconnect_packet_t) )
@@ -1229,7 +1232,11 @@ void next_server_process_packet_internal( next_server_t * server, next_address_t
 }
 
 void next_server_process_direct_packet( next_server_t * server, next_address_t * from, uint8_t * packet_data, int packet_bytes )
-{
+{   
+    // todo
+    next_info( "process direct packet" );
+
+
     if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
         return;
 
@@ -1518,7 +1525,7 @@ static void xdp_receive_thread_function( void * data )
 
                 int packet_bytes = desc->len - ( sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr) );
 
-                next_info( "received %d byte packet on queue %d", packet_bytes, socket->queue );
+                // next_info( "received %d byte packet on queue %d", packet_bytes, socket->queue );
 
                 if ( packet_bytes > 18 && receive_buffer->num_packets < NEXT_XDP_RECV_QUEUE_SIZE )
                 {
@@ -1533,6 +1540,7 @@ static void xdp_receive_thread_function( void * data )
                     next_address_load_ipv4( &receive_buffer->from[index], source_ipv4, next_platform_ntohs( udp->dest ) );
                     
                     receive_buffer->packet_bytes[index] = packet_bytes;
+
                     memcpy( receive_buffer->packet_data + index * NEXT_MAX_PACKET_BYTES, packet_data, packet_bytes );
                 }
             }
@@ -1573,7 +1581,7 @@ void next_server_receive_packets( next_server_t * server )
 
     for ( int queue = 0; queue < NUM_SERVER_XDP_SOCKETS; queue++ )
     {
-        // double buffer socket receive buffer ...
+        // double buffer the receive buffer
 
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
@@ -1582,7 +1590,7 @@ void next_server_receive_packets( next_server_t * server )
         socket->receive_buffer_index = current_index ? 0 : 1;
         next_platform_mutex_release( &socket->receive_mutex );
 
-        // ... now we can access the off receive buffer without contention
+        // now we can access the off receive buffer without contention with the receive thread
 
         next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[current_index];
 
@@ -1598,7 +1606,7 @@ void next_server_receive_packets( next_server_t * server )
             const uint8_t packet_type = packet_data[0];
 
             if ( packet_type == NEXT_PACKET_DIRECT )
-            {  
+            { 
                 next_server_process_direct_packet( server, &from, packet_data, packet_bytes );
             }
             else
