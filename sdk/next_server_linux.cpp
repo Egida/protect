@@ -669,6 +669,8 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
         // enable busy polling on the socket
 
+        // todo: not sure about this!?
+        /*
         #define SO_PREFER_BUSY_POLL 69
         int option_value = 64;
         if ( setsockopt( xsk_socket__fd( socket->xsk ), SOL_XDP, SO_PREFER_BUSY_POLL, &option_value, sizeof(option_value) ) < 0 ) 
@@ -677,6 +679,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             next_server_destroy( server );
             return NULL;
         }
+        */
 
         // configure the xdp socket to receive packets from the xdp program
 

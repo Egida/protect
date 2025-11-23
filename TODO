@@ -86,3 +86,13 @@ TODO
     Double this route and implement multipath
 
     -------------
+
+
+
+
+# Set busy_budget to 256 for a specific interface
+echo 256 | sudo tee /sys/class/net/ens786f1/busy_budget
+
+# Set napi_defer_hard_irqs and gro_flush_timeout for the interface
+echo 2 | sudo tee /sys/class/net/ens786f1/napi_defer_hard_irqs
+echo 200000 | sudo tee /sys/class/net/ens786f1/gro_flush_timeout
