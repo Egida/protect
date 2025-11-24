@@ -167,9 +167,6 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
     memset( &bind_address, 0, sizeof(bind_address) );
     bind_address.type = NEXT_ADDRESS_IPV4;
 
-    // todo: dummy the client on port 30000 for easy testing
-    bind_address.port = 30000;
-
     // IMPORTANT: for many platforms it's best practice to bind to ipv6 and go dual stack on the client
     if ( next_platform_client_dual_stack() )
     {
