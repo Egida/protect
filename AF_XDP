@@ -1,8 +1,16 @@
 AF_XDP
 
+	Updating the driver has made the warning go away. Optimistic that this is it!
+
+	Trying with zero copy mode now...
+
+	--------
+
 	It really does seem like there is a zero copy mode bug in the default i40e driver, and that I need to update the firmware for the NIC, and build the driver from source.
 
 		https://github.com/networknext/ethernet-linux-i40e
+
+		modinfo i40e
 
 	--------
 
