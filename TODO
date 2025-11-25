@@ -14,3 +14,4 @@ DONE
 
 TODO
 
+    Server is not resetting the send sequence number for a client when it times out.

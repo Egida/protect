@@ -122,22 +122,11 @@ struct next_server_t
     uint64_t match_id;
     void (*packet_received_callback)( next_server_t * server, void * context, int client_index, const uint8_t * packet_data, int packet_bytes );
 
-    bool client_connected[NEXT_MAX_CLIENTS];
-    bool client_direct[NEXT_MAX_CLIENTS];
-    next_address_t client_address[NEXT_MAX_CLIENTS];
-    double client_last_packet_receive_time[NEXT_MAX_CLIENTS];
-    uint8_t client_eth[NEXT_MAX_CLIENTS][ETH_ALEN];
-
-    std::atomic<uint64_t> client_send_sequence[NEXT_MAX_CLIENTS];
-
     uint8_t server_ethernet_address[ETH_ALEN];
     uint8_t gateway_ethernet_address[ETH_ALEN];
 
     uint32_t server_address_big_endian;
     uint16_t server_port_big_endian;
-
-    uint32_t client_address_big_endian[NEXT_MAX_CLIENTS];
-    uint16_t client_port_big_endian[NEXT_MAX_CLIENTS];
 
     int interface_index;
     struct xdp_program * program;
@@ -146,6 +135,15 @@ struct next_server_t
     int config_map_fd;
     int state_map_fd;
     int socket_map_fd;
+
+    bool client_connected[NEXT_MAX_CLIENTS];
+    bool client_direct[NEXT_MAX_CLIENTS];
+    next_address_t client_address[NEXT_MAX_CLIENTS];
+    double client_last_packet_receive_time[NEXT_MAX_CLIENTS];
+    uint8_t client_eth[NEXT_MAX_CLIENTS][ETH_ALEN];
+    std::atomic<uint64_t> client_send_sequence[NEXT_MAX_CLIENTS];
+    uint32_t client_address_big_endian[NEXT_MAX_CLIENTS];
+    uint16_t client_port_big_endian[NEXT_MAX_CLIENTS];
 
     next_server_xdp_socket_t socket[NUM_SERVER_XDP_SOCKETS];
 
@@ -901,16 +899,27 @@ void next_server_destroy( next_server_t * server )
     next_clear_and_free( server->context, server, sizeof(next_server_t) );
 }
 
+void next_server_reset_client_data( next_server_t * server, int client_index )
+{
+    next_assert( client_index >= 0 );
+    next_assert( client_index < NEXT_MAX_CLIENTS );
+    server->client_connected[client_index] = false;
+    server->client_direct[client_index] = false;
+    memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
+    server->client_last_packet_receive_time[client_index] = 0.0;
+    memset( &server->client_eth[client_index], 0, ETH_ALEN );
+    server->client_send_sequence[client_index] = 0;
+    server->client_address_big_endian[client_index] = 0;
+    server->client_port_big_endian[client_index] = 0;
+}
+
 void next_server_client_timed_out( next_server_t * server, int client_index )
 {
     next_assert( client_index >= 0 );
     next_assert( client_index < NEXT_MAX_CLIENTS );
     char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
     next_info( "client %s timed out from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
-    server->client_connected[client_index] = 0;
-    memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
-    server->client_address_big_endian[client_index] = 0;
-    server->client_port_big_endian[client_index] = 0;
+    next_server_reset_client_data( server, client_index );
 }
 
 void next_server_client_disconnected( next_server_t * server, int client_index )
@@ -919,10 +928,7 @@ void next_server_client_disconnected( next_server_t * server, int client_index )
     next_assert( client_index < NEXT_MAX_CLIENTS );
     char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
     next_info( "client %s disconnected from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
-    server->client_connected[client_index] = 0;
-    memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
-    server->client_address_big_endian[client_index] = 0;
-    server->client_port_big_endian[client_index] = 0;
+    next_server_reset_client_data( server, client_index );
 }
 
 void next_server_update_timeout( next_server_t * server )

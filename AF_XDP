@@ -4,6 +4,8 @@ AF_XDP
 
 	Trying with zero copy mode now...
 
+	OK, fix confirmed. It definitely was just updating the i40e driver that needed to be done.
+
 	--------
 
 	It really does seem like there is a zero copy mode bug in the default i40e driver, and that I need to update the firmware for the NIC, and build the driver from source.

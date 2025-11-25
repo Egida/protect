@@ -130,15 +130,24 @@ void next_server_destroy( next_server_t * server )
     next_clear_and_free( server->context, server, sizeof(next_server_t) );
 }
 
+void next_server_reset_client_data( next_server_t * server, int client_index )
+{
+    next_assert( client_index >= 0 );
+    next_assert( client_index < NEXT_MAX_CLIENTS );
+    server->client_connected[client_index] = false;
+    server->client_direct[client_index] = false;
+    memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
+    server->client_last_packet_receive_time[client_index] = 0.0;
+    server->client_send_sequence[client_index] = 0;
+}
+
 void next_server_client_timed_out( next_server_t * server, int client_index )
 {
     next_assert( client_index >= 0 );
     next_assert( client_index < NEXT_MAX_CLIENTS );
     char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
     next_info( "client %s timed out from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
-    server->client_connected[client_index] = 0;
-    server->client_send_sequence[client_index] = 0;
-    memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
+    next_server_reset_client_data( server, client_index );
 }
 
 void next_server_client_disconnected( next_server_t * server, int client_index )
@@ -147,9 +156,7 @@ void next_server_client_disconnected( next_server_t * server, int client_index )
     next_assert( client_index < NEXT_MAX_CLIENTS );
     char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
     next_info( "client %s disconnected from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
-    server->client_connected[client_index] = 0;
-    server->client_send_sequence[client_index] = 0;
-    memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
+    next_server_reset_client_data( server, client_index );
 }
 
 void next_server_update_timeout( next_server_t * server )
