@@ -1,16 +1,18 @@
 AF_XDP
 
+	It really does seem like there is a zero copy mode bug in the default i40e driver, and that I need to update the firmware for the NIC, and build the driver from source.
+
+		https://github.com/networknext/ethernet-linux-i40e
+
+	--------
+
 	Things I can try:
 
-		1. Install the latest libbpf and libxdp, instead of building old versions from source				<---- still hangs
+		1. Install the latest libbpf and libxdp, instead of building old versions from source							<---- still hangs
 
-		2. Try adjusting to page size (4096) chunks instead of 2048.										<---- still hangs
+		2. Try adjusting to page size (4096) chunks instead of 2048.													<---- still hangs
 
-		2. Disable zero copy mode. If it works after zero copy mode is disabled, it's probably a driver problem.
-
-		3. Build the i40e driver from source and install that
-
-		4. Try adjusting the size of the umem and the ring buffers in AF_XDP and look up the ideal values I should be setting them to for this card and driver
+		2. Disable zero copy mode. If it works after zero copy mode is disabled, it's probably a driver problem.		<---- warning pops up, but doesn't hang, progress!
 
 	--------
 
