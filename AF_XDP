@@ -1,5 +1,85 @@
 AF_XDP
 
+	Consider disabling hyperthreading
+
+	To see current status:
+
+		cat /sys/devices/system/cpu/smt/control
+
+	To turn hyperthreading off:
+
+		echo off > /sys/devices/system/cpu/smt/control
+
+
+	--------
+
+	The latest driver for i40e can be downloaded and built from here:
+
+		https://github.com/intel/ethernet-linux-i40e
+
+	--------
+
+	Again, I see this:
+
+	[ 2059.894875] i40e 0000:05:00.0: User requested queue count/HW max RSS count:  8/32
+	[ 2350.695404] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 0
+	[ 2350.704839] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 0 (pf_q 0)
+	[ 2350.792395] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 1
+	[ 2350.801822] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 1 (pf_q 1)
+	[ 2350.881392] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 2
+	[ 2350.890800] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 2 (pf_q 2)
+	[ 2350.970391] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 3
+	[ 2350.979807] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 3 (pf_q 3)
+	[ 2351.061393] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 4
+	[ 2351.070834] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 4 (pf_q 4)
+	[ 2351.150397] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 5
+	[ 2351.159838] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 5 (pf_q 5)
+	[ 2351.239397] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 6
+	[ 2351.248811] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 6 (pf_q 6)
+	[ 2351.328392] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 7
+	[ 2351.337818] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 7 (pf_q 7)
+
+	--------
+
+	To install the service:
+
+		sudo systemctl enable /app/server.service
+
+	--------
+
+	OK. My test machine is running ixgbe driver, but the latitude bare metal server is running i40e.
+
+	"The main difference is that the i40e driver is for Intel's 40 Gigabit Ethernet controllers, such as the X710 and XL710 series, while the ixgbe driver is for Intel's 10 Gigabit Ethernet adapters, including the 82598 and 82599 series. This means they are designed to operate at different speeds and are compatible with different generations of Intel network hardware."
+
+	--------
+
+	I see these warnings on the latitude.sh box:
+
+	[   19.315753] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 0
+	[   19.315773] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 0 (pf_q 0)
+	[   19.384748] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 1
+	[   19.384765] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 1 (pf_q 1)
+	[   19.455750] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 2
+	[   19.455779] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 2 (pf_q 2)
+	[   19.524750] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 3
+	[   19.524765] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 3 (pf_q 3)
+	[   19.608751] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 4
+	[   19.608784] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 4 (pf_q 4)
+	[   19.679751] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 5
+	[   19.679784] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 5 (pf_q 5)
+	[   19.748750] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 6
+	[   19.748778] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 6 (pf_q 6)
+	[   19.817751] i40e 0000:05:00.0: Registered XDP mem model MEM_TYPE_XSK_BUFF_POOL on Rx ring 7
+	[   19.817785] i40e 0000:05:00.0: Failed to allocate some buffers on AF_XDP ZC enabled Rx ring 7 (pf_q 7)
+
+	--------
+
+	ethtool -i enp1s0f0 shows the driver version
+
+	My ixgbe driver version is 6.17.4
+
+	--------
+
     It seems that I have to first set the maximum combined queues via:
 
     	sudo ethtool -L <nic> combined 8
@@ -9,6 +89,8 @@ AF_XDP
     I wonder if I really want 64 queues for XDP, or if it will drive them from the combined queues set *before* the XDP program is loaded.
 
     Let's find out...
+
+    No. It just ignores what is set by ethtool -L and sets XDP queues to 64.
 
 	-------
 

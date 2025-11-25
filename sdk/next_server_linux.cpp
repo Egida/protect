@@ -36,7 +36,6 @@
 #include <stdio.h>
 #include <atomic>
 
-// todo: want to be able to dynamically adjust to # of queues on the NIC
 #define NUM_SERVER_XDP_SOCKETS 8
 
 struct next_server_xdp_send_buffer_t
@@ -419,6 +418,26 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
     }
 
     next_info( "server network interface is %s", interface_name );
+
+    // disable hyperthreading
+    {
+        char command[2048];
+        snprintf( command, sizeof(command), "echo off > /sys/devices/system/cpu/smt/control" );
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
+    // force the NIC to use the number of NIC queues we want
+    {
+        char command[2048];
+        snprintf( command, sizeof(command), "ethtool -L %s combined %d", interface_name, NUM_SERVER_XDP_SOCKETS );
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
 
     // look up the ethernet address of the network interface
 
