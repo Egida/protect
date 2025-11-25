@@ -475,16 +475,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         server->gateway_ethernet_address[5] 
     );
 
-    // be extra safe and let's make sure no xdp programs are running on this interface before we start
-    {
-        char command[2048];
-        snprintf( command, sizeof(command), "xdp-loader unload %s --all", interface_name );
-        FILE * file = popen( command, "r" );
-        char buffer[1024];
-        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
-        pclose( file );
-    }
-
     // delete all bpf maps we use so stale data doesn't stick around
     {
         {
