@@ -815,7 +815,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // mock 1000 clients
 
-#if MOCK_1000_CLIENT
+#if MOCK_1000_CLIENTS
 
     for ( int i = 0; i < 1000; i++ )
     {
