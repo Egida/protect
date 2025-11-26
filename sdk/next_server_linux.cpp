@@ -1107,7 +1107,11 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, int 
     int packet_index = send_buffer->num_packets.fetch_add(1);
 
     if ( packet_index >= NEXT_XDP_SEND_QUEUE_SIZE )
+    {
+        // todo
+        next_info( "packet index is %d", packet_index );
         return NULL;
+    }
 
     uint8_t * packet_data = send_buffer->packet_data + packet_index * NEXT_MAX_PACKET_BYTES;
 
@@ -1145,8 +1149,6 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
         uint8_t * packet_data = next_server_start_packet_internal( server, queue, &server->client_address[client_index], NEXT_PACKET_DIRECT );
         if ( !packet_data )
         {
-            // todo
-            next_info( "start packet internal null" );
             return NULL;
         }
 
