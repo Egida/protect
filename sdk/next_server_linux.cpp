@@ -1316,6 +1316,38 @@ void next_server_send_packets( struct next_server_t * server )
         // todo
         next_info( "want to send %d packets on queue %d", (int) send_buffer->num_packets, socket->queue );
 
+        // count how many packets we have to send in the send buffer
+
+        const int start_index = send_buffer->packet_start_index;
+
+        next_assert( start_index >= 0 );
+        next_assert( start_index < NEXT_XDP_SEND_QUEUE_SIZE );
+
+        const int num_packets = (int) send_buffer->num_packets;
+
+        next_assert( num_packets >= 0 );
+        next_assert( num_packets <= NEXT_XDP_SEND_QUEUE_SIZE );
+
+        int num_packets_to_send = 0;
+        int send_packet_index[NEXT_XDP_SEND_BATCH_SIZE];
+
+        for ( int i = start_index; i < num_packets; i++ )
+        {
+            if ( num_packets_to_send >= NEXT_XDP_SEND_BATCH_SIZE )
+                break;
+            if ( send_buffer->packet_bytes[i] > 0 )
+            {
+                send_packet_index[num_packets_to_send] = i;
+                num_packets_to_send++;
+            }
+        }
+
+        if ( num_packets_to_send == 0 )
+        {
+            next_info( "no packets to send" );
+            continue;
+        }
+
 #if 0
 
 
@@ -1324,31 +1356,6 @@ void next_server_send_packets( struct next_server_t * server )
         while ( true )
         {
 
-            // count how many packets we have to send in the send buffer
-
-            const int start_index = send_buffer->packet_start_index;
-
-            next_assert( start_index >= 0 );
-            next_assert( start_index < NEXT_XDP_SEND_QUEUE_SIZE );
-
-            const int num_packets = (int) send_buffer->num_packets;
-
-            next_assert( num_packets >= 0 );
-            next_assert( num_packets <= NEXT_XDP_SEND_QUEUE_SIZE );
-
-            int num_packets_to_send = 0;
-            int send_packet_index[NEXT_XDP_SEND_BATCH_SIZE];
-
-            for ( int i = start_index; i < num_packets; i++ )
-            {
-                if ( num_packets_to_send >= NEXT_XDP_SEND_BATCH_SIZE )
-                    break;
-                if ( send_buffer->packet_bytes[i] > 0 )
-                {
-                    send_packet_index[num_packets_to_send] = i;
-                    num_packets_to_send++;
-                }
-            }
 
             if ( num_packets_to_send == 0 )
             {
