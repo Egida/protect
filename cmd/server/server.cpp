@@ -71,7 +71,7 @@ int main()
 
         next_server_update( server );
 
-        for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
+        for ( int i = 0; i < 1000; i++ )
         {
             if ( next_server_client_connected( server, i ) )
             {
