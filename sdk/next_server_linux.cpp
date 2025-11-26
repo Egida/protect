@@ -1464,8 +1464,6 @@ static void xdp_send_thread_function( void * data )
                 if ( batch_packets == 0 )
                 {
                     next_warn( "send queue %d is full", socket->queue );
-                    // todo
-                    exit(1);
                 }
                 else
                 {
