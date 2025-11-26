@@ -1520,6 +1520,8 @@ static void pin_thread_to_cpu( int cpu )
 
 static void xdp_send_thread_function( void * data )
 {
+#if 0
+
     next_server_xdp_socket_t * socket = (next_server_xdp_socket_t*) data;
 
     // pin_thread_to_cpu( socket->queue );
@@ -1699,6 +1701,7 @@ static void xdp_send_thread_function( void * data )
                 break;
         }
     }
+#endif
 }
 
 static void xdp_receive_thread_function( void * data )
