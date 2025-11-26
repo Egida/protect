@@ -1385,7 +1385,8 @@ static void xdp_send_thread_function( void * data )
 
         if ( num_completed != 0 )
         {
-            // next_info( "marked %d send frames completed on queue %d", num_completed, socket->queue );
+            // todo
+            next_info( "marked %d send frames completed on queue %d", num_completed, socket->queue );
 
             for ( int i = 0; i < num_completed; i++ )
             {
