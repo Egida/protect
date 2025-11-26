@@ -50,10 +50,10 @@ int main()
 
     const char * connect = "127.0.0.1:40000";
 
-    const char * connect_address_env = getenv( "CLIENT_CONNECT_ADDRESS" );
-    if ( connect_address_env )
+    const char * connect_env = getenv( "CLIENT_CONNECT" );
+    if ( connect_env )
     {
-        connect = connect_address_env;
+        connect = connect_env;
     }
 
 #else // #if CLIENT_DIRECT

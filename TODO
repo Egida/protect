@@ -24,19 +24,19 @@ DONE
 
     Same for client, env var for connect address, default 127.0.0.1
 
-TODO
-    
     Add an env var for the number of queues and then dynamically allocate these # of queues on the next server.
 
     This way we can adjust from one machine type to another. Right now the number of queues is hard coded and this is very inflexible.
 
+    Verify that I can build and deploy easily on both linux space servers, same binary, but different server addresses and queue sizes via env vars.    
+
+TODO
+
+    Setup space1 server so it sends 10gbps of traffic to space2 server and see how much CPU it takes on the send side.
+
     ---------
 
     Implement the map setting the public address and port, and only pass packets down to the server AF_XDP socket if they match.
-
-    ---------
-
-    Setup space1 server so it sends 10gbps of traffic to space2 server and see how much CPU it takes on the send side.
 
     ---------
 
