@@ -825,12 +825,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         server->client_address[i].port = 30000 + i;
         server->client_address_big_endian[i] = next_address_ipv4( &server->client_address[i] );
         server->client_port_big_endian[i] = next_platform_htons( server->client_address[i].port );
-        server->client_eth[i][0] = 0xd0;
-        server->client_eth[i][1] = 0x81;
-        server->client_eth[i][2] = 0x7a;
-        server->client_eth[i][3] = 0xd8;
-        server->client_eth[i][4] = 0x3a;
-        server->client_eth[i][5] = 0xec;
+        memcpy( server->client_eth[i], server->gateway_ethernet_address, ETH_ALEN );
     }
 
 #endif // #if MOCK_1000_CLIENTS
