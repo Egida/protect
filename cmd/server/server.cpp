@@ -44,11 +44,6 @@ int main()
             bind_address = bind_address_env;
         }
 
-        if ( bind_address_env )
-        {
-            bind_address = bind_address_env;
-        }
-
         const char * public_address_env = getenv( "SERVER_PUBLIC_ADDRESS" );
         if ( public_address_env )
         {
