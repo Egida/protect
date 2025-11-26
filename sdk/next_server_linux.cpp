@@ -1372,7 +1372,7 @@ static void xdp_send_thread_function( void * data )
 
     while ( true )
     {
-        int poll_result = poll( fds, 1, 1 );
+        int poll_result = poll( fds, 1, 0 );
         if ( poll_result < 0 ) 
         {
             next_error( "poll error on socket send queue %d (%d)", socket->queue, poll_result );
@@ -1531,15 +1531,9 @@ static void xdp_send_thread_function( void * data )
 
             // go to next iteration or stop if there are no more packets to send
 
-            // todo: test
-            /*
             send_buffer->packet_start_index = send_packet_index[batch_packets-1] + 1;
 
             bool stop = send_buffer->packet_start_index >= send_buffer->num_packets;
-            */
-
-            // todo
-            bool stop = true;
 
             next_platform_mutex_release( &socket->send_mutex );
 
