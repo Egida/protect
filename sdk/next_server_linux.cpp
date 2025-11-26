@@ -917,7 +917,7 @@ void next_server_destroy( next_server_t * server )
         free( socket->buffer );
     }
 
-    next_free( server->context, socket );
+    next_free( server->context, server->socket );
 
     next_clear_and_free( server->context, server, sizeof(next_server_t) );
 }
