@@ -1314,7 +1314,7 @@ void next_server_send_packets( struct next_server_t * server )
         }
 
         // todo
-        next_info( "want to send %d packets on queue %d", send_buffer->num_packets, socket->queue );
+        next_info( "want to send %d packets on queue %d", (int) send_buffer->num_packets, socket->queue );
 
 #if 0
 
