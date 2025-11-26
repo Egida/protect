@@ -118,7 +118,6 @@ struct next_server_t
 {
     void * context;
     int state;
-    next_address_t bind_address;
     next_address_t public_address;
     uint64_t server_id;
     uint64_t match_id;
@@ -142,7 +141,6 @@ struct next_server_t
     bool client_direct[NEXT_MAX_CLIENTS];
     next_address_t client_address[NEXT_MAX_CLIENTS];
     double client_last_packet_receive_time[NEXT_MAX_CLIENTS];
-    uint8_t client_eth[NEXT_MAX_CLIENTS][ETH_ALEN];
     std::atomic<uint64_t> client_send_sequence[NEXT_MAX_CLIENTS];
     uint32_t client_address_big_endian[NEXT_MAX_CLIENTS];
     uint16_t client_port_big_endian[NEXT_MAX_CLIENTS];
@@ -326,17 +324,11 @@ static void xdp_receive_thread_function( void * data );
 
 next_server_t * next_server_create( void * context, const char * bind_address_string, const char * public_address_string )
 {
-    next_assert( bind_address_string );
     next_assert( public_address_string );
+    
+    (void) bind_address_string;  // not used
 
     next_info( "server public address is %s", public_address_string );
-
-    next_address_t bind_address;
-    if ( !next_address_parse( &bind_address, bind_address_string ) )
-    {
-        next_error( "server could not parse bind address" );
-        return NULL;
-    }
 
     next_address_t public_address;
     if ( !next_address_parse( &public_address, public_address_string ) )
@@ -825,13 +817,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         server->client_address[i].port = 30000 + i;
         server->client_address_big_endian[i] = next_address_ipv4( &server->client_address[i] );
         server->client_port_big_endian[i] = next_platform_htons( server->client_address[i].port );
-
-        server->client_eth[i][0] = 0xd0;
-        server->client_eth[i][1] = 0x81;
-        server->client_eth[i][2] = 0x7a;
-        server->client_eth[i][3] = 0xd8;
-        server->client_eth[i][4] = 0x3a;
-        server->client_eth[i][5] = 0xec;
     }
 
 #endif // #if MOCK_1000_CLIENTS
@@ -932,7 +917,6 @@ void next_server_reset_client_data( next_server_t * server, int client_index )
     server->client_direct[client_index] = false;
     memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
     server->client_last_packet_receive_time[client_index] = 0.0;
-    memset( &server->client_eth[client_index], 0, ETH_ALEN );
     server->client_send_sequence[client_index] = 0;
     server->client_address_big_endian[client_index] = 0;
     server->client_port_big_endian[client_index] = 0;
@@ -1054,7 +1038,7 @@ static uint16_t ipv4_checksum( const void * data, size_t header_length )
     return ~sum;
 }
 
-int generate_packet_header( void * data, uint8_t * server_ethernet_address, uint8_t * client_ethernet_address, uint32_t server_address_big_endian, uint32_t client_address_big_endian, uint16_t server_port_big_endian, uint16_t client_port_big_endian, int payload_bytes )
+int generate_packet_header( void * data, uint8_t * server_ethernet_address, uint8_t * gateway_ethernet_address, uint32_t server_address_big_endian, uint32_t client_address_big_endian, uint16_t server_port_big_endian, uint16_t client_port_big_endian, int payload_bytes )
 {
     struct ethhdr * eth = (ethhdr*) data;
     struct iphdr  * ip  = (iphdr*) ( (uint8_t*)data + sizeof( struct ethhdr ) );
@@ -1063,7 +1047,7 @@ int generate_packet_header( void * data, uint8_t * server_ethernet_address, uint
     // generate ethernet header
 
     memcpy( eth->h_source, server_ethernet_address, ETH_ALEN );
-    memcpy( eth->h_dest, client_ethernet_address, ETH_ALEN );
+    memcpy( eth->h_dest, gateway_ethernet_address, ETH_ALEN );
     eth->h_proto = __constant_htons( ETH_P_IP );
 
     // generate ip header
@@ -1310,7 +1294,6 @@ void next_server_process_direct_packet( next_server_t * server, uint8_t * eth, n
             server->client_address[client_index] = *from;
             server->client_address_big_endian[client_index] = next_address_ipv4( from );
             server->client_port_big_endian[client_index] = next_platform_htons( from->port );
-            memcpy( server->client_eth[client_index], eth, ETH_ALEN );
         }
         else
         {
