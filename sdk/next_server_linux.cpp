@@ -38,8 +38,6 @@
 
 //#define MOCK_1000_CLIENTS 1
 
-#define NUM_SERVER_XDP_SOCKETS 8
-
 struct next_server_xdp_send_buffer_t
 {
     uint8_t padding_0[1024];
@@ -145,7 +143,8 @@ struct next_server_t
     uint32_t client_address_big_endian[NEXT_MAX_CLIENTS];
     uint16_t client_port_big_endian[NEXT_MAX_CLIENTS];
 
-    next_server_xdp_socket_t socket[NUM_SERVER_XDP_SOCKETS];
+    int num_queues;
+    next_server_xdp_socket_t * socket;
 
     next_server_process_packets_t process_packets;
 };
@@ -322,8 +321,9 @@ static void free_receive_frame( next_server_xdp_socket_t * socket, uint64_t fram
 static void xdp_send_thread_function( void * data );
 static void xdp_receive_thread_function( void * data );
 
-next_server_t * next_server_create( void * context, const char * bind_address_string, const char * public_address_string )
+next_server_t * next_server_create( void * context, const char * bind_address_string, const char * public_address_string, int num_queues )
 {
+    next_assert( num_queues >= 1 );
     next_assert( public_address_string );
     
     (void) bind_address_string;  // not used
@@ -423,8 +423,12 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // force the NIC to use the number of NIC queues we want
     {
+        next_info( "initializing %d queues", num_queues );
+
+        server->num_queues = num_queues;
+
         char command[2048];
-        snprintf( command, sizeof(command), "ethtool -L %s combined %d", interface_name, NUM_SERVER_XDP_SOCKETS );
+        snprintf( command, sizeof(command), "ethtool -L %s combined %d", interface_name, num_queues );
         FILE * file = popen( command, "r" );
         char buffer[1024];
         while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
@@ -608,7 +612,15 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // initialize server xdp sockets (one socket per-NIC queue)
 
-    for ( int queue = 0; queue < NUM_SERVER_XDP_SOCKETS; queue++ )
+    server->socket = (next_server_xdp_socket_t*) next_malloc( server->context, num_queues * sizeof(next_server_xdp_socket_t) );
+    if ( server->socket == NULL )
+    {
+        next_error( "server could not allocate sockets" );
+        next_server_destroy( server );
+        return NULL;
+    }
+
+    for ( int queue = 0; queue < num_queues; queue++ )
     {
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
@@ -675,7 +687,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // setup send threads
 
-    for ( int queue = 0; queue < NUM_SERVER_XDP_SOCKETS; queue++ )
+    for ( int queue = 0; queue < num_queues; queue++ )
     {
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
@@ -725,7 +737,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // setup receive threads
 
-    for ( int queue = 0; queue < NUM_SERVER_XDP_SOCKETS; queue++ )
+    for ( int queue = 0; queue < num_queues; queue++ )
     {
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
@@ -855,7 +867,7 @@ void next_server_destroy( next_server_t * server )
         xdp_program__close( server->program );
     }
 
-    for ( int i = 0; i < NUM_SERVER_XDP_SOCKETS; i++ )
+    for ( int i = 0; i < server->num_queues; i++ )
     {
         next_server_xdp_socket_t * socket = &server->socket[i];
 
@@ -904,6 +916,8 @@ void next_server_destroy( next_server_t * server )
 
         free( socket->buffer );
     }
+
+    next_free( server->context, socket );
 
     next_clear_and_free( server->context, server, sizeof(next_server_t) );
 }
@@ -1107,7 +1121,7 @@ uint8_t * next_server_start_packet( struct next_server_t * server, int client_in
 
     uint64_t sequence = server->client_send_sequence[client_index].fetch_add(1);
 
-    int queue = sequence % NUM_SERVER_XDP_SOCKETS;
+    int queue = sequence % server->num_queues;
 
     if ( server->client_direct[client_index] )
     {
@@ -1141,7 +1155,7 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t sequence
     next_assert( packet_bytes >= 0 );
     next_assert( packet_bytes <= NEXT_MTU );
 
-    int queue = sequence % NUM_SERVER_XDP_SOCKETS;
+    int queue = sequence % server->num_queues;
 
     next_server_xdp_socket_t * socket = &server->socket[queue];
 
@@ -1190,7 +1204,7 @@ void next_server_abort_packet( struct next_server_t * server, uint64_t sequence,
 {
     next_assert( server );
 
-    int queue = sequence % NUM_SERVER_XDP_SOCKETS;
+    int queue = sequence % server->num_queues;
 
     next_server_xdp_socket_t * socket = &server->socket[queue];
 
@@ -1214,7 +1228,7 @@ void next_server_send_packets( struct next_server_t * server )
 {
     next_assert( server );
 
-    for ( int queue = 0; queue < NUM_SERVER_XDP_SOCKETS; queue++ )
+    for ( int queue = 0; queue < server->num_queues; queue++ )
     {
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
@@ -1599,7 +1613,7 @@ void next_server_receive_packets( next_server_t * server )
 
     server->process_packets.num_packets = 0;
 
-    for ( int queue = 0; queue < NUM_SERVER_XDP_SOCKETS; queue++ )
+    for ( int queue = 0; queue < server->num_queues; queue++ )
     {
         // double buffer the receive buffer
 

@@ -59,8 +59,10 @@ struct next_server_t
 
 void next_server_destroy( next_server_t * server );
 
-next_server_t * next_server_create( void * context, const char * bind_address_string, const char * public_address_string )
+next_server_t * next_server_create( void * context, const char * bind_address_string, const char * public_address_string, int num_queues )
 {
+    (void) num_queues;  // not used
+
     next_assert( bind_address_string );
     next_assert( public_address_string );
 

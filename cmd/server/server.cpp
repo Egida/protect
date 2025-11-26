@@ -28,21 +28,35 @@ int main()
         return 1;        
     }
 
+    int num_queues = 8;
     const char * bind_address = "0.0.0.0:40000";
-    const char * bind_address_env = getenv( "SERVER_BIND_ADDRESS" );
-    if ( bind_address_env )
-    {
-        bind_address = bind_address_env;
-    }
-
     const char * public_address = "127.0.0.1:40000";
-    const char * public_address_env = getenv( "SERVER_PUBLIC_ADDRESS" );
-    if ( public_address_env )
     {
-        public_address = public_address_env;
+        const char * num_queues_env = getenv( "SERVER_NUM_QUEUES" );
+        if ( num_queues_env )
+        {
+            num_queues = atoi( num_queues_env );
+        }
+
+        const char * bind_address_env = getenv( "SERVER_BIND_ADDRESS" );
+        if ( bind_address_env )
+        {
+            bind_address = bind_address_env;
+        }
+
+        if ( bind_address_env )
+        {
+            bind_address = bind_address_env;
+        }
+
+        const char * public_address_env = getenv( "SERVER_PUBLIC_ADDRESS" );
+        if ( public_address_env )
+        {
+            public_address = public_address_env;
+        }
     }
 
-    next_server_t * server = next_server_create( NULL, bind_address, public_address );
+    next_server_t * server = next_server_create( NULL, bind_address, public_address, num_queues );
     if ( !server )
     {
         next_error( "could not create server" );
