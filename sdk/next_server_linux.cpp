@@ -821,7 +821,8 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
 #if MOCK_1000_CLIENTS
 
-    for ( int i = 0; i < 1000; i++ )
+    // todo: 100 -> 1000
+    for ( int i = 0; i < 100; i++ )
     {
         server->client_connected[i] = true;
         server->client_direct[i] = true;
