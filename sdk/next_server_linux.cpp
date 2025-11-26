@@ -1280,6 +1280,8 @@ void next_server_send_packets( struct next_server_t * server )
 
         // todo: try XDP in main thread
 
+#if 0
+
         if ( xsk_ring_prod__needs_wakeup( &socket->send_queue ) )
         {
             sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
@@ -1433,6 +1435,7 @@ void next_server_send_packets( struct next_server_t * server )
         // todo: hack hack hack
         send_buffer->num_packets = 0;
 
+#endif // #if 0
 
 // ====================================================================================================
     }
