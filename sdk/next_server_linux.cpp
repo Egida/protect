@@ -1395,6 +1395,9 @@ static void xdp_send_thread_function( void * data )
 
             if ( num_completed > 0 )
             {
+                // todo
+                next_info( "marked %d send frames completed on queue %d", num_completed, socket->queue );
+
                 for ( int i = 0; i < num_completed; i++ )
                 {
                     uint64_t frame = *xsk_ring_cons__comp_addr( &socket->complete_queue, complete_index++ );
@@ -1446,7 +1449,14 @@ static void xdp_send_thread_function( void * data )
             if ( batch_packets < num_packets_to_send )
             {
                 // todo
-                next_warn( "could only reserve %d/%d packets in send queue %d", batch_packets, num_packets_to_send, socket->queue );
+                if ( batch_packets == 0 )
+                {
+                    next_warn( "send queue %d is full", socket->queue );
+                }
+                else
+                {
+                    next_warn( "could only reserve %d/%d packets in send queue %d", batch_packets, num_packets_to_send, socket->queue );
+                }
 
                 send_buffer->packet_start_index = send_packet_index[batch_packets];
                 if ( batch_packets == 0 )
