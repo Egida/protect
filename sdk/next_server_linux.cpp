@@ -1445,6 +1445,9 @@ static void xdp_send_thread_function( void * data )
 
             if ( batch_packets < num_packets_to_send )
             {
+                // todo
+                next_warn( "could only reserve %d/%d packets in send queue %d", batch_packets, num_packets_to_send, socket->queue );
+
                 send_buffer->packet_start_index = send_packet_index[batch_packets];
                 if ( batch_packets == 0 )
                 {
@@ -1454,6 +1457,9 @@ static void xdp_send_thread_function( void * data )
             }
 
             // setup descriptors for packets in batch to be sent
+
+            // todo
+            next_info( "sent batch of %d packets on queue %d", batch_packets, socket->queue );
 
             for ( int i = 0; i < batch_packets; i++ )
             {
