@@ -21,7 +21,7 @@
 #define NEXT_XDP_SEND_QUEUE_SIZE                                     8192
 #define NEXT_XDP_RECV_QUEUE_SIZE                                     8192
 #define NEXT_XDP_FILL_QUEUE_SIZE                                     2048
-#define NEXT_XDP_SEND_BATCH_SIZE                                     1024
+#define NEXT_XDP_SEND_BATCH_SIZE                                       64
 
 #else // #ifdef __linux__
 
