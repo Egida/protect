@@ -1430,6 +1430,10 @@ void next_server_send_packets( struct next_server_t * server )
             */
         }
 
+        // todo: hack hack hack
+        send_buffer->num_packets = 0;
+
+
 // ====================================================================================================
     }
 }
