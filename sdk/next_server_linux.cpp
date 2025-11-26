@@ -1316,6 +1316,7 @@ void next_server_send_packets( struct next_server_t * server )
         // todo
         next_info( "want to send %d packets on queue %d", (int) send_buffer->num_packets, socket->queue );
 
+        /*
         // count how many packets we have to send in the send buffer
 
         const int start_index = send_buffer->packet_start_index;
@@ -1347,17 +1348,18 @@ void next_server_send_packets( struct next_server_t * server )
             next_info( "no packets to send" );
             continue;
         }
+        */
 
         // reserve entries in the send queue. we *must* send all entries we reserve
+
+        const int num_packets_to_send = send_buffer->num_packets;
 
         uint32_t send_queue_index;
         int batch_packets = xsk_ring_prod__reserve( &socket->send_queue, num_packets_to_send, &send_queue_index );
 
         next_info( "reserved %d entries in send queue %d", batch_packets, socket->queue );
 
-        // it's possible to reserve fewer entries in the send queue than requested. when this happens wind back the packet start index for sending packets
-
-        if ( batch_packets < num_packets_to_send )
+        if ( batch_packets != num_packets_to_send )
         {
             // todo
             if ( batch_packets == 0 )
@@ -1368,58 +1370,59 @@ void next_server_send_packets( struct next_server_t * server )
             {
                 next_warn( "could only reserve %d/%d packets in send queue %d", batch_packets, num_packets_to_send, socket->queue );
             }
-
-            send_buffer->packet_start_index = send_packet_index[batch_packets];
-            if ( batch_packets == 0 )
-            {
-                continue;
-            }
         }
 
+        if ( batch_packets == 0 )
+        {
+            continue;
+        }
+
+        // setup descriptors for packets in batch to be sent
+
+        next_info( "sent batch of %d packets on queue %d", batch_packets, socket->queue );
+
+        for ( int i = 0; i < batch_packets; i++ )
+        {
+            const int packet_index = send_packet_index[i];
+
+            struct xdp_desc * desc = xsk_ring_prod__tx_desc( &socket->send_queue, send_queue_index + i );
+
+            int frame = alloc_send_frame( socket );
+            next_assert( frame != INVALID_FRAME );
+            if ( frame == INVALID_FRAME )
+            {
+                next_error( "fatal error. this cannot happen unless you have too few frames. please adjust NEXT_XDP_NUM_FRAMES to the next highest power of two!" );
+                exit(1);
+            }
+
+            uint8_t * packet_data = (uint8_t*)socket->buffer + frame;
+
+            const int payload_bytes = send_buffer->packet_bytes[packet_index];
+
+            memcpy( packet_data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr), send_buffer->packet_data + packet_index * NEXT_MAX_PACKET_BYTES, payload_bytes );
+
+            uint32_t to_address_big_endian = next_address_ipv4( &send_buffer->to[packet_index] );
+            uint16_t to_port_big_endian = next_platform_htons( send_buffer->to[packet_index].port );
+
+            int packet_bytes = generate_packet_header( packet_data, socket->server_ethernet_address, socket->gateway_ethernet_address, socket->server_address_big_endian, to_address_big_endian, socket->server_port_big_endian, to_port_big_endian, payload_bytes );
+
+            desc->addr = frame;
+            desc->len = packet_bytes;
+        }
+
+        // submit send queue to driver
+
+        xsk_ring_prod__submit( &socket->send_queue, batch_packets );
+
+        // actually send the packets
+
+        if ( xsk_ring_prod__needs_wakeup( &socket->send_queue ) )
+        {
+            sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
+        }
+
+
 #if 0
-            // setup descriptors for packets in batch to be sent
-
-            next_info( "sent batch of %d packets on queue %d", batch_packets, socket->queue );
-
-            for ( int i = 0; i < batch_packets; i++ )
-            {
-                const int packet_index = send_packet_index[i];
-
-                struct xdp_desc * desc = xsk_ring_prod__tx_desc( &socket->send_queue, send_queue_index + i );
-
-                int frame = alloc_send_frame( socket );
-                next_assert( frame != INVALID_FRAME );
-                if ( frame == INVALID_FRAME )
-                {
-                    next_error( "fatal error. this cannot happen unless you have too few frames. please adjust NEXT_XDP_NUM_FRAMES to the next highest power of two!" );
-                    exit(1);
-                }
-
-                uint8_t * packet_data = (uint8_t*)socket->buffer + frame;
-
-                const int payload_bytes = send_buffer->packet_bytes[packet_index];
-
-                memcpy( packet_data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr), send_buffer->packet_data + packet_index * NEXT_MAX_PACKET_BYTES, payload_bytes );
-
-                uint32_t to_address_big_endian = next_address_ipv4( &send_buffer->to[packet_index] );
-                uint16_t to_port_big_endian = next_platform_htons( send_buffer->to[packet_index].port );
-
-                int packet_bytes = generate_packet_header( packet_data, socket->server_ethernet_address, socket->gateway_ethernet_address, socket->server_address_big_endian, to_address_big_endian, socket->server_port_big_endian, to_port_big_endian, payload_bytes );
-
-                desc->addr = frame;
-                desc->len = packet_bytes;
-            }
-
-            // submit send queue to driver
-
-            xsk_ring_prod__submit( &socket->send_queue, batch_packets );
-
-            // actually send the packets
-
-            if ( xsk_ring_prod__needs_wakeup( &socket->send_queue ) )
-            {
-                sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
-            }
 
             // todo
             break;
