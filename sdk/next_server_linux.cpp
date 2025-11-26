@@ -1245,12 +1245,14 @@ void next_server_send_packets( struct next_server_t * server )
 
         // double buffer swap the send buffer
 
+        /*
         next_platform_mutex_acquire( &socket->send_mutex );
         socket->send_buffer_off_index = socket->send_buffer_off_index ? 0 : 1;
         socket->send_buffer_on_index = socket->send_buffer_off_index ? 0 : 1;
         socket->send_buffer[socket->send_buffer_off_index].num_packets = 0;
         socket->send_buffer[socket->send_buffer_on_index].packet_start_index = 0;
         next_platform_mutex_release( &socket->send_mutex );
+        */
 
         // trigger the send queue to wake up and send the packets in the off send buffer
 
