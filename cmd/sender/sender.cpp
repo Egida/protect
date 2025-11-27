@@ -712,7 +712,7 @@ static void xdp_send_thread_function( void * data )
 
         // submit send queue to driver
 
-        next_info( "send batch of %d packets on queue %d", num_packets, socket->queue );
+        // next_info( "send batch of %d packets on queue %d", num_packets, socket->queue );
 
         xsk_ring_prod__submit( &socket->send_queue, num_packets );
     }
