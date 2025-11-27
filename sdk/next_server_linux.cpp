@@ -1478,13 +1478,13 @@ static void xdp_receive_thread_function( void * data )
 
     pin_thread_to_cpu( socket->num_queues + socket->queue );
 
-    struct pollfd fds[2];
+    struct pollfd fds[1];
     fds[0].fd = xsk_socket__fd( socket->xsk );
     fds[0].events = POLLIN;
 
     while ( !socket->receive_quit )
     {
-        int poll_result = poll( fds, 2, 0 );
+        int poll_result = poll( fds, 1, 0 );
         if ( poll_result < 0 ) 
         {
             next_error( "poll error on socket receive queue %d (%d)", socket->queue, poll_result );
