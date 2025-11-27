@@ -456,7 +456,7 @@ int main()
 
     // initialize xdp sockets (one socket per-NIC queue)
 
-    sender.socket = (next_xdp_socket_t*) next_malloc( NULL, num_queues * sizeof(next_xdp_socket_t) );
+    sender.socket = (next_xdp_socket_t*) next_malloc( NULL, sender.num_queues * sizeof(next_xdp_socket_t) );
     if ( sender.socket == NULL )
     {
         next_error( "could not allocate sockets" );
