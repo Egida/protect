@@ -5,6 +5,13 @@
 
 #include "next.h"
 
+static volatile int quit;
+
+void interrupt_handler( int signal )
+{
+    (void) signal; quit = 1;
+}
+
 int main()
 {
     signal( SIGINT, interrupt_handler ); signal( SIGTERM, interrupt_handler );
