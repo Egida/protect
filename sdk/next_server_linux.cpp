@@ -1552,6 +1552,12 @@ static void xdp_receive_thread_function( void * data )
                 *xsk_ring_prod__fill_addr( &socket->fill_queue, fill_index + i ) = frame[i];
             }
 
+            if ( num_reserved != num_packets )
+            {
+                next_error( "whoops" );
+                exit(1);
+            }
+
             next_assert( num_reserved == num_packets ); // todo: maybe fix this if it ever fires
 
             xsk_ring_prod__submit( &socket->fill_queue, num_reserved );
