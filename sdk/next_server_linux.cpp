@@ -1337,9 +1337,6 @@ static void pin_thread_to_cpu( int cpu )
 
 static void xdp_send_thread_function( void * data )
 {
-    // todo
-#if 0
-
     next_server_xdp_socket_t * socket = (next_server_xdp_socket_t*) data;
 
     pin_thread_to_cpu( socket->queue );
@@ -1473,11 +1470,12 @@ static void xdp_send_thread_function( void * data )
 
         next_platform_mutex_release( &socket->send_mutex );
     }
-#endif // #if 0
 }
 
 static void xdp_receive_thread_function( void * data )
 {
+#if 0
+
     next_server_xdp_socket_t * socket = (next_server_xdp_socket_t*) data;
 
     pin_thread_to_cpu( socket->num_queues + socket->queue );
@@ -1565,6 +1563,8 @@ static void xdp_receive_thread_function( void * data )
 
         next_platform_mutex_release( &socket->receive_mutex );
     }
+
+#endif // #if 0
 }
 
 void next_server_receive_packets( next_server_t * server )
