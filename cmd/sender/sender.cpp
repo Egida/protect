@@ -127,8 +127,7 @@ int main()
         if ( getifaddrs( &addrs ) != 0 )
         {
             next_error( "server getifaddrs failed" );
-            next_server_destroy( server );
-            return NULL;
+            return 1;
         }
 
         for ( struct ifaddrs * iap = addrs; iap != NULL; iap = iap->ifa_next ) 
@@ -144,8 +143,7 @@ int main()
                     if ( !server->interface_index ) 
                     {
                         next_error( "server if_nametoindex failed" );
-                        next_server_destroy( server );
-                        return NULL;
+                        return 1;
                     }
                     found = true;
                     break;
@@ -158,8 +156,7 @@ int main()
         if ( !found )
         {
             next_error( "server could not find any network interface matching address" );
-            next_server_destroy( server );
-            return NULL;
+            return 1;
         }
     }
 
