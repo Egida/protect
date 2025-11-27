@@ -116,8 +116,12 @@ int main()
 
     // find the network interface that matches the address
 
+    const char * address_string = "69.67.149.151:40000";
+
+    next_info( "address is %s", address_string );
+
     next_address_t address;
-    if ( !next_address_parse( &address, "69.67.149.151:40000" ) )
+    if ( !next_address_parse( &address, address_string ) )
     {
         next_error( "could not parse address" );
         return 1;
