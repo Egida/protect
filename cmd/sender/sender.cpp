@@ -333,7 +333,7 @@ int main()
         return 1;
     }
 
-    uint32_t address_ipv4 = next_address_ipv4( &address );
+    uint32_t source_address_ipv4 = next_address_ipv4( &source_address );
 
     char interface_name[1024];
     memset( interface_name, 0, sizeof(interface_name) );
@@ -352,7 +352,7 @@ int main()
             if ( iap->ifa_addr && ( iap->ifa_flags & IFF_UP ) && iap->ifa_addr->sa_family == AF_INET )
             {
                 struct sockaddr_in * sa = (struct sockaddr_in*) iap->ifa_addr;
-                if ( sa->sin_addr.s_addr == address_ipv4 )
+                if ( sa->sin_addr.s_addr == source_address_ipv4 )
                 {
                     strncpy( interface_name, iap->ifa_name, sizeof(interface_name) );
                     next_info( "found network interface: %s", interface_name );
@@ -516,7 +516,7 @@ int main()
 
     // save the public address and port in network order (big endian)
 
-    sender.sender_address_big_endian = address_ipv4;
+    sender.sender_address_big_endian = source_address_ipv4;
     sender.sender_port_big_endian = next_platform_htons( address.port );
 
     // initialize xdp sockets (one socket per-NIC queue)
