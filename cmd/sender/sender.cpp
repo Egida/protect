@@ -219,7 +219,7 @@ static uint16_t ipv4_checksum( const void * data, size_t header_length )
     return ~sum;
 }
 
-int generate_packet_header( void * data, uint8_t * sender_ethernet_address, uint8_t * gateway_ethernet_address, uint32_t server_address_big_endian, uint32_t client_address_big_endian, uint16_t server_port_big_endian, uint16_t client_port_big_endian, int payload_bytes )
+int generate_packet_header( void * data, uint8_t * sender_ethernet_address, uint8_t * gateway_ethernet_address, uint32_t sender_address_big_endian, uint32_t client_address_big_endian, uint16_t server_port_big_endian, uint16_t client_port_big_endian, int payload_bytes )
 {
     struct ethhdr * eth = (ethhdr*) data;
     struct iphdr  * ip  = (iphdr*) ( (uint8_t*)data + sizeof( struct ethhdr ) );
@@ -241,7 +241,7 @@ int generate_packet_header( void * data, uint8_t * sender_ethernet_address, uint
     ip->ttl      = 64;
     ip->tot_len  = __constant_htons( sizeof(struct iphdr) + sizeof(struct udphdr) + payload_bytes );
     ip->protocol = IPPROTO_UDP;
-    ip->saddr    = server_address_big_endian;
+    ip->saddr    = sender_address_big_endian;
     ip->daddr    = client_address_big_endian;
     ip->check    = ipv4_checksum( ip, sizeof( struct iphdr ) );
 
@@ -682,7 +682,7 @@ static void xdp_send_thread_function( void * data )
             uint32_t to_address_big_endian = destination_address_big_endian;
             uint16_t to_port_big_endian = next_platform_htons( ( sequence & 1000 ) + 30000 );
 
-            int packet_bytes = generate_packet_header( packet_data, socket->sender_ethernet_address, socket->gateway_ethernet_address, socket->server_address_big_endian, to_address_big_endian, socket->server_port_big_endian, to_port_big_endian, payload_bytes );
+            int packet_bytes = generate_packet_header( packet_data, socket->sender_ethernet_address, socket->gateway_ethernet_address, socket->sender_address_big_endian, to_address_big_endian, socket->server_port_big_endian, to_port_big_endian, payload_bytes );
 
             desc->addr = frame;
             desc->len = packet_bytes;
