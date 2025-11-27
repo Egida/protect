@@ -430,6 +430,16 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         pclose( file );
     }
 
+    // setup for busy polling
+    {
+        char command[2048];
+        snprintf( command, sizeof(command), "echo 2 > /sys/class/net/%s/napi_defer_hard_irqs && echo 200000 > /sys/class/net/%s/gro_flush_timeout", interface_name, interface_name );
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
     // force the NIC to use the number of NIC queues we want
     {
         next_info( "initializing %d queues", num_queues );
