@@ -535,7 +535,7 @@ int main()
     if ( sender.socket == NULL )
     {
         next_error( "could not allocate sockets" );
-     q   return 1;
+        return 1;
     }
 
     for ( int queue = 0; queue < sender.num_queues; queue++ )
