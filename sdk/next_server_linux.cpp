@@ -432,7 +432,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // setup for busy polling
     {
-        char command[2048];
+        char command[4096];
         snprintf( command, sizeof(command), "echo 2 > /sys/class/net/%s/napi_defer_hard_irqs && echo 200000 > /sys/class/net/%s/gro_flush_timeout", interface_name, interface_name );
         FILE * file = popen( command, "r" );
         char buffer[1024];
