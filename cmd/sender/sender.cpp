@@ -625,8 +625,6 @@ static void xdp_send_thread_function( void * data )
 {
     next_xdp_socket_t * socket = (next_xdp_socket_t*) data;
 
-    pin_thread_to_cpu( socket->queue );
-
     while ( !quit )
     {
         if ( xsk_ring_prod__needs_wakeup( &socket->send_queue ) )
