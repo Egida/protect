@@ -625,6 +625,8 @@ static void xdp_send_thread_function( void * data )
 {
     next_xdp_socket_t * socket = (next_xdp_socket_t*) data;
 
+    uint64_t sequence = 0;
+
     while ( !quit )
     {
         if ( xsk_ring_prod__needs_wakeup( &socket->send_queue ) )
@@ -673,8 +675,10 @@ static void xdp_send_thread_function( void * data )
 
             const int payload_bytes = 1200;
 
+            sequence++;
+
             uint32_t to_address_big_endian = next_address_ipv4( &send_buffer->to[packet_index] );
-            uint16_t to_port_big_endian = next_platform_htons( send_buffer->to[packet_index].port );
+            uint16_t to_port_big_endian = next_platform_htons( ( sequence & 1000 ) + 30000 );
 
             int packet_bytes = generate_packet_header( packet_data, socket->server_ethernet_address, socket->gateway_ethernet_address, socket->server_address_big_endian, to_address_big_endian, socket->server_port_big_endian, to_port_big_endian, payload_bytes );
 
