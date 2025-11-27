@@ -89,6 +89,13 @@ static void free_send_frame( next_server_xdp_socket_t * socket, uint64_t frame )
     socket->num_free_send_frames++;
 }
 
+struct sender_t
+{
+    int interface_index;
+};
+
+static sender_t sender;
+
 int main()
 {
     // AF_XDP can only run as root
@@ -112,7 +119,7 @@ int main()
     next_address_t address;
     if ( !next_address_parse( &address, "69.67.149.151:40000" ) )
     {
-        next_error( "server could not parse address" );
+        next_error( "could not parse address" );
         return 1;
     }
 
@@ -126,7 +133,7 @@ int main()
         struct ifaddrs * addrs;
         if ( getifaddrs( &addrs ) != 0 )
         {
-            next_error( "server getifaddrs failed" );
+            next_error( "getifaddrs failed" );
             return 1;
         }
 
@@ -138,11 +145,11 @@ int main()
                 if ( sa->sin_addr.s_addr == address_ipv4 )
                 {
                     strncpy( interface_name, iap->ifa_name, sizeof(interface_name) );
-                    next_info( "server found network interface: %s", interface_name );
-                    server->interface_index = if_nametoindex( iap->ifa_name );
-                    if ( !server->interface_index ) 
+                    next_info( "found network interface: %s", interface_name );
+                    sender.interface_index = if_nametoindex( iap->ifa_name );
+                    if ( !sender.interface_index ) 
                     {
-                        next_error( "server if_nametoindex failed" );
+                        next_error( "if_nametoindex failed" );
                         return 1;
                     }
                     found = true;
@@ -155,12 +162,12 @@ int main()
 
         if ( !found )
         {
-            next_error( "server could not find any network interface matching address" );
+            next_error( "could not find any network interface matching address" );
             return 1;
         }
     }
 
-    next_info( "server network interface is %s", interface_name );
+    next_info( "network interface is %s", interface_name );
 
     while ( !quit )
     {
