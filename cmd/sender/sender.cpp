@@ -68,6 +68,133 @@ struct next_server_xdp_socket_t
     uint8_t padding_3[1024];
 };
 
+static bool get_interface_mac_address( const char * interface_name, uint8_t * mac_address ) 
+{
+    char path[256];
+    snprintf( path, sizeof(path), "/sys/class/net/%s/address", interface_name );
+    FILE * file = fopen(path, "r");
+    if ( !file )
+    {
+        return false;
+    }
+
+    // xx.xx.xx.xx.xx.xx
+
+    char mac_address_string[18];
+
+    if ( fgets( mac_address_string, sizeof(mac_address_string), file ) == NULL ) 
+    {
+        fclose( file );
+        return false;
+    }
+
+    mac_address_string[2] = 0;
+    mac_address_string[5] = 0;
+    mac_address_string[8] = 0;
+    mac_address_string[11] = 0;
+    mac_address_string[14] = 0;
+    mac_address_string[17] = 0;
+
+    mac_address[0] = (uint8_t) strtol( mac_address_string + 0, NULL, 16 );
+    mac_address[1] = (uint8_t) strtol( mac_address_string + 3, NULL, 16 );
+    mac_address[2] = (uint8_t) strtol( mac_address_string + 6, NULL, 16 );
+    mac_address[3] = (uint8_t) strtol( mac_address_string + 9, NULL, 16 );
+    mac_address[4] = (uint8_t) strtol( mac_address_string + 12, NULL, 16 );
+    mac_address[5] = (uint8_t) strtol( mac_address_string + 15, NULL, 16 );
+
+    fclose( file );
+
+    return true;
+}
+
+static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_address )
+{
+    memset( mac_address, 0, 6 );
+
+    // first find the gateway IP address for the network interface via netstat
+
+    const char * gateway_ip_string = NULL;
+
+    FILE * file = popen( "netstat -rn", "r" );
+    char netstat_buffer[1024];
+    while ( fgets( netstat_buffer, sizeof(netstat_buffer), file ) != NULL )
+    {
+        if ( strlen( netstat_buffer ) > 0 && strstr( netstat_buffer, "UG" ) && strstr( netstat_buffer, interface_name ) )
+        {
+            char * token = strtok( netstat_buffer, " " );
+            if ( token )
+            {
+                token = strtok( NULL, " " );
+                if ( token )
+                {
+                    gateway_ip_string = token;
+                    break;
+                }
+            }
+        }
+    }
+    pclose( file );
+
+    if ( !gateway_ip_string )
+    {
+        return false;
+    }
+
+    // parse the address and make sure it's a valid ipv4
+
+    next_address_t address;
+    if ( !next_address_parse( &address, gateway_ip_string ) || address.type != NEXT_ADDRESS_IPV4 )
+    {
+        return false;
+    }
+
+    // now find the ethernet address corresponding to the gateway IP address and interface name
+
+    bool found_mac_address = false;
+
+    char mac_address_string[18];
+
+    file = popen( "ip neigh show", "r" );
+    char ip_buffer[1024];
+    while ( fgets( ip_buffer, sizeof(ip_buffer), file ) != NULL )
+    {
+        if ( strlen( ip_buffer ) > 0 && strstr( ip_buffer, gateway_ip_string ) && strstr( ip_buffer, interface_name ) )
+        {
+            char * p = strstr( ip_buffer, " lladdr " );
+            if ( p )
+            {
+                p += 8;
+                found_mac_address = true;
+                strncpy( mac_address_string, p, 17 );
+                mac_address_string[17] = 0;
+                break;
+            }
+        }
+    }
+    pclose( file );
+
+    if ( !found_mac_address )
+    {
+        return false;
+    }
+
+    mac_address_string[2] = 0;
+    mac_address_string[5] = 0;
+    mac_address_string[8] = 0;
+    mac_address_string[11] = 0;
+    mac_address_string[14] = 0;
+    mac_address_string[17] = 0;
+
+    mac_address[0] = (uint8_t) strtol( mac_address_string + 0, NULL, 16 );
+    mac_address[1] = (uint8_t) strtol( mac_address_string + 3, NULL, 16 );
+    mac_address[2] = (uint8_t) strtol( mac_address_string + 6, NULL, 16 );
+    mac_address[3] = (uint8_t) strtol( mac_address_string + 9, NULL, 16 );
+    mac_address[4] = (uint8_t) strtol( mac_address_string + 12, NULL, 16 );
+    mac_address[5] = (uint8_t) strtol( mac_address_string + 15, NULL, 16 );
+
+    return true;
+}
+
 #define INVALID_FRAME UINT64_MAX
 
 static uint64_t alloc_send_frame( next_server_xdp_socket_t * socket )
