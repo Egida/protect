@@ -376,8 +376,7 @@ int main()
         if ( !file )
         {
             next_error( "could not open server_xdp_source.tar.gz for writing" );
-            next_server_destroy( server );
-            return NULL;
+            return 1;
         }
 
         fwrite( next_server_xdp_tar_gz, sizeof(next_server_xdp_tar_gz), 1, file );
