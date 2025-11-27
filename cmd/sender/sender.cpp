@@ -661,6 +661,8 @@ static void xdp_send_thread_function( void * data )
         
         int num_packets = xsk_ring_prod__reserve( &socket->send_queue, NEXT_XDP_SEND_BATCH_SIZE, &send_queue_index );
 
+        // fill descriptors in the send queue
+
         for ( int i = 0; i < num_packets; i++ )
         {
             struct xdp_desc * desc = xsk_ring_prod__tx_desc( &socket->send_queue, send_queue_index + i );
@@ -687,6 +689,12 @@ static void xdp_send_thread_function( void * data )
             desc->addr = frame;
             desc->len = packet_bytes;
         }
+
+        // submit send queue to driver
+
+        next_info( "send batch of %d packets on queue %d", num_packets, socket->queue, )
+
+        xsk_ring_prod__submit( &socket->send_queue, num_packets );
     }
 
 
