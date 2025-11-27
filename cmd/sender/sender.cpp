@@ -91,8 +91,18 @@ static void free_send_frame( next_server_xdp_socket_t * socket, uint64_t frame )
 
 struct sender_t
 {
-    int interface_index;
     int num_queues;
+
+    uint8_t sender_ethernet_address[ETH_ALEN];
+    uint8_t gateway_ethernet_address[ETH_ALEN];
+
+    uint32_t sender_address_big_endian;
+    uint16_t sender_port_big_endian;
+
+    int interface_index;
+    struct xdp_program * program;
+    bool attached_native;
+    bool attached_skb;
 };
 
 static sender_t sender;
@@ -190,7 +200,7 @@ int main()
 
     // look up the ethernet address of the network interface
 
-    if ( !get_interface_mac_address( interface_name, server->server_ethernet_address ) )
+    if ( !get_interface_mac_address( interface_name, sender.server_ethernet_address ) )
     {
         next_error( "server could not get mac address of network interface" );
         next_server_destroy( server );
@@ -198,17 +208,17 @@ int main()
     }
 
     next_info( "server ethernet address is %02x.%02x.%02x.%02x.%02x.%02x", 
-        server->server_ethernet_address[0], 
-        server->server_ethernet_address[1], 
-        server->server_ethernet_address[2], 
-        server->server_ethernet_address[3], 
-        server->server_ethernet_address[4], 
-        server->server_ethernet_address[5] 
+        sender.server_ethernet_address[0], 
+        sender.server_ethernet_address[1], 
+        sender.server_ethernet_address[2], 
+        sender.server_ethernet_address[3], 
+        sender.server_ethernet_address[4], 
+        sender.server_ethernet_address[5] 
     );
 
     // look up the gateway ethernet address for the network interface
 
-    if ( !get_gateway_mac_address( interface_name, server->gateway_ethernet_address ) )
+    if ( !get_gateway_mac_address( interface_name, sender.gateway_ethernet_address ) )
     {
         next_error( "server could not get gateway mac address" );
         next_server_destroy( server );
@@ -217,21 +227,21 @@ int main()
 
     // hulk
     /*
-    server->gateway_ethernet_address[0] = 0xd0;
-    server->gateway_ethernet_address[1] = 0x81;
-    server->gateway_ethernet_address[2] = 0x7a;
-    server->gateway_ethernet_address[3] = 0xd8;
-    server->gateway_ethernet_address[4] = 0x3a;
-    server->gateway_ethernet_address[5] = 0xec;
+    sender.gateway_ethernet_address[0] = 0xd0;
+    sender.gateway_ethernet_address[1] = 0x81;
+    sender.gateway_ethernet_address[2] = 0x7a;
+    sender.gateway_ethernet_address[3] = 0xd8;
+    sender.gateway_ethernet_address[4] = 0x3a;
+    sender.gateway_ethernet_address[5] = 0xec;
     */
 
     next_info( "gateway ethernet address is %02x.%02x.%02x.%02x.%02x.%02x", 
-        server->gateway_ethernet_address[0], 
-        server->gateway_ethernet_address[1], 
-        server->gateway_ethernet_address[2], 
-        server->gateway_ethernet_address[3], 
-        server->gateway_ethernet_address[4], 
-        server->gateway_ethernet_address[5] 
+        sender.gateway_ethernet_address[0], 
+        sender.gateway_ethernet_address[1], 
+        sender.gateway_ethernet_address[2], 
+        sender.gateway_ethernet_address[3], 
+        sender.gateway_ethernet_address[4], 
+        sender.gateway_ethernet_address[5] 
     );
 
     while ( !quit )
