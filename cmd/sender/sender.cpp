@@ -45,6 +45,7 @@ void interrupt_handler( int signal )
     (void) signal; quit = 1;
 }
 
+#define NEXT_NUM_XDP_QUEUES                     4
 #define NEXT_XDP_NUM_FRAMES                  8192
 #define NEXT_XDP_FRAME_SIZE                  2048
 #define NEXT_XDP_SEND_QUEUE_SIZE             4096
@@ -391,7 +392,7 @@ int main()
 
     // force the NIC to use the number of NIC queues we want
 
-    sender.num_queues = 8;
+    sender.num_queues = NEXT_NUM_XDP_QUEUES;
     {
         next_info( "initializing %d queues", sender.num_queues );
 
