@@ -1341,8 +1341,14 @@ static void xdp_send_thread_function( void * data )
 
     pin_thread_to_cpu( socket->queue );
 
-    while ( true )
+    while ( !socket->send_quit )
     {
+        next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_on_index];
+
+        next_platform_mutex_acquire( &socket->send_mutex );
+
+        // busy poll the xdp driver
+
         if ( xsk_ring_prod__needs_wakeup( &socket->send_queue ) )
         {
             sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
@@ -1354,30 +1360,16 @@ static void xdp_send_thread_function( void * data )
 
         unsigned int num_completed = xsk_ring_cons__peek( &socket->complete_queue, XSK_RING_CONS__DEFAULT_NUM_DESCS, &complete_index );
 
-        if ( num_completed == 0 )
-            break;
-
-        for ( int i = 0; i < num_completed; i++ )
+        if ( num_completed > 0 )
         {
-            uint64_t frame = *xsk_ring_cons__comp_addr( &socket->complete_queue, complete_index + i );
-            free_send_frame( socket, frame );
+            for ( int i = 0; i < num_completed; i++ )
+            {
+                uint64_t frame = *xsk_ring_cons__comp_addr( &socket->complete_queue, complete_index + i );
+                free_send_frame( socket, frame );
+            }
+
+            xsk_ring_cons__release( &socket->complete_queue, num_completed );
         }
-
-        xsk_ring_cons__release( &socket->complete_queue, num_completed );
-    }
-
-    uint64_t value;
-    ssize_t bytes_read = read( socket->send_event_fd, &value, sizeof(uint64_t) );
-    (void) bytes_read;
-
-    if ( socket->send_quit )
-        break;
-
-    while ( true )
-    {
-        next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_on_index];
-
-        next_platform_mutex_acquire( &socket->send_mutex );
 
         // make sure the driver gets updated
 
@@ -1490,7 +1482,7 @@ static void xdp_receive_thread_function( void * data )
     fds[0].fd = xsk_socket__fd( socket->xsk );
     fds[0].events = POLLIN;
 
-    while ( true )
+    while ( !socket->receive_quit )
     {
         int poll_result = poll( fds, 2, 0 );
         if ( poll_result < 0 ) 
@@ -1498,9 +1490,6 @@ static void xdp_receive_thread_function( void * data )
             next_error( "poll error on socket receive queue %d (%d)", socket->queue, poll_result );
             break;
         }
-
-        if ( socket->receive_quit )
-            break;
 
         // receive packets
 
