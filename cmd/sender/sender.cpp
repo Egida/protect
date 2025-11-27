@@ -107,16 +107,16 @@ int main()
         return 1;        
     }
 
-    // find the network interface that matches the public address
+    // find the network interface that matches the address
 
     next_address_t address;
-    if ( !next_address_parse( &public_address, "69.67.149.151:40000" ) )
+    if ( !next_address_parse( &address, "69.67.149.151:40000" ) )
     {
-        next_error( "server could not parse public address" );
+        next_error( "server could not parse address" );
         return 1;
     }
 
-    uint32_t public_address_ipv4 = next_address_ipv4( &public_address );
+    uint32_t address_ipv4 = next_address_ipv4( &address );
 
     char interface_name[1024];
     memset( interface_name, 0, sizeof(interface_name) );
@@ -136,7 +136,7 @@ int main()
             if ( iap->ifa_addr && ( iap->ifa_flags & IFF_UP ) && iap->ifa_addr->sa_family == AF_INET )
             {
                 struct sockaddr_in * sa = (struct sockaddr_in*) iap->ifa_addr;
-                if ( sa->sin_addr.s_addr == public_address_ipv4 )
+                if ( sa->sin_addr.s_addr == address_ipv4 )
                 {
                     strncpy( interface_name, iap->ifa_name, sizeof(interface_name) );
                     next_info( "server found network interface: %s", interface_name );
