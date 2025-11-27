@@ -11,12 +11,35 @@
 #include <signal.h>
 #include <stdlib.h>
 
+#ifdef __linux__
+#include <unistd.h>
+#endif // #ifdef __linux__
+
 static volatile int quit;
 
 void interrupt_handler( int signal )
 {
     (void) signal; quit = 1;
 }
+
+#ifdef __linux__
+
+static void pin_thread_to_cpu( int cpu ) 
+{
+    int num_cpus = sysconf( _SC_NPROCESSORS_ONLN );
+    next_assert( cpu >= 0 );
+    next_assert( cpu < num_cpus );
+
+    cpu_set_t cpuset;
+    CPU_ZERO( &cpuset );
+    CPU_SET( cpu, &cpuset );
+
+    pthread_t current_thread = pthread_self();    
+
+    pthread_setaffinity_np( current_thread, sizeof(cpu_set_t), &cpuset );
+}
+
+#endif // #ifdef __linux__
 
 int main()
 {
@@ -28,7 +51,7 @@ int main()
         return 1;        
     }
 
-    int num_queues = 8;
+    int num_queues = 2;
     const char * bind_address = "0.0.0.0:40000";
     const char * public_address = "127.0.0.1:40000";
     {
@@ -51,6 +74,10 @@ int main()
         }
     }
 
+#ifdef __linux__
+    pin_thread_to_cpu( num_queues * 2 );
+#endif // #ifdef __linux__
+    
     next_server_t * server = next_server_create( NULL, bind_address, public_address, num_queues );
     if ( !server )
     {
