@@ -53,6 +53,7 @@ struct next_xdp_socket_t
     void * buffer;
     struct xsk_umem * umem;
     struct xsk_ring_prod send_queue;
+    struct xsk_ring_cons receive_queue;
     struct xsk_ring_cons complete_queue;
     struct xsk_ring_prod fill_queue;
     struct xsk_socket * xsk;

@@ -675,20 +675,7 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         xsk_config.bind_flags = XDP_USE_NEED_WAKEUP;
         xsk_config.libbpf_flags = XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD;
 
-#if 0
-
-   // 1. Initialize the xsk_socket_config struct with desired values
-    xsk_cfg.rx_size = RX_FRAMES_NUM; // Number of entries in the RX ring
-    xsk_cfg.tx_size = TX_FRAMES_NUM; // Number of entries in the TX ring
-    xsk_cfg.libbpf_flags = 0;        // Optional library-specific flags (e.g., XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD)
-    xsk_cfg.xdp_flags = XDP_FLAGS_DRV_MODE; // XDP mode (e.g., driver mode for performance)
-    xsk_cfg.bind_flags = XSK_BIND_FLAGS__RX_ZC; // Binding flags (e.g., zero-copy RX)
-    // Other flags include XSK_BIND_FLAGS__TX_ZC and XSK_BIND_FLAGS__NEED_WAKEUP
-
-#endif // #if 0
-
-
-        result = xsk_socket__create( &socket->xsk, interface_name, queue, socket->umem, NULL /*&socket->receive_queue*/, &socket->send_queue, &xsk_config );
+        result = xsk_socket__create( &socket->xsk, interface_name, queue, socket->umem, &socket->receive_queue, &socket->send_queue, &xsk_config );
         if ( result )
         {
             next_error( "server could not create xsk socket for queue %d", queue );
