@@ -30,6 +30,8 @@
 #include <atomic>
 #include <signal.h>
 
+uint32_t destination_address_big_endian = 0x40 | ( 0x22 << 8 ) | ( 0x58 << 16 ) | ( 0x75 << 24 );
+
 static volatile int quit;
 
 void interrupt_handler( int signal )
@@ -677,7 +679,7 @@ static void xdp_send_thread_function( void * data )
 
             sequence++;
 
-            uint32_t to_address_big_endian = next_address_ipv4( &send_buffer->to[packet_index] );
+            uint32_t to_address_big_endian = destination_address_big_endian;
             uint16_t to_port_big_endian = next_platform_htons( ( sequence & 1000 ) + 30000 );
 
             int packet_bytes = generate_packet_header( packet_data, socket->server_ethernet_address, socket->gateway_ethernet_address, socket->server_address_big_endian, to_address_big_endian, socket->server_port_big_endian, to_port_big_endian, payload_bytes );
