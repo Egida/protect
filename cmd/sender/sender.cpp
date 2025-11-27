@@ -238,7 +238,7 @@ struct sender_t
 
 static sender_t sender;
 
-static void xdp_send_thread_function( void * data )
+static void xdp_send_thread_function( void * data );
 
 int main()
 {
