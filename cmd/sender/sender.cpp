@@ -322,14 +322,14 @@ int main()
         return 1;        
     }
 
-    // find the network interface that matches the address
+    // find the network interface that matches the source address
 
-    next_info( "address is %s", address_string );
+    next_info( "source address is %s", source_address_string );
 
-    next_address_t address;
-    if ( !next_address_parse( &address, address_string ) )
+    next_address_t source_address;
+    if ( !next_address_parse( &source_address, source_address_string ) )
     {
-        next_error( "could not parse address" );
+        next_error( "could not parse source address" );
         return 1;
     }
 
