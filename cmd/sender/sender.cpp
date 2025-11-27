@@ -32,7 +32,11 @@
 
 // todo: we do need to run this on start: sudo xdp-loader unload -a
 
-uint32_t destination_address_big_endian = 0x40 | ( 0x22 << 8 ) | ( 0x58 << 16 ) | ( 0x75 << 24 );
+uint32_t destination_address_big_endian = 0xC0 | ( 0xA8 << 8 ) | ( 0x01 << 16 ) | ( 0x03 << 24 );
+
+// 192.168.1.3
+
+//space2: 0x40 | ( 0x22 << 8 ) | ( 0x58 << 16 ) | ( 0x75 << 24 );
 
 static volatile int quit;
 
@@ -410,21 +414,21 @@ int main()
 
     // look up the gateway ethernet address for the network interface
 
+    /*
     if ( !get_gateway_mac_address( interface_name, sender.gateway_ethernet_address ) )
     {
         next_error( "could not get gateway mac address" );
         return 1;
     }
+    */
 
     // hulk
-    /*
     sender.gateway_ethernet_address[0] = 0xd0;
     sender.gateway_ethernet_address[1] = 0x81;
     sender.gateway_ethernet_address[2] = 0x7a;
     sender.gateway_ethernet_address[3] = 0xd8;
     sender.gateway_ethernet_address[4] = 0x3a;
     sender.gateway_ethernet_address[5] = 0xec;
-    */
 
     next_info( "gateway ethernet address is %02x.%02x.%02x.%02x.%02x.%02x", 
         sender.gateway_ethernet_address[0], 
