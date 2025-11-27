@@ -465,7 +465,7 @@ int main()
 
     for ( int queue = 0; queue < sender.num_queues; queue++ )
     {
-        next_xdp_socket_t * socket = &server->socket[queue];
+        next_xdp_socket_t * socket = &sender.socket[queue];
 
         socket->queue = queue;
 
@@ -507,10 +507,10 @@ int main()
 
         // copy across data needed by the socket to send packets
 
-        memcpy( socket->server_ethernet_address, server->server_ethernet_address, ETH_ALEN );
-        memcpy( socket->gateway_ethernet_address, server->gateway_ethernet_address, ETH_ALEN );
-        socket->server_address_big_endian = server->server_address_big_endian;
-        socket->server_port_big_endian = server->server_port_big_endian;
+        memcpy( socket->server_ethernet_address, sender.server_ethernet_address, ETH_ALEN );
+        memcpy( socket->gateway_ethernet_address, sender.gateway_ethernet_address, ETH_ALEN );
+        socket->server_address_big_endian = sender.server_address_big_endian;
+        socket->server_port_big_endian = sender.server_port_big_endian;
     }
 
     // ----------------------------------------------------------------------------------
