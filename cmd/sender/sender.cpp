@@ -53,7 +53,6 @@ struct next_xdp_socket_t
     void * buffer;
     struct xsk_umem * umem;
     struct xsk_ring_prod send_queue;
-    struct xsk_ring_cons receive_queue;
     struct xsk_ring_cons complete_queue;
     struct xsk_ring_prod fill_queue;
     struct xsk_socket * xsk;
@@ -481,7 +480,15 @@ int main()
             return 1;
         }
 
-        int result = xsk_umem__create( &socket->umem, socket->buffer, buffer_size, &socket->fill_queue, &socket->complete_queue, NULL );
+        struct xsk_umem_config config = {
+            .fill_size = 4096,
+            .comp_size = 4096,
+            .frame_size = 2048,
+            .frame_headroom = 0, // Optional headroom for metadata/headers
+            .flags = 0,          // No specific flags needed for basic setup
+        };
+
+        int result = xsk_umem__create( &socket->umem, socket->buffer, buffer_size, &socket->fill_queue, &socket->complete_queue, &config );
         if ( result ) 
         {
             next_error( "could not create umem" );
