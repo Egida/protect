@@ -6,6 +6,7 @@
 #include "next.h"
 #include "next_platform.h"
 #include "next_packet_filter.h"
+#include "next_server_xdp.h"
 #include "next_hash.h"
 #include <ifaddrs.h>
 #include <bpf/bpf.h>
@@ -368,6 +369,86 @@ int main()
         sender.gateway_ethernet_address[4], 
         sender.gateway_ethernet_address[5] 
     );
+
+    // write out source tar.gz for server_xdp program
+    {
+        FILE * file = fopen( "server_xdp_source.tar.gz", "wb" );
+        if ( !file )
+        {
+            next_error( "could not open server_xdp_source.tar.gz for writing" );
+            next_server_destroy( server );
+            return NULL;
+        }
+
+        fwrite( next_server_xdp_tar_gz, sizeof(next_server_xdp_tar_gz), 1, file );
+
+        fclose( file );
+    }
+
+    // unzip source and build server_xdp.o
+    {
+        const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.o && rm -f Makefile && tar -zxf server_xdp_source.tar.gz && make server_xdp.o";
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
+    // clean up after ourselves
+    {
+        const char * command = "rm -f Makefile && rm -f *.c && rm -f *.h && rm -f *.tar.gz";
+        FILE * file = popen( command, "r" );
+        char buffer[1024];
+        while ( fgets( buffer, sizeof(buffer), file ) != NULL ) {}
+        pclose( file );
+    }
+
+    // load the client_backend_xdp program and attach it to the network interface
+
+    next_info( "loading server_xdp..." );
+
+    sender.program = xdp_program__open_file( "server_xdp.o", "server_xdp", NULL );
+    if ( libxdp_get_error( sender.program ) ) 
+    {
+        next_error( "could not load server_xdp program" );
+        return 1;
+    }
+
+    next_info( "server_xdp loaded successfully." );
+
+    next_info( "attaching server_xdp to network interface %s", interface_name );
+
+    int ret = xdp_program__attach( sender.program, sender.interface_index, XDP_MODE_NATIVE, 0 );
+    if ( ret == 0 )
+    {
+        sender.attached_native = true;
+    } 
+    else
+    {
+        next_info( "falling back to skb mode..." );
+        ret = xdp_program__attach( sender.program, sender.interface_index, XDP_MODE_SKB, 0 );
+        if ( ret == 0 )
+        {
+            sender.attached_skb = true;
+        }
+        else
+        {
+            next_error( "failed to attach server_xdp program to interface %s", interface_name );
+            return 1;
+        }
+    }
+
+    // allow unlimited locking of memory, so all memory needed for packet buffers can be locked
+
+    struct rlimit rlim = { RLIM_INFINITY, RLIM_INFINITY };
+
+    if ( setrlimit( RLIMIT_MEMLOCK, &rlim ) ) 
+    {
+        next_error( "server could not setrlimit" );
+        return 1;
+    }
+
+    // ----------------------------------------------------------------------------------
 
     while ( !quit )
     {
