@@ -1337,6 +1337,9 @@ static void pin_thread_to_cpu( int cpu )
 
 static void xdp_send_thread_function( void * data )
 {
+    // todo
+#if 0
+
     next_server_xdp_socket_t * socket = (next_server_xdp_socket_t*) data;
 
     pin_thread_to_cpu( socket->queue );
@@ -1470,6 +1473,7 @@ static void xdp_send_thread_function( void * data )
 
         next_platform_mutex_release( &socket->send_mutex );
     }
+#endif // #if 0
 }
 
 static void xdp_receive_thread_function( void * data )
@@ -1521,6 +1525,9 @@ static void xdp_receive_thread_function( void * data )
 
                 if ( packet_bytes >= 18 && receive_buffer->num_packets < NEXT_XDP_RECV_QUEUE_SIZE )
                 {
+                    // todo
+                    next_info( "received %d byte packet on queue %d", packet_bytes, socket->queue );
+
                     const int index = receive_buffer->num_packets++;
 
                     struct ethhdr * eth = (ethhdr*) packet_data;

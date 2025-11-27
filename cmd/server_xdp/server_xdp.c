@@ -341,8 +341,6 @@ static void reflect_packet( void * data, int payload_bytes, __u8 * magic )
 
 SEC("server_xdp") int server_xdp_filter( struct xdp_md *ctx ) 
 { 
-#if 0
-
     void * data = (void*) (long) ctx->data; 
 
     void * data_end = (void*) (long) ctx->data_end; 
@@ -614,7 +612,6 @@ SEC("server_xdp") int server_xdp_filter( struct xdp_md *ctx )
             }
         }
     }
-#endif // #if 0
 
     return XDP_PASS;
 }
