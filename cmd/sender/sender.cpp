@@ -200,14 +200,13 @@ int main()
 
     // look up the ethernet address of the network interface
 
-    if ( !get_interface_mac_address( interface_name, sender.server_ethernet_address ) )
+    if ( !get_interface_mac_address( interface_name, sender.sender_ethernet_address ) )
     {
-        next_error( "server could not get mac address of network interface" );
-        next_server_destroy( server );
-        return NULL;
+        next_error( "could not get mac address of network interface" );
+        return 1;
     }
 
-    next_info( "server ethernet address is %02x.%02x.%02x.%02x.%02x.%02x", 
+    next_info( "sender ethernet address is %02x.%02x.%02x.%02x.%02x.%02x", 
         sender.server_ethernet_address[0], 
         sender.server_ethernet_address[1], 
         sender.server_ethernet_address[2], 
@@ -220,9 +219,8 @@ int main()
 
     if ( !get_gateway_mac_address( interface_name, sender.gateway_ethernet_address ) )
     {
-        next_error( "server could not get gateway mac address" );
-        next_server_destroy( server );
-        return NULL;
+        next_error( "could not get gateway mac address" );
+        return 1;
     }
 
     // hulk
