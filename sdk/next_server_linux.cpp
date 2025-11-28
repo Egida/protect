@@ -1355,7 +1355,7 @@ static void xdp_send_thread_function( void * data )
 
     while ( !socket->send_quit )
     {
-        socket->send_counter_send_thread = socket->send_counter_main_thread;
+        socket->send_counter_send_thread = (uint64_t) socket->send_counter_main_thread;
 
         const int on_index = socket->send_counter_send_thread % 2;
 
