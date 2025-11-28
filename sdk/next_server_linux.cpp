@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include <atomic>
 
-//#define MOCK_1000_CLIENTS 1
+#define MOCK_1000_CLIENTS 1
 
 struct next_server_xdp_send_buffer_t
 {
