@@ -1238,7 +1238,7 @@ void next_server_send_packets( struct next_server_t * server )
 
         socket->send_counter_main_thread++;
 
-        while ( socket->send_counter_send_thread != socket_send_counter_main_thread ) {}
+        while ( socket->send_counter_send_thread != socket->send_counter_main_thread ) {}
 
         const int off_index = ( socket->send_counter_main_thread + 1 ) % 2;
 
