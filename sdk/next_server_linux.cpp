@@ -1572,15 +1572,15 @@ void next_server_receive_packets( next_server_t * server )
 
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
-        int off_index = ( socket->receive_counter_main_thread + 1 ) % 2;
+        const int prev_off_index = ( socket->receive_counter_main_thread + 1 ) % 2;
 
-        socket->receive_buffer[off_index].num_packets = 0;
+        socket->receive_buffer[prev_off_index].num_packets = 0;
 
         socket->receive_counter_main_thread++;
 
         while ( socket->receive_counter_receive_thread != socket->receive_counter_main_thread ) {}
 
-        int off_index = ( socket->receive_counter_main_thread + 1 ) % 2;
+        const int off_index = ( socket->receive_counter_main_thread + 1 ) % 2;
 
         // now we can access the off receive buffer without contention with the receive thread
 
