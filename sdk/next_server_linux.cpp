@@ -88,9 +88,8 @@ struct next_server_xdp_socket_t
     uint32_t num_free_receive_frames;
     uint64_t receive_frames[NEXT_XDP_NUM_FRAMES/2];
     next_platform_thread_t * receive_thread;
-    next_platform_mutex_t receive_mutex;
-    int receive_buffer_on_index;
-    int receive_buffer_off_index;
+    std::atomic<uint64_t> send_counter_main_thread;
+    std::atomic<uint64_t> send_counter_send_thread;
     struct next_server_xdp_receive_buffer_t receive_buffer[2];
 
     uint8_t padding_3[1024];
@@ -795,15 +794,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
             xsk_ring_prod__submit( &socket->fill_queue, NEXT_XDP_FILL_QUEUE_SIZE );
         }
 
-        // create receive thread mutex for double buffering
-
-        if ( !next_platform_mutex_create( &socket->receive_mutex ) )
-        {
-            next_error( "server failed to create receive mutex" );
-            next_server_destroy( server );
-            return NULL;
-        }
-
         // start receive thread for queue
 
         next_info( "starting receive thread for socket queue %d", socket->queue );
@@ -889,8 +879,6 @@ void next_server_destroy( next_server_t * server )
             next_platform_thread_join( socket->receive_thread );
             next_platform_thread_destroy( socket->receive_thread );
         }
-
-        next_platform_mutex_destroy( &socket->receive_mutex );
 
         // destroy xdp socket
 
@@ -1503,7 +1491,7 @@ static void xdp_receive_thread_function( void * data )
 
         // receive packets
 
-        next_platform_mutex_acquire( &socket->receive_mutex );
+        // todo: receive_counter
 
         next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[socket->receive_buffer_on_index];
 
@@ -1565,8 +1553,6 @@ static void xdp_receive_thread_function( void * data )
 
             xsk_ring_prod__submit( &socket->fill_queue, num_reserved );
         }
-
-        next_platform_mutex_release( &socket->receive_mutex );
     }
 }
 
@@ -1582,15 +1568,19 @@ void next_server_receive_packets( next_server_t * server )
 
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
-        next_platform_mutex_acquire( &socket->receive_mutex );
-        socket->receive_buffer_off_index = socket->receive_buffer_off_index ? 0 : 1;
-        socket->receive_buffer_on_index = socket->receive_buffer_off_index ? 0 : 1;
-        socket->receive_buffer[socket->receive_buffer_on_index].num_packets = 0;
-        next_platform_mutex_release( &socket->receive_mutex );
+        int off_index = ( socket->receive_counter_main_thread + 1 ) % 2;
+
+        socket->receive_buffer[off_index].num_packets = 0;
+
+        socket->receive_counter_main_thread++;
+
+        while ( socket->receive_counter_send_thread != socket->receive_counter_main_thread ) {}
+
+        int off_index = ( socket->receive_counter_main_thread + 1 ) % 2;
 
         // now we can access the off receive buffer without contention with the receive thread
 
-        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[socket->receive_buffer_off_index];
+        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[off_index];
 
         for ( int i = 0; i < receive_buffer->num_packets; i++ )
         {
