@@ -534,7 +534,7 @@ int main()
             send_thread_pool.AddTask( send_packets_thread, send_data + i );
         }
 
-        next_platform_sleep( 1.0 / 100.0 );       
+        next_platform_sleep( 1.0 / 100.0 );
 
         next_server_send_packets( server );
     }

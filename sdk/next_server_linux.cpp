@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include <atomic>
 
-#define MOCK_1000_CLIENTS 1
+// #define MOCK_1000_CLIENTS 1
 
 struct next_server_xdp_send_buffer_t
 {
@@ -1553,12 +1553,10 @@ static void xdp_receive_thread_function( void * data )
 
             if ( num_reserved != num_packets )
             {
-                next_error( "whoops" );
+                next_error( "could not reserve packets to send in send queue" );
                 exit(1);
             }
-
-            next_assert( num_reserved == num_packets ); // todo: maybe fix this if it ever fires
-
+            
             xsk_ring_prod__submit( &socket->fill_queue, num_reserved );
         }
     }
