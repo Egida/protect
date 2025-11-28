@@ -400,7 +400,6 @@ private:
 
 // ---------------------------------------------------------------------------
 
-
 #ifdef __linux__
 
 static void pin_thread_to_cpu( int cpu ) 
@@ -422,14 +421,26 @@ static void pin_thread_to_cpu( int cpu )
 
 struct send_packets_data_t
 {
-
+    next_server_t * server;
+    int start_index;
+    int finish_index;
 };
 
-void send_packets( void * arg )
+void send_packets_thread( void * arg )
 {
     send_packets_data_t * data = (send_packets_data_t*) arg;
 
-    // ...
+    next_assert( data );
+
+    next_server_t * server = data->server;
+
+    const int start_index = data->start_index;
+    const int finish_index = data->finish_index;
+
+    for ( int i = start_index; i < finish_index; i++ )
+    {
+        // ...
+    }
 }
 
 int main()
