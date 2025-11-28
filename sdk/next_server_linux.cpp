@@ -89,7 +89,7 @@ struct next_server_xdp_socket_t
     uint64_t receive_frames[NEXT_XDP_NUM_FRAMES/2];
     next_platform_thread_t * receive_thread;
     std::atomic<uint64_t> receive_counter_main_thread;
-    std::atomic<uint64_t> receive_counter_send_thread;
+    std::atomic<uint64_t> receive_counter_receive_thread;
     struct next_server_xdp_receive_buffer_t receive_buffer[2];
 
     uint8_t padding_3[1024];
