@@ -22,6 +22,385 @@ void interrupt_handler( int signal )
     (void) signal; quit = 1;
 }
 
+// ---------------------------------------------------------------------------
+
+#if NEXT_PLATFORM == NEXT_PLATFORM_LINUX || NEXT_PLATFORM == NEXT_PLATFORM_MAC
+
+#include <pthread.h>
+
+typedef void (*platform_thread_func_t)( void *arg );
+
+class ThreadPool
+{
+public:
+
+    ThreadPool( int numThreads )
+    {
+        next_assert( numThreads >= 1 );
+
+        m_startTime = 0.0;
+        m_finishTime = 0.0;
+
+        m_stop = false;
+        m_maxTasks = numThreads;
+        m_numThreads = numThreads;
+        m_numTasks = 0;
+        m_numWorking = 0;
+
+        m_tasks = (TaskData*) malloc( sizeof(TaskData) * numThreads );
+        next_assert( m_tasks );
+
+        pthread_mutex_init( &m_taskMutex, NULL );
+        pthread_cond_init( &m_taskCondition, NULL );
+        pthread_cond_init( &m_workingCondition, NULL );
+
+#if HIGH_PRIORITY_WORKER_THREADS
+        struct sched_param param;
+        param.sched_priority = sched_get_priority_max( SCHED_RR );
+#endif // #if HIGH_PRIORITY_WORKER_THREADS
+
+        for ( int i = 0; i < numThreads; i++) 
+        {
+            pthread_t thread;
+            pthread_create( &thread, NULL, WorkerThreadFunction, this );
+#if HIGH_PRIORITY_WORKER_THREADS
+            pthread_setschedparam( thread, SCHED_RR, &param );
+#endif // #if HIGH_PRIORITY_WORKER_THREADS
+            pthread_detach( thread );
+        }
+    }
+
+    ~ThreadPool()
+    {
+        pthread_mutex_lock( &m_taskMutex );
+
+        m_stop = true;
+
+        pthread_cond_broadcast( &m_taskCondition );
+        pthread_mutex_unlock( &m_taskMutex );
+
+        Join();
+
+        pthread_mutex_destroy( &m_taskMutex );
+        pthread_cond_destroy( &m_taskCondition );
+        pthread_cond_destroy( &m_workingCondition );
+
+        free( m_tasks );
+        m_tasks = NULL;
+    }
+
+    void StartTimer()
+    {
+        pthread_mutex_lock( &m_taskMutex );
+        m_startTime = next_platform_time();
+        pthread_mutex_unlock( &m_taskMutex );
+    }
+
+    void AddTask( platform_thread_func_t func, void * arg )
+    {
+        pthread_mutex_lock( &m_taskMutex );
+        {
+            next_assert( m_numTasks >= 0 );
+            next_assert( m_numTasks < m_maxTasks );
+            m_tasks[m_numTasks].func = func;
+            m_tasks[m_numTasks].arg = arg;
+            m_numTasks++;
+            pthread_cond_broadcast( &m_taskCondition );
+        }
+        pthread_mutex_unlock( &m_taskMutex );
+    }
+
+    void Join()
+    {
+        pthread_mutex_lock( &m_taskMutex );
+        while (1) 
+        {
+            if ( m_numTasks > 0 || ( !m_stop && m_numWorking > 0 ) || ( m_stop && m_numThreads != 0 ) ) 
+            {
+                pthread_cond_wait( &m_workingCondition, &m_taskMutex );
+            } 
+            else 
+            {
+                break;
+            }
+        }
+        pthread_mutex_unlock( &m_taskMutex );
+    }
+
+    double GetTotalTaskTime()
+    {
+        pthread_mutex_lock( &m_taskMutex );
+        double totalTaskTime = m_finishTime - m_startTime;
+        pthread_mutex_unlock( &m_taskMutex );
+        return totalTaskTime;
+    }
+
+protected:
+
+    static void * WorkerThreadFunction( void * arg )
+    {
+        ThreadPool * pool = (ThreadPool*) arg;
+
+        while ( true )
+        {
+            TaskData task;
+
+            pthread_mutex_lock( &pool->m_taskMutex );
+            {
+                while ( pool->m_numTasks == 0 && !pool->m_stop )
+                {
+                    pthread_cond_wait( &pool->m_taskCondition, &pool->m_taskMutex );
+                }
+
+                if ( pool->m_stop )
+                {
+                    next_assert( pool->m_numThreads > 0 );
+                    pool->m_numThreads--;
+                    pthread_cond_signal( &pool->m_workingCondition );
+                    pthread_mutex_unlock( &pool->m_taskMutex );
+                    return NULL;
+                }
+
+                next_assert( pool->m_numTasks > 0 );
+
+                task = pool->m_tasks[pool->m_numTasks-1];
+
+                pool->m_numTasks--;
+                pool->m_numWorking++;
+            }
+            pthread_mutex_unlock( &pool->m_taskMutex );
+
+            task.func( task.arg );
+
+            pthread_mutex_lock( &pool->m_taskMutex );
+            {
+                next_assert( pool->m_numWorking > 0 );
+
+                pool->m_numWorking--;
+
+                if ( !pool->m_stop && pool->m_numWorking == 0 && pool->m_numTasks == 0 )
+                {
+                    pool->m_finishTime = next_platform_time();
+                    pthread_cond_signal( &pool->m_workingCondition );
+                }
+            }
+            pthread_mutex_unlock( &pool->m_taskMutex );
+        }
+
+        return NULL;
+    }
+
+private:
+
+    double m_startTime;
+    double m_finishTime;
+
+    int m_maxTasks;
+    int m_numThreads;
+    int m_numTasks;
+    int m_numWorking;
+    bool m_stop;
+
+    pthread_mutex_t m_taskMutex;
+    pthread_cond_t m_taskCondition;
+    pthread_cond_t m_workingCondition;
+
+    struct TaskData
+    {
+        platform_thread_func_t func;
+        void * arg;
+    };
+
+    TaskData * m_tasks;
+};
+
+#else // #if NEXT_PLATFORM == NEXT_PLATFORM_LINUX || NEXT_PLATFORM == NEXT_PLATFORM_MAC
+
+typedef void (*platform_thread_func_t)( void *arg );
+
+class ThreadPool
+{
+public:
+
+    ThreadPool( int numThreads )
+    {
+        next_assert( numThreads >= 1 );
+
+        m_startTime = 0.0;
+        m_finishTime = 0.0;
+
+        m_stop = false;
+        m_maxTasks = numThreads;
+        m_numThreads = numThreads;
+        m_numTasks = 0;
+        m_numWorking = 0;
+
+        m_tasks = (TaskData*) malloc( sizeof(TaskData) * numThreads );
+        nextw_assert( m_tasks );
+
+        InitializeCriticalSectionAndSpinCount( (LPCRITICAL_SECTION)&m_taskMutex, 0xFF );
+        
+        InitializeConditionVariable( &m_taskCondition );
+        InitializeConditionVariable( &m_workingCondition );
+
+        for ( int i = 0; i < numThreads; i++) 
+        {
+            HANDLE thread = CreateThread( NULL, 0, WorkerThreadFunction, this, 0, NULL );
+#if HIGH_PRIORITY_WORKER_THREADS
+            SetThreadPriority( thread, THREAD_PRIORITY_TIME_CRITICAL );
+#endif // #if HIGH_PRIORITY_WORKER_THREADS
+        }
+    }
+
+    ~ThreadPool()
+    {
+        EnterCriticalSection( &m_taskMutex );
+        
+        m_stop = true;
+
+        WakeConditionVariable( &m_taskCondition );
+
+        LeaveCriticalSection( &m_taskMutex );
+
+        Join();
+
+        DeleteCriticalSection( &m_taskMutex );
+
+        free( m_tasks );
+        m_tasks = NULL;
+    }
+
+    void StartTimer()
+    {
+        EnterCriticalSection( &m_taskMutex );
+        m_startTime = next_platform_time();
+        LeaveCriticalSection( &m_taskMutex );
+    }
+
+    void AddTask( platform_thread_func_t func, void * arg )
+    {
+        EnterCriticalSection( &m_taskMutex );
+        {
+            next_assert( m_numTasks >= 0 );
+            next_assert( m_numTasks < m_maxTasks );
+            m_tasks[m_numTasks].func = func;
+            m_tasks[m_numTasks].arg = arg;
+            m_numTasks++;
+
+            WakeConditionVariable( &m_taskCondition );
+        }
+        LeaveCriticalSection( &m_taskMutex );
+    }
+
+    void Join()
+    {
+        EnterCriticalSection( &m_taskMutex );
+        while (1) 
+        {
+            if ( m_numTasks > 0 || ( !m_stop && m_numWorking > 0 ) || ( m_stop && m_numThreads != 0 ) ) 
+            {
+                SleepConditionVariableCS( &m_workingCondition, &m_taskMutex, 10 );
+            } 
+            else 
+            {
+                break;
+            }
+        }
+        LeaveCriticalSection( &m_taskMutex );
+    }
+
+    double GetTotalTaskTime()
+    {
+        EnterCriticalSection( &m_taskMutex );
+        double totalTaskTime = m_finishTime - m_startTime;
+        LeaveCriticalSection( &m_taskMutex );
+        return totalTaskTime;
+    }
+
+protected:
+
+    static DWORD WINAPI WorkerThreadFunction( void * arg )
+    {
+        ThreadPool * pool = (ThreadPool*) arg;
+
+        while ( true )
+        {
+            TaskData task;
+
+            EnterCriticalSection( &pool->m_taskMutex );
+            {
+                while ( pool->m_numTasks == 0 && !pool->m_stop )
+                {
+                    SleepConditionVariableCS( &pool->m_taskCondition, &pool->m_taskMutex, 1000 );
+                }
+
+                if ( pool->m_stop )
+                {
+                    next_assert( pool->m_numThreads > 0 );
+                    pool->m_numThreads--;
+                    WakeConditionVariable( &pool->m_workingCondition );
+                    LeaveCriticalSection( &pool->m_taskMutex );
+                    return NULL;
+                }
+
+                next_assert( pool->m_numTasks > 0 );
+
+                task = pool->m_tasks[pool->m_numTasks-1];
+
+                pool->m_numTasks--;
+                pool->m_numWorking++;
+            }
+            LeaveCriticalSection( &pool->m_taskMutex );
+
+            task.func( task.arg );
+
+            EnterCriticalSection( &pool->m_taskMutex );
+            {
+                next_assert( pool->m_numWorking > 0 );
+
+                pool->m_numWorking--;
+
+                if ( !pool->m_stop && pool->m_numWorking == 0 && pool->m_numTasks == 0 )
+                {
+                    pool->m_finishTime = next_platform_time();
+                    WakeConditionVariable( &pool->m_workingCondition );
+                }
+            }
+            LeaveCriticalSection( &pool->m_taskMutex );
+        }
+
+        return NULL;
+    }
+
+private:
+
+    double m_startTime;
+    double m_finishTime;
+
+    int m_maxTasks;
+    int m_numThreads;
+    int m_numTasks;
+    int m_numWorking;
+    bool m_stop;
+
+    CRITICAL_SECTION m_taskMutex;
+    CONDITION_VARIABLE m_taskCondition;
+    CONDITION_VARIABLE m_workingCondition;
+
+    struct TaskData
+    {
+        platform_thread_func_t func;
+        void * arg;
+    };
+
+    TaskData * m_tasks;
+};
+
+#endif // #if NEXT_PLATFORM == NEXT_PLATFORM_LINUX || NEXT_PLATFORM == NEXT_PLATFORM_MAC
+
+// ---------------------------------------------------------------------------
+
+
 #ifdef __linux__
 
 static void pin_thread_to_cpu( int cpu ) 
@@ -40,6 +419,18 @@ static void pin_thread_to_cpu( int cpu )
 }
 
 #endif // #ifdef __linux__
+
+struct send_packets_data_t
+{
+
+};
+
+void send_packets( void * arg )
+{
+    send_packets_data_t * data = (send_packets_data_t*) arg;
+
+    // ...
+}
 
 int main()
 {
@@ -85,6 +476,8 @@ int main()
         return 1;
     }
 
+    ThreadPool send( num_queues );
+
     while ( !quit )
     {
         next_server_receive_packets( server );
@@ -108,12 +501,8 @@ int main()
                     uint8_t * packet_data = next_server_start_packet( server, i, &sequence );
                     if ( packet_data )
                     {
-                        memset( packet_data, 0, 100 ); // NEXT_MTU );
+                        memset( packet_data, 0, NEXT_MTU );
                         next_server_finish_packet( server, sequence, packet_data, NEXT_MTU );
-                    }
-                    else
-                    {
-                        next_warn( "null packet" );
                     }
                 }
             }
