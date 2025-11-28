@@ -1482,6 +1482,8 @@ static void xdp_receive_thread_function( void * data )
 
     while ( !socket->receive_quit )
     {
+        // keep network driver active
+
         int poll_result = poll( fds, 1, 0 );
         if ( poll_result < 0 ) 
         {
@@ -1491,9 +1493,11 @@ static void xdp_receive_thread_function( void * data )
 
         // receive packets
 
-        // todo: receive_counter
+        socket->receive_counter_receive_thread = (uint64_t) socket->receive_counter_main_thread;
 
-        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[socket->receive_buffer_on_index];
+        const int on_index = socket->receive_counter_receive_thread % 2;
+
+        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[on_index];
 
         uint32_t receive_index;
         
