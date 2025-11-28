@@ -103,9 +103,8 @@ struct next_server_xdp_socket_t
     uint32_t server_address_big_endian;
     uint16_t server_port_big_endian;
     next_platform_thread_t * send_thread;
-    next_platform_mutex_t send_mutex;
-    int send_buffer_on_index;
-    int send_buffer_off_index;
+    std::atomic<uint64_t> send_counter_main_thread;
+    std::atomic<uint64_t> send_counter_send_thread;
     struct next_server_xdp_send_buffer_t send_buffer[2];
 
     uint8_t padding_4[1024];
@@ -733,15 +732,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
         socket->num_free_send_frames = NEXT_XDP_NUM_FRAMES / 2;
 
-        // create send thread mutex for double buffering
-
-        if ( !next_platform_mutex_create( &socket->send_mutex ) )
-        {
-            next_error( "server failed to create send mutex %d", queue );
-            next_server_destroy( server );
-            return NULL;
-        }
-
         // start send thread for queue
 
         next_info( "starting send thread for socket queue %d", socket->queue );
@@ -890,8 +880,6 @@ void next_server_destroy( next_server_t * server )
             next_platform_thread_join( socket->send_thread );
             next_platform_thread_destroy( socket->send_thread );
         }
-
-        next_platform_mutex_destroy( &socket->send_mutex );
 
         // stop receive thread
 
@@ -1238,16 +1226,18 @@ void next_server_send_packets( struct next_server_t * server )
 
     for ( int queue = 0; queue < server->num_queues; queue++ )
     {
+        // double buffer send buffer
+
         next_server_xdp_socket_t * socket = &server->socket[queue];
 
-        // double buffer swap the send buffer
+        socket->send_counter_main_thread++;
 
-        next_platform_mutex_acquire( &socket->send_mutex );
-        socket->send_buffer_off_index = socket->send_buffer_off_index ? 0 : 1;
-        socket->send_buffer_on_index = socket->send_buffer_off_index ? 0 : 1;
-        socket->send_buffer[socket->send_buffer_off_index].num_packets = 0;
-        socket->send_buffer[socket->send_buffer_on_index].packet_start_index = 0;
-        next_platform_mutex_release( &socket->send_mutex );
+        while ( socket->send_counter_send_thread != socket_send_counter_main_thread ) {}
+
+        const int off_index = ( socket->send_counter_main_thread + 1 ) % 2;
+
+        socket->send_buffer[off_index].num_packets = 0;
+        socket->send_buffer[off_index].packet_start_index = 0;
     }
 }
 
@@ -1359,9 +1349,11 @@ static void xdp_send_thread_function( void * data )
 
     while ( !socket->send_quit )
     {
-        next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_buffer_on_index];
+        socket->send_counter_send_thread = socket->send_counter_main_thread;
 
-        next_platform_mutex_acquire( &socket->send_mutex );
+        const int on_index = socket->send_counter_send_thread % 2;
+
+        next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[on_index];
 
         // busy poll the xdp driver
 
