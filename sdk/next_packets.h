@@ -19,7 +19,6 @@
 #define NEXT_PACKET_CLIENT_BACKEND_REFRESH_TOKEN_RESPONSE       5
 
 #define NEXT_PACKET_DIRECT                                      6
-#define NEXT_PACKET_DISCONNECT                                  7
 
 #pragma pack(push,1)
 
@@ -143,19 +142,6 @@ struct next_direct_packet_t
 inline void next_endian_fix( next_direct_packet_t * packet )
 {
     next_endian_fix( &packet->sequence );
-}
-
-// --------------------------------------------------------------------------------------------------
-
-struct next_disconnect_packet_t
-{
-    uint8_t type;
-    uint8_t prefix[17];
-};
-
-inline void next_endian_fix( next_disconnect_packet_t * packet )
-{
-    // ...
 }
 
 // --------------------------------------------------------------------------------------------------

@@ -6,8 +6,6 @@
 #include "next_tests.h"
 #include "next.h"
 
-#if NEXT_DEVELOPMENT
-
 #include "next_platform.h"
 #include "next_address.h"
 #include "next_base64.h"
@@ -55,7 +53,7 @@ do                                                                              
     }                                                                                                           \
 } while(0)
 
-void test_time()
+void next_test_time()
 {
     double start = next_platform_time();
     next_platform_sleep( 0.1 );
@@ -63,7 +61,7 @@ void test_time()
     next_check( finish > start );
 }
 
-void test_endian()
+void next_test_endian()
 {
     uint32_t value = 0x11223344;
     char bytes[4];
@@ -86,7 +84,7 @@ void test_endian()
 #endif // #if NEXT_LITTLE_ENDIAN
 }
 
-void test_base64()
+void next_test_base64()
 {
     const char * input = "a test string. let's see if it works properly";
     char encoded[1024];
@@ -97,13 +95,13 @@ void test_base64()
     next_check( next_base64_decode_string( encoded, decoded, 10 ) == 0 );
 }
 
-void test_hash()
+void next_test_hash()
 {
     uint64_t hash = next_datacenter_id( "local" );
     next_check( hash == 0x249f1fb6f3a680e8ULL );
 }
 
-void test_copy_string()
+void next_test_copy_string()
 {
     // copy valid string
     {
@@ -130,7 +128,7 @@ void test_copy_string()
     }
 }
 
-void test_address()
+void next_test_address()
 {
     {
         struct next_address_t address;
@@ -369,7 +367,7 @@ void test_address()
 #endif // #if NEXT_PLATFORM_HAS_IPV6
 }
 
-void test_replay_protection()
+void next_test_replay_protection()
 {
     next_replay_protection_t replay_protection;
 
@@ -420,7 +418,7 @@ static bool equal_within_tolerance( float a, float b, float tolerance = 0.001f )
     return fabs(double(a)-double(b)) <= tolerance;
 }
 
-void test_random_bytes()
+void next_test_random_bytes()
 {
     const int BufferSize = 999;
     uint8_t buffer[BufferSize];
@@ -434,7 +432,7 @@ void test_random_bytes()
     }
 }
 
-void test_random_float()
+void next_test_random_float()
 {
     for ( int i = 0; i < 1000; ++i )
     {
@@ -444,7 +442,7 @@ void test_random_float()
     }
 }
 
-void test_platform_socket()
+void next_test_platform_socket()
 {
     // non-blocking socket (ipv4)
     {
@@ -574,7 +572,7 @@ static void test_thread_function(void*)
     threads_work = true;
 }
 
-void test_platform_thread()
+void next_test_platform_thread()
 {
     next_platform_thread_t * thread = next_platform_thread_create( NULL, test_thread_function, NULL );
     next_check( thread );
@@ -583,7 +581,7 @@ void test_platform_thread()
     next_check( threads_work );
 }
 
-void test_platform_mutex()
+void next_test_platform_mutex()
 {
     next_platform_mutex_t mutex;
     bool result = next_platform_mutex_create( &mutex );
@@ -597,7 +595,7 @@ void test_platform_mutex()
     next_platform_mutex_destroy( &mutex );
 }
 
-void test_value_tracker()
+void next_test_value_tracker()
 {
     // initial values without any samples added should be 0/0/0
     {
@@ -665,7 +663,7 @@ void test_value_tracker()
     }
 }
 
-void test_packet_filter()
+void next_test_packet_filter()
 {
     uint8_t output[NEXT_MAX_PACKET_BYTES];
     memset( output, 0, sizeof(output) );
@@ -695,7 +693,7 @@ void test_packet_filter()
     }
 }
 
-void test_basic_packet_filter()
+void next_test_basic_packet_filter()
 {
     uint8_t output[256];
     memset( output, 0, sizeof(output) );
@@ -718,7 +716,7 @@ void test_basic_packet_filter()
 
 #if NEXT_ADVANCED_PACKET_FILTER
 
-void test_advanced_packet_filter()
+void next_test_advanced_packet_filter()
 {
     uint8_t output[256];
     memset( output, 0, sizeof(output) );
@@ -748,7 +746,7 @@ void test_advanced_packet_filter()
 
 #endif // #if NEXT_ADVANCED_PACKET_FILTER
 
-void test_address_data_ipv4()
+void next_test_address_data_ipv4()
 {
     next_address_t address;
     next_address_parse( &address, "127.0.0.1:50000" );
@@ -761,7 +759,7 @@ void test_address_data_ipv4()
     next_check( address_data[3] == 1 );
 }
 
-void test_anonymize_address_ipv4()
+void next_test_anonymize_address_ipv4()
 {
     next_address_t address;
     next_address_parse( &address, "1.2.3.4:5" );
@@ -785,7 +783,7 @@ void test_anonymize_address_ipv4()
 
 #if NEXT_PLATFORM_HAS_IPV6
 
-void test_anonymize_address_ipv6()
+void next_test_anonymize_address_ipv6()
 {
     next_address_t address;
     next_address_parse( &address, "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:40000" );
@@ -817,7 +815,7 @@ void test_anonymize_address_ipv6()
 
 #endif // #if NEXT_PLATFORM_HAS_IPV6
 
-void test_packet_loss_tracker()
+void next_test_packet_loss_tracker()
 {
     next_packet_loss_tracker_t tracker;
     next_packet_loss_tracker_reset( &tracker );
@@ -872,7 +870,7 @@ void test_packet_loss_tracker()
     next_check( next_packet_loss_tracker_update( &tracker ) == 0 );
 }
 
-void test_out_of_order_tracker()
+void next_test_out_of_order_tracker()
 {
     next_out_of_order_tracker_t tracker;
     next_out_of_order_tracker_reset( &tracker );
@@ -916,7 +914,7 @@ void test_out_of_order_tracker()
     next_check( tracker.num_out_of_order_packets == 500 );
 }
 
-void test_jitter_tracker()
+void next_test_jitter_tracker()
 {
     next_jitter_tracker_t tracker;
     next_jitter_tracker_reset( &tracker );
@@ -1007,7 +1005,7 @@ static void context_check_free( void * context, void * p )
     next_default_free_function( context, p );;
 }
 
-void test_connect_token()
+void next_test_connect_token()
 {
     hydro_sign_keypair keypair;
     hydro_sign_keygen( &keypair );
@@ -1041,7 +1039,7 @@ void test_connect_token()
     next_check( memcmp( &input_token, &output_token, sizeof(next_connect_token_t) - sizeof(input_token.signature) ) == 0 );
 }
 
-void test_client_backend_token()
+void next_test_client_backend_token()
 {
     uint8_t key[hydro_secretbox_KEYBYTES];
     hydro_secretbox_keygen( key );
@@ -1071,9 +1069,9 @@ void test_client_backend_token()
 #define RUN_TEST( test_function )                                           \
     do                                                                      \
     {                                                                       \
-        next_printf( NEXT_LOG_LEVEL_NONE, "    " #test_function );          \
+        next_printf( NEXT_LOG_LEVEL_NONE, #test_function );                 \
         fflush( stdout );                                                   \
-        test_function();                                                    \
+        next_##test_function();                                             \
     }                                                                       \
     while (0)
 
@@ -1111,14 +1109,3 @@ void next_run_tests()
         RUN_TEST( test_client_backend_token );
     }
 }
-
-#else // #if NEXT_DEVELOPMENT
-
-#include <stdio.h>
-
-void next_run_tests()
-{
-    printf( "\n[tests are not included in this build]\n\n" );
-}
-
-#endif // #if NEXT_DEVELOPMENT

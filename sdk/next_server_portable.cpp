@@ -6,7 +6,6 @@
 #ifndef __linux__
 
 #include "next_server.h"
-#include "next_config.h"
 #include "next_constants.h"
 #include "next_platform.h"
 #include "next_packet_filter.h"
@@ -28,8 +27,7 @@ struct next_server_send_buffer_t
 struct next_server_receive_buffer_t
 {
     int current_packet;
-    int client_index[NEXT_SERVER_MAX_RECEIVE_PACKETS];
-    uint64_t sequence[NEXT_SERVER_MAX_RECEIVE_PACKETS];
+    next_address_t from[NEXT_SERVER_MAX_RECEIVE_PACKETS];
     uint8_t * packet_data[NEXT_SERVER_MAX_RECEIVE_PACKETS];
     size_t packet_bytes[NEXT_SERVER_MAX_RECEIVE_PACKETS];
     uint8_t data[NEXT_MAX_PACKET_BYTES*NEXT_SERVER_MAX_RECEIVE_PACKETS];
@@ -43,13 +41,8 @@ struct next_server_t
     next_address_t public_address;
     uint64_t server_id;
     uint64_t match_id;
-    void (*packet_received_callback)( next_server_t * server, void * context, int client_index, const uint8_t * packet_data, int packet_bytes );
 
-    bool client_connected[NEXT_MAX_CLIENTS];
-    bool client_direct[NEXT_MAX_CLIENTS];
-    next_address_t client_address[NEXT_MAX_CLIENTS];
-    double client_last_packet_receive_time[NEXT_MAX_CLIENTS];
-    std::atomic<uint64_t> client_send_sequence[NEXT_MAX_CLIENTS];
+    std::atomic<uint64_t> packet_id;
 
     next_platform_socket_t * socket;
     next_server_send_buffer_t send_buffer;
@@ -132,58 +125,6 @@ void next_server_destroy( next_server_t * server )
     next_clear_and_free( server->context, server, sizeof(next_server_t) );
 }
 
-void next_server_reset_client_data( next_server_t * server, int client_index )
-{
-    next_assert( client_index >= 0 );
-    next_assert( client_index < NEXT_MAX_CLIENTS );
-    server->client_connected[client_index] = false;
-    server->client_direct[client_index] = false;
-    memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
-    server->client_last_packet_receive_time[client_index] = 0.0;
-    server->client_send_sequence[client_index] = 0;
-}
-
-void next_server_client_timed_out( next_server_t * server, int client_index )
-{
-    next_assert( client_index >= 0 );
-    next_assert( client_index < NEXT_MAX_CLIENTS );
-    char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
-    next_info( "client %s timed out from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
-    next_server_reset_client_data( server, client_index );
-}
-
-void next_server_client_disconnected( next_server_t * server, int client_index )
-{
-    next_assert( client_index >= 0 );
-    next_assert( client_index < NEXT_MAX_CLIENTS );
-    char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
-    next_info( "client %s disconnected from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
-    next_server_reset_client_data( server, client_index );
-}
-
-void next_server_update_timeout( next_server_t * server )
-{
-    double current_time = next_platform_time();
-
-    for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
-    {
-        if ( server->client_connected[i] )
-        {
-            if ( server->client_direct[i] )
-            {
-                if ( server->client_last_packet_receive_time[i] + NEXT_DIRECT_TIMEOUT < current_time )
-                {
-                    next_server_client_timed_out( server, i );
-                }
-            }
-            else
-            {
-                // todo: next timeout
-            }
-        }
-    }
-}
-
 void next_server_update( next_server_t * server )
 {
     next_assert( server );
@@ -193,28 +134,6 @@ void next_server_update( next_server_t * server )
     {
         server->state = NEXT_SERVER_STOPPED;
     }
-
-    next_server_update_timeout( server );
-}
-
-bool next_server_client_connected( next_server_t * server, int client_index )
-{
-    next_assert( server );
-    next_assert( client_index >= 0 );
-    next_assert( client_index <= NEXT_MAX_CLIENTS );
-    return server->client_connected[client_index];
-}
-
-void next_server_disconnect_client( next_server_t * server, int client_index )
-{
-    next_assert( server );
-    next_assert( client_index >= 0 );
-    next_assert( client_index <= NEXT_MAX_CLIENTS );
-
-    if ( !server->client_connected[client_index] )
-        return;
-
-    next_server_client_disconnected( server, client_index );
 }
 
 void next_server_stop( next_server_t * server )
@@ -235,7 +154,7 @@ uint64_t next_server_id( next_server_t * server )
     return server->server_id;
 }
 
-uint8_t * next_server_start_packet_internal( struct next_server_t * server, next_address_t * to, uint8_t packet_type )
+uint8_t * next_server_start_packet_internal( struct next_server_t * server, const next_address_t * to, uint8_t packet_type, uint64_t * packet_id )
 {
     next_assert( server );
     next_assert( to );
@@ -253,52 +172,34 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, next
     server->send_buffer.packet_type[packet_index] = packet_type;
     server->send_buffer.packet_bytes[packet_index] = 0;
 
+    *packet_id = server->packet_id.fetch_add(1);
+
     return packet_data;
 }
 
-uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * out_sequence )
+uint8_t * next_server_start_packet( struct next_server_t * server, const next_address_t * to, uint64_t * packet_id )
 {
     next_assert( server );
-    next_assert( client_index >= 0 );
-    next_assert( client_index < NEXT_MAX_CLIENTS );
-    next_assert( out_sequence );
+    next_assert( to );
+    next_assert( to->type == NEXT_ADDRESS_IPV4 );
+    next_assert( packet_id );
 
-    if ( !server->client_connected[client_index] )
+    // direct packet
+
+    uint8_t * packet_data = next_server_start_packet_internal( server, to, NEXT_PACKET_DIRECT, packet_id );
+    if ( !packet_data )
         return NULL;
 
-    uint64_t sequence = server->client_send_sequence[client_index].fetch_add(1);
-
-    if ( server->client_direct[client_index] )
-    {
-        // direct packet
-
-        uint8_t * packet_data = next_server_start_packet_internal( server, &server->client_address[client_index], NEXT_PACKET_DIRECT );
-        if ( !packet_data )
-            return NULL;
-
-        uint64_t endian_sequence = sequence;
-        next_endian_fix( &endian_sequence );
-        memcpy( packet_data, (char*)&endian_sequence, 8 );
-
-        packet_data += 8;
-
-        *out_sequence = sequence;
-
-        return packet_data;
-    }
-    else
-    {
-        // todo: next packet
-
-        return NULL;
-    }
+    return packet_data;
 }
 
-void next_server_finish_packet( struct next_server_t * server, uint64_t sequence, uint8_t * packet_data, int packet_bytes )
+void next_server_finish_packet( struct next_server_t * server, uint64_t packet_id, uint8_t * packet_data, int packet_bytes )
 {
     next_assert( server );
     next_assert( packet_bytes >= 0 );
     next_assert( packet_bytes <= NEXT_MTU );
+
+    (void) packet_id;
 
     size_t offset = ( packet_data - server->send_buffer.data );
 
@@ -315,14 +216,11 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t sequence
     next_assert( packet_bytes > 0 );
     next_assert( packet_bytes <= NEXT_MTU );
 
-    server->send_buffer.packet_bytes[packet_index] = packet_bytes + NEXT_HEADER_BYTES + 8;
-
-    // todo
-    next_info( "send packet %" PRId64 " (%d bytes)", sequence, server->send_buffer.packet_bytes[packet_index] );
+    server->send_buffer.packet_bytes[packet_index] = packet_bytes + NEXT_HEADER_BYTES;
 
     // write the packet header
 
-    packet_data -= NEXT_HEADER_BYTES + 8;
+    packet_data -= NEXT_HEADER_BYTES;
 
     packet_data[0] = server->send_buffer.packet_type[packet_index];
 
@@ -342,9 +240,11 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t sequence
     next_generate_chonkle( b, magic, from_address_data, to_address_data, packet_bytes );
 }
 
-void next_server_abort_packet( struct next_server_t * server, uint64_t sequence, uint8_t * packet_data )
+void next_server_abort_packet( struct next_server_t * server, uint64_t packet_id, uint8_t * packet_data )
 {
     next_assert( server );
+
+    (void) packet_id;
 
     size_t offset = ( packet_data - server->send_buffer.data );
 
@@ -391,81 +291,27 @@ void next_server_process_packet_internal( next_server_t * server, next_address_t
 {
     const uint8_t packet_type = packet_data[0];
 
-    if ( packet_type == NEXT_PACKET_DISCONNECT && packet_bytes == sizeof(next_disconnect_packet_t) )
-    {
-        int client_index = -1;
-        for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
-        {
-            if ( next_address_equal( from, &server->client_address[i] ) )
-            {
-                client_index = i;
-                break;
-            }
-        }
+    // ...
 
-        if ( client_index == -1 )
-            return;
-
-        next_server_disconnect_client( server, client_index );
-    }
+    (void) packet_type;
 }
 
 void next_server_process_direct_packet( next_server_t * server, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {
-    if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
+    if ( packet_bytes < NEXT_HEADER_BYTES )
         return;
 
     if ( server->process_packets.num_packets == NEXT_SERVER_MAX_RECEIVE_PACKETS )
         return;
 
-    int client_index = -1;
-    int first_free_slot = -1;
-    for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
-    {
-        if ( first_free_slot == -1 && !server->client_connected[i] )
-        {
-            first_free_slot = i;
-        }
-        if ( next_address_equal( from, &server->client_address[i] ) )
-        {
-            client_index = i;
-            break;
-        }
-    }
-
-    if ( client_index == -1 )
-    {
-        if ( first_free_slot != -1 )
-        {
-            client_index = first_free_slot;
-            char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
-            next_info( "client %s connected in slot %d", next_address_to_string( from, buffer ) );
-            server->client_connected[client_index] = true;
-            server->client_direct[client_index] = true;
-            server->client_address[client_index] = *from;
-        }
-        else
-        {
-            // all client slots are full
-            return;
-        }
-    }
-
-    server->client_last_packet_receive_time[client_index] = next_platform_time();
-
     const int index = server->process_packets.num_packets++;
 
-    uint64_t sequence;
-    memcpy( (char*) &sequence, packet_data + NEXT_HEADER_BYTES, 8 );
-    next_endian_fix( &sequence );
-
-    packet_data += NEXT_HEADER_BYTES + 8;
-    packet_bytes -= NEXT_HEADER_BYTES + 8;
+    packet_data += NEXT_HEADER_BYTES;
+    packet_bytes -= NEXT_HEADER_BYTES;
 
     next_assert( packet_bytes >= 0 );
 
-    server->process_packets.client_index[index] = client_index;
-    server->process_packets.sequence[index] = sequence;
+    server->process_packets.from[index] = *from;
     server->process_packets.packet_data[index] = packet_data;
     server->process_packets.packet_bytes[index] = packet_bytes;
 }

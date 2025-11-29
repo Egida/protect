@@ -10,7 +10,7 @@
 
 #include "next.h"
 #include <memory.h>
-#include "next_config.h"
+#include "next_constants.h"
 #include "next_memory_checks.h"
 
 struct next_replay_protection_t

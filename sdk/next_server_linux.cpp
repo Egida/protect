@@ -6,7 +6,6 @@
 #ifdef __linux__
 
 #include "next_server.h"
-#include "next_config.h"
 #include "next_constants.h"
 #include "next_platform.h"
 #include "next_packet_filter.h"
@@ -35,8 +34,6 @@
 #include <memory.h>
 #include <stdio.h>
 #include <atomic>
-
-// #define MOCK_1000_CLIENTS 1
 
 struct next_server_xdp_send_buffer_t
 {
@@ -116,7 +113,6 @@ struct next_server_t
     next_address_t public_address;
     uint64_t server_id;
     uint64_t match_id;
-    void (*packet_received_callback)( next_server_t * server, void * context, int client_index, const uint8_t * packet_data, int packet_bytes );
 
     uint8_t server_ethernet_address[ETH_ALEN];
     uint8_t gateway_ethernet_address[ETH_ALEN];
@@ -132,13 +128,7 @@ struct next_server_t
     int state_map_fd;
     int socket_map_fd;
 
-    bool client_connected[NEXT_MAX_CLIENTS];
-    bool client_direct[NEXT_MAX_CLIENTS];
-    next_address_t client_address[NEXT_MAX_CLIENTS];
-    double client_last_packet_receive_time[NEXT_MAX_CLIENTS];
-    std::atomic<uint64_t> client_send_sequence[NEXT_MAX_CLIENTS];
-    uint32_t client_address_big_endian[NEXT_MAX_CLIENTS];
-    uint16_t client_port_big_endian[NEXT_MAX_CLIENTS];
+    std::atomic<uint64_t> packet_id;
 
     int num_queues;
     next_server_xdp_socket_t * socket;
@@ -191,71 +181,83 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
 {
     memset( mac_address, 0, 6 );
 
-    // first find the gateway IP address for the network interface via netstat
+    char mac_address_string[18];
+    memset( mac_address_string, 0, sizeof(mac_address_string) );
 
-    const char * gateway_ip_string = NULL;
-
-    FILE * file = popen( "netstat -rn", "r" );
-    char netstat_buffer[1024];
-    while ( fgets( netstat_buffer, sizeof(netstat_buffer), file ) != NULL )
+    const char * gateway_ethernet_address_env = getenv( "NEXT_GATEWAY_ETHERNET_ADDRESS" );
+    if ( gateway_ethernet_address_env )
     {
-        if ( strlen( netstat_buffer ) > 0 && strstr( netstat_buffer, "UG" ) && strstr( netstat_buffer, interface_name ) )
+        // let the user force the gateway ethernet address to use (useful for testing)
+
+        strncpy( mac_address_string, gateway_ethernet_address_env, 17 );
+        mac_address_string[17] = 0;
+    }
+    else
+    {
+        // first find the gateway IP address for the network interface via netstat
+
+        const char * gateway_ip_string = NULL;
+
+        FILE * file = popen( "netstat -rn", "r" );
+        char netstat_buffer[1024];
+        while ( fgets( netstat_buffer, sizeof(netstat_buffer), file ) != NULL )
         {
-            char * token = strtok( netstat_buffer, " " );
-            if ( token )
+            if ( strlen( netstat_buffer ) > 0 && strstr( netstat_buffer, "UG" ) && strstr( netstat_buffer, interface_name ) )
             {
-                token = strtok( NULL, " " );
+                char * token = strtok( netstat_buffer, " " );
                 if ( token )
                 {
-                    gateway_ip_string = token;
+                    token = strtok( NULL, " " );
+                    if ( token )
+                    {
+                        gateway_ip_string = token;
+                        break;
+                    }
+                }
+            }
+        }
+        pclose( file );
+
+        if ( !gateway_ip_string )
+        {
+            return false;
+        }
+
+        // parse the address and make sure it's a valid ipv4
+
+        next_address_t address;
+        if ( !next_address_parse( &address, gateway_ip_string ) || address.type != NEXT_ADDRESS_IPV4 )
+        {
+            return false;
+        }
+
+        // now find the ethernet address corresponding to the gateway IP address and interface name
+
+        bool found_mac_address = false;
+
+        file = popen( "ip neigh show", "r" );
+        char ip_buffer[1024];
+        while ( fgets( ip_buffer, sizeof(ip_buffer), file ) != NULL )
+        {
+            if ( strlen( ip_buffer ) > 0 && strstr( ip_buffer, gateway_ip_string ) && strstr( ip_buffer, interface_name ) )
+            {
+                char * p = strstr( ip_buffer, " lladdr " );
+                if ( p )
+                {
+                    p += 8;
+                    found_mac_address = true;
+                    strncpy( mac_address_string, p, 17 );
+                    mac_address_string[17] = 0;
                     break;
                 }
             }
         }
-    }
-    pclose( file );
+        pclose( file );
 
-    if ( !gateway_ip_string )
-    {
-        return false;
-    }
-
-    // parse the address and make sure it's a valid ipv4
-
-    next_address_t address;
-    if ( !next_address_parse( &address, gateway_ip_string ) || address.type != NEXT_ADDRESS_IPV4 )
-    {
-        return false;
-    }
-
-    // now find the ethernet address corresponding to the gateway IP address and interface name
-
-    bool found_mac_address = false;
-
-    char mac_address_string[18];
-
-    file = popen( "ip neigh show", "r" );
-    char ip_buffer[1024];
-    while ( fgets( ip_buffer, sizeof(ip_buffer), file ) != NULL )
-    {
-        if ( strlen( ip_buffer ) > 0 && strstr( ip_buffer, gateway_ip_string ) && strstr( ip_buffer, interface_name ) )
+        if ( !found_mac_address )
         {
-            char * p = strstr( ip_buffer, " lladdr " );
-            if ( p )
-            {
-                p += 8;
-                found_mac_address = true;
-                strncpy( mac_address_string, p, 17 );
-                mac_address_string[17] = 0;
-                break;
-            }
+            return false;
         }
-    }
-    pclose( file );
-
-    if ( !found_mac_address )
-    {
-        return false;
     }
 
     mac_address_string[2] = 0;
@@ -472,26 +474,12 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
 
     // look up the gateway ethernet address for the network interface
 
-#if !MOCK_1000_CLIENTS
-
     if ( !get_gateway_mac_address( interface_name, server->gateway_ethernet_address ) )
     {
         next_error( "server could not get gateway mac address" );
         next_server_destroy( server );
         return NULL;
     }
-
-#else // #if !MOCK_1000_CLIENTS
-
-    // hulk -> batman
-    server->gateway_ethernet_address[0] = 0xd0;
-    server->gateway_ethernet_address[1] = 0x81;
-    server->gateway_ethernet_address[2] = 0x7a;
-    server->gateway_ethernet_address[3] = 0xd8;
-    server->gateway_ethernet_address[4] = 0x3a;
-    server->gateway_ethernet_address[5] = 0xec;
-
-#endif // #if !MOCK_1000_CLIENTS
 
     next_info( "gateway ethernet address is %02x.%02x.%02x.%02x.%02x.%02x", 
         server->gateway_ethernet_address[0], 
@@ -811,23 +799,6 @@ next_server_t * next_server_create( void * context, const char * bind_address_st
         }
     }
 
-    // mock 1000 clients
-
-#if MOCK_1000_CLIENTS
-
-    for ( int i = 0; i < 1000; i++ )
-    {
-        server->client_connected[i] = true;
-        server->client_direct[i] = true;
-        // next_address_parse( &server->client_address[i], "64.34.88.117" );
-        next_address_parse( &server->client_address[i], "192.168.1.3" );
-        server->client_address[i].port = 30000 + i;
-        server->client_address_big_endian[i] = next_address_ipv4( &server->client_address[i] );
-        server->client_port_big_endian[i] = next_platform_htons( server->client_address[i].port );
-    }
-
-#endif // #if MOCK_1000_CLIENTS
-
     // the server has started successfully
 
     char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
@@ -904,95 +875,14 @@ void next_server_destroy( next_server_t * server )
     next_clear_and_free( server->context, server, sizeof(next_server_t) );
 }
 
-void next_server_reset_client_data( next_server_t * server, int client_index )
-{
-    next_assert( client_index >= 0 );
-    next_assert( client_index < NEXT_MAX_CLIENTS );
-    server->client_connected[client_index] = false;
-    server->client_direct[client_index] = false;
-    memset( &server->client_address[client_index], 0, sizeof(next_address_t) );
-    server->client_last_packet_receive_time[client_index] = 0.0;
-    server->client_send_sequence[client_index] = 0;
-    server->client_address_big_endian[client_index] = 0;
-    server->client_port_big_endian[client_index] = 0;
-}
-
-void next_server_client_timed_out( next_server_t * server, int client_index )
-{
-    next_assert( client_index >= 0 );
-    next_assert( client_index < NEXT_MAX_CLIENTS );
-    char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
-    next_info( "client %s timed out from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
-    next_server_reset_client_data( server, client_index );
-}
-
-void next_server_client_disconnected( next_server_t * server, int client_index )
-{
-    next_assert( client_index >= 0 );
-    next_assert( client_index < NEXT_MAX_CLIENTS );
-    char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
-    next_info( "client %s disconnected from slot %d", next_address_to_string( &server->client_address[client_index], buffer ), client_index );
-    next_server_reset_client_data( server, client_index );
-}
-
-void next_server_update_timeout( next_server_t * server )
-{
-    double current_time = next_platform_time();
-
-#if !MOCK_1000_CLIENTS
-
-    for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
-    {
-        if ( server->client_connected[i] )
-        {
-            if ( server->client_direct[i] )
-            {
-                if ( server->client_last_packet_receive_time[i] + NEXT_DIRECT_TIMEOUT < current_time )
-                {
-                    next_server_client_timed_out( server, i );
-                }
-            }
-            else
-            {
-                // todo: next timeout
-            }
-        }
-    }
-
-#endif // #if MOCK_1000_CLIENTS
-}
-
 void next_server_update( next_server_t * server )
 {
     next_assert( server );
 
-    // todo: mock stopping -> stopped transition
     if ( server->state == NEXT_SERVER_STOPPING )
     {
         server->state = NEXT_SERVER_STOPPED;
     }
-
-    next_server_update_timeout( server );
-}
-
-bool next_server_client_connected( next_server_t * server, int client_index )
-{
-    next_assert( server );
-    next_assert( client_index >= 0 );
-    next_assert( client_index <= NEXT_MAX_CLIENTS );
-    return server->client_connected[client_index];
-}
-
-void next_server_disconnect_client( next_server_t * server, int client_index )
-{
-    next_assert( server );
-    next_assert( client_index >= 0 );
-    next_assert( client_index <= NEXT_MAX_CLIENTS );
-
-    if ( !server->client_connected[client_index] )
-        return;
-
-    next_server_client_disconnected( server, client_index );
 }
 
 void next_server_stop( next_server_t * server )
@@ -1069,7 +959,7 @@ int generate_packet_header( void * data, uint8_t * server_ethernet_address, uint
     return sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr) + payload_bytes; 
 }
 
-uint8_t * next_server_start_packet_internal( struct next_server_t * server, int queue, next_address_t * to, uint8_t packet_type )
+uint8_t * next_server_start_packet_internal( struct next_server_t * server, int queue, const next_address_t * to, uint8_t packet_type )
 {
     next_server_xdp_socket_t * socket = &server->socket[queue];
 
@@ -1095,57 +985,34 @@ uint8_t * next_server_start_packet_internal( struct next_server_t * server, int 
     return packet_data;
 }
 
-uint8_t * next_server_start_packet( struct next_server_t * server, int client_index, uint64_t * out_sequence )
+uint8_t * next_server_start_packet( struct next_server_t * server, const next_address_t * to, uint64_t * packet_id )
 {
     next_assert( server );
-    next_assert( client_index >= 0 );
-    next_assert( client_index < NEXT_MAX_CLIENTS );
-    next_assert( out_sequence );
+    next_assert( to );
+    next_assert( packet_id );
 
-    if ( !server->client_connected[client_index] )
+    *packet_id = server->packet_id.fetch_add(1);
+
+    const int queue = *packet_id % server->num_queues;
+
+    // direct packet
+
+    uint8_t * packet_data = next_server_start_packet_internal( server, queue, to, NEXT_PACKET_DIRECT );
+    if ( !packet_data )
     {
         return NULL;
     }
 
-    uint64_t sequence = server->client_send_sequence[client_index].fetch_add(1);
-
-    int queue = sequence % server->num_queues;
-
-    if ( server->client_direct[client_index] )
-    {
-        // direct packet
-
-        uint8_t * packet_data = next_server_start_packet_internal( server, queue, &server->client_address[client_index], NEXT_PACKET_DIRECT );
-        if ( !packet_data )
-        {
-            return NULL;
-        }
-
-        uint64_t endian_sequence = sequence;
-        next_endian_fix( &endian_sequence );
-        memcpy( packet_data, (char*)&endian_sequence, 8 );
-
-        packet_data += 8;
-
-        *out_sequence = sequence;
-
-        return packet_data;
-    }
-    else
-    {
-        // todo: next packet
-
-        return NULL;
-    }
+    return packet_data;
 }
 
-void next_server_finish_packet( struct next_server_t * server, uint64_t sequence, uint8_t * packet_data, int packet_bytes )
+void next_server_finish_packet( struct next_server_t * server, uint64_t packet_id, uint8_t * packet_data, int packet_bytes )
 {
     next_assert( server );
     next_assert( packet_bytes >= 0 );
     next_assert( packet_bytes <= NEXT_MTU );
 
-    int queue = sequence % server->num_queues;
+    const int queue = packet_id % server->num_queues;
 
     next_server_xdp_socket_t * socket = &server->socket[queue];
 
@@ -1192,11 +1059,11 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t sequence
     next_generate_chonkle( b, magic, from_address_data, to_address_data, packet_bytes );
 }
 
-void next_server_abort_packet( struct next_server_t * server, uint64_t sequence, uint8_t * packet_data )
+void next_server_abort_packet( struct next_server_t * server, uint64_t packet_id, uint8_t * packet_data )
 {
     next_assert( server );
 
-    int queue = sequence % server->num_queues;
+    const int queue = packet_id % server->num_queues;
 
     next_server_xdp_socket_t * socket = &server->socket[queue];
 
@@ -1243,83 +1110,27 @@ void next_server_process_packet_internal( next_server_t * server, uint8_t * eth,
 {
     const uint8_t packet_type = packet_data[0];
 
-    if ( packet_type == NEXT_PACKET_DISCONNECT && packet_bytes == sizeof(next_disconnect_packet_t) )
-    {
-        int client_index = -1;
-        for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
-        {
-            if ( next_address_equal( from, &server->client_address[i] ) )
-            {
-                client_index = i;
-                break;
-            }
-        }
+    // ...
 
-        if ( client_index == -1 )
-            return;
-
-        next_server_disconnect_client( server, client_index );
-    }
+    (void) packet_type;
 }
 
 void next_server_process_direct_packet( next_server_t * server, uint8_t * eth, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {   
-    if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
+    if ( packet_bytes < NEXT_HEADER_BYTES )
         return;
 
     if ( server->process_packets.num_packets >= NEXT_XDP_RECV_QUEUE_SIZE )
         return;
 
-    int client_index = -1;
-    int first_free_slot = -1;
-    for ( int i = 0; i < NEXT_MAX_CLIENTS; i++ )
-    {
-        if ( first_free_slot == -1 && !server->client_connected[i] )
-        {
-            first_free_slot = i;
-        }
-        if ( next_address_equal( from, &server->client_address[i] ) )
-        {
-            client_index = i;
-            break;
-        }
-    }
-
-    if ( client_index == -1 )
-    {
-        if ( first_free_slot != -1 )
-        {
-            client_index = first_free_slot;
-            char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
-            next_info( "client %s connected in slot %d", next_address_to_string( from, buffer ) );
-            server->client_connected[client_index] = true;
-            server->client_direct[client_index] = true;
-            server->client_address[client_index] = *from;
-            server->client_address_big_endian[client_index] = next_address_ipv4( from );
-            server->client_port_big_endian[client_index] = next_platform_htons( from->port );
-        }
-        else
-        {
-            // all client slots are full
-            return;
-        }
-    }
-
-    server->client_last_packet_receive_time[client_index] = next_platform_time();
-
     const int index = server->process_packets.num_packets++;
 
-    uint64_t sequence;
-    memcpy( (char*) &sequence, packet_data + NEXT_HEADER_BYTES, 8 );
-    next_endian_fix( &sequence );
-
-    packet_data += NEXT_HEADER_BYTES + 8;
-    packet_bytes -= NEXT_HEADER_BYTES + 8;
+    packet_data += NEXT_HEADER_BYTES;
+    packet_bytes -= NEXT_HEADER_BYTES;
 
     next_assert( packet_bytes >= 0 );
 
-    server->process_packets.client_index[index] = client_index;
-    server->process_packets.sequence[index] = sequence;
+    server->process_packets.from[index] = *from;
     server->process_packets.packet_data[index] = packet_data;
     server->process_packets.packet_bytes[index] = packet_bytes;
 }

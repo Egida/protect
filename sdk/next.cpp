@@ -8,7 +8,6 @@
 #include "next_address.h"
 #include "next_base64.h"
 #include "next_hash.h"
-#include "next_config.h"
 #include "next_replay_protection.h"
 #include "next_header.h"
 #include "next_packet_filter.h"
@@ -373,9 +372,6 @@ bool next_init( void * context )
 {
     next_assert( next_global_context == NULL );
 
-    next_base64_decode_data( NEXT_SERVER_BACKEND_PUBLIC_KEY, next_server_backend_public_key, 32 );
-    next_base64_decode_data( NEXT_RELAY_BACKEND_PUBLIC_KEY, next_relay_backend_public_key, 32 );
-
     next_global_context = context;
 
     if ( !next_platform_init() )
@@ -413,10 +409,6 @@ void next_term()
 
     next_global_context = NULL;
 }
-
-#if NEXT_DEVELOPMENT
-bool next_packet_loss;
-#endif // #if NEXT_DEVELOPMENT
 
 // ---------------------------------------------------------------
 

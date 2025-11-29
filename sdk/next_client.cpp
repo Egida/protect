@@ -4,7 +4,6 @@
 */
 
 #include "next_client.h"
-#include "next_config.h"
 #include "next_constants.h"
 #include "next_platform.h"
 #include "next_packet_filter.h"
@@ -33,7 +32,6 @@ struct next_client_receive_buffer_t
     bool processing_packets;
     next_address_t from[NEXT_NUM_CLIENT_PACKETS];
     double receive_time[NEXT_NUM_CLIENT_PACKETS];
-    uint64_t sequence[NEXT_NUM_CLIENT_PACKETS];
     uint8_t * packet_data[NEXT_NUM_CLIENT_PACKETS];
     size_t packet_bytes[NEXT_NUM_CLIENT_PACKETS];
     uint8_t data[NEXT_MAX_PACKET_BYTES*NEXT_NUM_CLIENT_PACKETS];
@@ -63,8 +61,6 @@ struct next_client_t
     uint64_t session_id;
     uint64_t server_id;
 
-    uint64_t send_sequence;
-
     next_platform_socket_t * socket;
 
     next_platform_thread_t * thread;
@@ -73,7 +69,7 @@ struct next_client_t
 
     double last_packet_receive_time;
 
-    void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes, uint64_t sequence );
+    void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes );
 
     next_client_receive_buffer_t receive_buffer;
 };
@@ -100,7 +96,7 @@ void next_client_disconnected( next_client_t * client )
 
 static void next_client_thread_function( void * data );
 
-next_client_t * next_client_create( void * context, const char * connect_token_string, const uint8_t * buyer_public_key, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes, uint64_t sequence ) )
+next_client_t * next_client_create( void * context, const char * connect_token_string, const uint8_t * buyer_public_key, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) )
 {
     next_assert( connect_token_string );
     next_assert( buyer_public_key );
@@ -422,13 +418,10 @@ void next_client_process_packet( next_client_t * client, next_address_t * from, 
 
         if ( packet_type == NEXT_PACKET_DIRECT && next_address_equal( from, &client->direct_address ) )
         {
-            if ( packet_bytes > 18 + 8 )
+            if ( packet_bytes > 18 )
             {
-                uint64_t sequence;
-                memcpy( (uint8_t*) &sequence, packet_data + 18, 8 );
-                next_endian_fix( &sequence );
                 client->last_packet_receive_time = next_platform_time();
-                client->packet_received_callback( client, client->context, packet_data + 18 + 8, packet_bytes - ( 18 + 8 ), sequence );
+                client->packet_received_callback( client, client->context, packet_data + 18, packet_bytes - 18 );
             }
         }
         else if ( packet_type == NEXT_PACKET_CLIENT_BACKEND_REFRESH_TOKEN_RESPONSE && packet_bytes == sizeof(next_client_backend_refresh_token_response_packet_t) )
@@ -596,9 +589,8 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
     {
         next_direct_packet_t packet;
         packet.type = NEXT_PACKET_DIRECT;
-        packet.sequence = ++client->send_sequence;
         memcpy( packet.payload, packet_data, packet_bytes );
-        next_client_send_packet_internal( client, &client->direct_address, (uint8_t*) &packet, NEXT_HEADER_BYTES + 8 + packet_bytes );
+        next_client_send_packet_internal( client, &client->direct_address, (uint8_t*) &packet, NEXT_HEADER_BYTES + packet_bytes );
     }
     else
     {
@@ -610,18 +602,7 @@ void next_client_disconnect( next_client_t * client )
 {
     next_assert( client );
 
-    if ( client->direct )
-    {
-        // fire off 10 disconnect packets to server
-
-        for ( int i = 0; i < 10; i++ )
-        {
-            next_direct_packet_t packet;
-            packet.type = NEXT_PACKET_DISCONNECT;
-            next_client_send_packet_internal( client, &client->direct_address, (uint8_t*) &packet, NEXT_HEADER_BYTES );
-        }
-    }
-    else
+    if ( !client->direct )
     {
         // todo: next disconnect. this is a state machine and we stay in this state until we receive ack from the relays that we have closed the sessions, nad from the server, or timeout.
     }
@@ -685,17 +666,8 @@ void next_client_receive_packets( next_client_t * client )
 
         const int index = client->receive_buffer.current_packet;
 
-        if ( packet_type == NEXT_PACKET_DIRECT )
-        {
-            if ( packet_bytes < NEXT_HEADER_BYTES + 8 )
-                continue;
-
-            uint64_t sequence;
-            memcpy( (char*) &sequence, packet_data + NEXT_HEADER_BYTES, 8 );
-            next_endian_fix( &sequence );
-
-            client->receive_buffer.sequence[index] = sequence;
-        }
+        if ( packet_type == NEXT_PACKET_DIRECT && packet_bytes < NEXT_HEADER_BYTES )
+            continue;
 
         client->receive_buffer.from[index] = from;
         client->receive_buffer.receive_time[index] = receive_time;
