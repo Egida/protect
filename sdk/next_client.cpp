@@ -13,6 +13,7 @@
 #include "next_platform.h"
 
 #include <memory.h>
+#include <stdlib.h>
 #include <atomic>
 
 struct next_client_backend_init_data_t
