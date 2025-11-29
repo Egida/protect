@@ -406,25 +406,6 @@ private:
 
 // ---------------------------------------------------------------------------
 
-#ifdef __linux__
-
-static void pin_thread_to_cpu( int cpu ) 
-{
-    int num_cpus = sysconf( _SC_NPROCESSORS_ONLN );
-    next_assert( cpu >= 0 );
-    next_assert( cpu < num_cpus );
-
-    cpu_set_t cpuset;
-    CPU_ZERO( &cpuset );
-    CPU_SET( cpu, &cpuset );
-
-    pthread_t current_thread = pthread_self();    
-
-    pthread_setaffinity_np( current_thread, sizeof(cpu_set_t), &cpuset );
-}
-
-#endif // #ifdef __linux__
-
 struct send_packets_data_t
 {
     next_server_t * server;
@@ -464,6 +445,25 @@ void send_packets_thread( void * arg )
 
 #endif // #if LOAD_TEST
 
+#ifdef __linux__
+
+static void pin_thread_to_cpu( int cpu ) 
+{
+    int num_cpus = sysconf( _SC_NPROCESSORS_ONLN );
+    next_assert( cpu >= 0 );
+    next_assert( cpu < num_cpus );
+
+    cpu_set_t cpuset;
+    CPU_ZERO( &cpuset );
+    CPU_SET( cpu, &cpuset );
+
+    pthread_t current_thread = pthread_self();    
+
+    pthread_setaffinity_np( current_thread, sizeof(cpu_set_t), &cpuset );
+}
+
+#endif // #ifdef __linux__
+
 int main()
 {
     signal( SIGINT, interrupt_handler ); signal( SIGTERM, interrupt_handler );
@@ -484,7 +484,7 @@ int main()
         return 1;
     }
 
-    int num_queues = next_server_num_queues( server );
+    const int num_queues = next_server_num_queues( server );
 
 #ifdef __linux__
     pin_thread_to_cpu( num_queues * 2 );
