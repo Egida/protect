@@ -439,19 +439,20 @@ void send_packets_thread( void * arg )
     const int start_index = data->start_index;
     const int finish_index = data->finish_index;
 
+    next_address_t to;
+    next_address_parse( &to, "192.164.1.3" );
+
     for ( int i = start_index; i < finish_index; i++ )
     {
-        if ( next_server_client_connected( server, i ) )
+        for ( int j = 0; j < 10; j++ )
         {
-            for ( int j = 0; j < 10; j++ )
+            uint64_t packet_id;
+            to.port = 30000 + start_index + i;
+            uint8_t * packet_data = next_server_start_packet( server, &to, &packet_id );
+            if ( packet_data )
             {
-                uint64_t sequence;
-                uint8_t * packet_data = next_server_start_packet( server, i, &sequence );
-                if ( packet_data )
-                {
-                    memset( packet_data, 0, NEXT_MTU );
-                    next_server_finish_packet( server, sequence, packet_data, NEXT_MTU );
-                }
+                memset( packet_data, 0, NEXT_MTU );
+                next_server_finish_packet( server, packet_id, packet_data, NEXT_MTU );
             }
         }
     }
@@ -467,23 +468,25 @@ int main()
         return 1;        
     }
 
+    // todo: moving these into the server create would be convenient
+
     int num_queues = 2;
     const char * bind_address = "0.0.0.0:40000";
     const char * public_address = "127.0.0.1:40000";
     {
-        const char * num_queues_env = getenv( "SERVER_NUM_QUEUES" );
+        const char * num_queues_env = getenv( "NEXT_SERVER_NUM_QUEUES" );
         if ( num_queues_env )
         {
             num_queues = atoi( num_queues_env );
         }
 
-        const char * bind_address_env = getenv( "SERVER_BIND_ADDRESS" );
+        const char * bind_address_env = getenv( "NEXT_SERVER_BIND_ADDRESS" );
         if ( bind_address_env )
         {
             bind_address = bind_address_env;
         }
 
-        const char * public_address_env = getenv( "SERVER_PUBLIC_ADDRESS" );
+        const char * public_address_env = getenv( "NEXT_SERVER_PUBLIC_ADDRESS" );
         if ( public_address_env )
         {
             public_address = public_address_env;
@@ -522,10 +525,13 @@ int main()
 
         next_server_process_packets_t * packets = next_server_process_packets( server );
 
+        // todo
+        /*
         for ( int i = 0; i < packets->num_packets; i++ )
         {
             next_info( "server received packet %" PRId64 " from client %d (%d bytes)", packets->sequence[i], packets->client_index[i], packets->packet_bytes[i] );
         }
+        */
 
         next_server_update( server );
 

@@ -26,14 +26,15 @@ void interrupt_handler( int signal )
     (void) signal; quit = 1;
 }
 
-void packet_received_callback( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes, uint64_t sequence )
+void packet_received_callback( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes )
 {
     (void) client;
     (void) context;
     (void) packet_data;
     (void) packet_bytes;
 
-    next_info( "client received packet %" PRId64 " from server (%d bytes)", sequence, packet_bytes );
+    // todo
+    // next_info( "client received packet %" PRId64 " from server (%d bytes)", sequence, packet_bytes );
 }
 
 int main()
@@ -50,7 +51,7 @@ int main()
 
     const char * connect = "69.67.149.151:40000"; // space1
 
-    const char * connect_env = getenv( "CLIENT_CONNECT" );
+    const char * connect_env = getenv( "NEXT_CLIENT_CONNECT" );
     if ( connect_env )
     {
         connect = connect_env;
