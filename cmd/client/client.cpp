@@ -33,8 +33,7 @@ void packet_received_callback( next_client_t * client, void * context, const uin
     (void) packet_data;
     (void) packet_bytes;
 
-    // todo
-    // next_info( "client received packet %" PRId64 " from server (%d bytes)", sequence, packet_bytes );
+    next_info( "client received %d byte packet from server", packet_bytes );
 }
 
 int main()
@@ -50,12 +49,6 @@ int main()
 #if CLIENT_DIRECT
 
     const char * connect = "69.67.149.151:40000"; // space1
-
-    const char * connect_env = getenv( "NEXT_CLIENT_CONNECT" );
-    if ( connect_env )
-    {
-        connect = connect_env;
-    }
 
 #else // #if CLIENT_DIRECT
 

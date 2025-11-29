@@ -102,6 +102,12 @@ next_client_t * next_client_create( void * context, const char * connect_token_s
     next_assert( buyer_public_key );
     next_assert( packet_received_callback );
 
+    const char * connect_env = getenv( "NEXT_CLIENT_CONNECT" );
+    if ( connect_env )
+    {
+        connect_token_string = connect_env;
+    }
+
     next_connect_token_t connect_token;
     memset( &connect_token, 0, sizeof(connect_token) );
 

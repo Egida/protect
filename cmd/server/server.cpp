@@ -525,13 +525,11 @@ int main()
 
         next_server_process_packets_t * packets = next_server_process_packets( server );
 
-        // todo
-        /*
         for ( int i = 0; i < packets->num_packets; i++ )
         {
-            next_info( "server received packet %" PRId64 " from client %d (%d bytes)", packets->sequence[i], packets->client_index[i], packets->packet_bytes[i] );
+            char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
+            next_info( "server received %d byte packet from %s", packets->packet_bytes[i], next_address_to_string( &packets->from[i], buffer ) );
         }
-        */
 
         next_server_update( server );
 
