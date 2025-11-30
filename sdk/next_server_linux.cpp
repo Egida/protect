@@ -1048,11 +1048,11 @@ void next_server_finish_packet( struct next_server_t * server, uint64_t packet_i
     next_assert( packet_bytes > 0 );
     next_assert( packet_bytes <= NEXT_MTU );
 
-    send_buffer->packet_bytes[packet_index] = packet_bytes + NEXT_HEADER_BYTES + 8;
+    send_buffer->packet_bytes[packet_index] = packet_bytes + NEXT_HEADER_BYTES;
 
     // write the packet header
 
-    packet_data -= NEXT_HEADER_BYTES + 8;
+    packet_data -= NEXT_HEADER_BYTES;
 
     packet_data[0] = send_buffer->packet_type[packet_index];
 
