@@ -976,7 +976,7 @@ uint8_t * next_server_socket_start_packet_internal( struct next_server_socket_t 
 
     const int off_index = ( socket->send_counter_main_thread + 1 ) % 2;
 
-    next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[off_index];
+    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[off_index];
 
     int packet_index = send_buffer->num_packets.fetch_add(1);
 
@@ -1029,7 +1029,7 @@ void next_server_socket_finish_packet( struct next_server_socket_t * server_sock
 
     const int off_index = ( socket->send_counter_main_thread + 1 ) % 2;
 
-    next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[off_index];
+    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[off_index];
 
     size_t offset = ( packet_data - send_buffer->packet_data );
 
@@ -1080,7 +1080,7 @@ void next_server_socket_abort_packet( struct next_server_socket_t * server_socke
 
     const int off_index = ( socket->send_counter_main_thread + 1 ) % 2;
 
-    next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[off_index];
+    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[off_index];
 
     size_t offset = ( packet_data - send_buffer->packet_data );
 
@@ -1173,7 +1173,7 @@ static void xdp_send_thread_function( void * data )
 
         const int on_index = socket->send_counter_send_thread % 2;
 
-        next_server_xdp_send_buffer_t * send_buffer = &socket->send_buffer[on_index];
+        next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[on_index];
 
         // busy poll the xdp driver
 
@@ -1323,7 +1323,7 @@ static void xdp_receive_thread_function( void * data )
 
         const int on_index = socket->receive_counter_receive_thread % 2;
 
-        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[on_index];
+        next_server_socket_receive_buffer_t * receive_buffer = &socket->receive_buffer[on_index];
 
         uint32_t receive_index;
         
@@ -1408,7 +1408,7 @@ void next_server_socket_receive_packets( next_server_socket_t * server_socket )
 
         // now we can access the off receive buffer without contention with the receive thread
 
-        next_server_xdp_receive_buffer_t * receive_buffer = &socket->receive_buffer[off_index];
+        next_server_socket_receive_buffer_t * receive_buffer = &socket->receive_buffer[off_index];
 
         for ( int i = 0; i < receive_buffer->num_packets; i++ )
         {
