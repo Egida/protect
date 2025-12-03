@@ -17,21 +17,21 @@
 #ifdef __linux__
 
 #define NEXT_XDP_NUM_FRAMES                                         65536
-#define NEXT_XDP_FRAME_SIZE                                          ( 2048 * 4 )
-#define NEXT_XDP_SEND_QUEUE_SIZE                                     ( 4096 * 4 )
-#define NEXT_XDP_RECV_QUEUE_SIZE                                     ( 4096 * 4 )
+#define NEXT_XDP_FRAME_SIZE                                          2048
+#define NEXT_XDP_SEND_QUEUE_SIZE                             ( 4096 * 4 )
+#define NEXT_XDP_RECV_QUEUE_SIZE                             ( 4096 * 4 )
 #define NEXT_XDP_FILL_QUEUE_SIZE                                     2048
 #define NEXT_XDP_SEND_BATCH_SIZE                                       32
 
 #else // #ifdef __linux__
 
-#define NEXT_SERVER_MAX_SEND_PACKETS              ( NEXT_SEND_PACKETS_PER_CLIENT * NEXT_MAX_CLIENTS )
+#define NEXT_SERVER_SOCKET_MAX_SEND_PACKETS              ( NEXT_SEND_PACKETS_PER_CLIENT * NEXT_MAX_CLIENTS )
 
-#define NEXT_SERVER_MAX_RECEIVE_PACKETS        ( NEXT_RECEIVE_PACKETS_PER_CLIENT * NEXT_MAX_CLIENTS )
+#define NEXT_SERVER_SOCKET_MAX_RECEIVE_PACKETS        ( NEXT_RECEIVE_PACKETS_PER_CLIENT * NEXT_MAX_CLIENTS )
 
 #endif // #ifdef __linux__
 
-#define NEXT_SERVER_MAX_PROCESS_PACKETS        ( NEXT_RECEIVE_PACKETS_PER_CLIENT * NEXT_MAX_CLIENTS )
+#define NEXT_SERVER_SOCKET_MAX_PROCESS_PACKETS        ( NEXT_RECEIVE_PACKETS_PER_CLIENT * NEXT_MAX_CLIENTS )
 
 #define NEXT_NUM_CLIENT_PACKETS                                      1024
 

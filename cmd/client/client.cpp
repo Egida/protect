@@ -4,7 +4,7 @@
 */
 
 #include "next.h"
-#include "next_client.h"
+#include "next_client_socket.h"
 #include "next_base64.h"
 #include "next_connect_token.h"
 #include "next_hydrogen.h"
@@ -24,16 +24,6 @@ static volatile int quit;
 void interrupt_handler( int signal )
 {
     (void) signal; quit = 1;
-}
-
-void packet_received_callback( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes )
-{
-    (void) client;
-    (void) context;
-    (void) packet_data;
-    (void) packet_bytes;
-
-    next_info( "client received %d byte packet from server", packet_bytes );
 }
 
 int main()
@@ -78,10 +68,10 @@ int main()
 
 #endif // #if CLIENT_DIRECT
 
-    next_client_t * client = next_client_create( NULL, connect, buyer_public_key, packet_received_callback );
-    if ( !client )
+    next_client_socket_t * client_socket = next_client_socket_create( NULL, connect );
+    if ( !client_socket )
     {
-        next_error( "could not create client" );
+        next_error( "could not create client socket" );
         return 1;
     }
 
@@ -96,18 +86,25 @@ int main()
 
     while ( !quit )
     {
-        if ( next_client_state( client ) <= NEXT_CLIENT_DISCONNECTED )
+        if ( next_client_socket_state( client_socket ) <= NEXT_CLIENT_SOCKET_DISCONNECTED )
             break;
 
-        next_client_receive_packets( client );
+        next_client_socket_update( client_socket );
 
-        next_client_update( client );
+        while ( true )
+        {
+            uint8_t packet_data[NEXT_MTU];
+            int packet_bytes = next_client_socket_receive_packet( client_socket, packet_data );
+            if ( packet_bytes == 0 )
+                break;
+            next_info( "client received %d byte packet from server", packet_bytes );
+        }
 
-        next_client_send_packet( client, packet_data, (int) sizeof(packet_data) );
+        next_client_socket_send_packet( client_socket, packet_data, (int) sizeof(packet_data) );
 
         if ( !previous_connected )
         {
-            if ( next_client_state( client ) == NEXT_CLIENT_CONNECTED )
+            if ( next_client_socket_state( client_socket ) == NEXT_CLIENT_SOCKET_CONNECTED )
             {
                 next_info( "connected" );
 
@@ -120,16 +117,16 @@ int main()
 
     next_info( "disconnecting" );
 
-    next_client_disconnect( client );
+    next_client_socket_disconnect( client_socket );
 
-    while ( next_client_state( client ) > NEXT_CLIENT_DISCONNECTED )
+    while ( next_client_socket_state( client_socket ) > NEXT_CLIENT_SOCKET_DISCONNECTED )
     {
-        next_client_update( client );
+        next_client_socket_update( client_socket );
     }
 
     next_info( "disconnected" );
 
-    next_client_destroy( client );
+    next_client_socket_destroy( client_socket );
 
     next_term();
 

@@ -4,7 +4,7 @@
 */
 
 #include "next.h"
-#include "next_server.h"
+#include "next_server_socket.h"
 #include "next_platform.h"
 #include <stdio.h>
 #include <string.h>
@@ -477,14 +477,14 @@ int main()
     const char * bind_address = "0.0.0.0:40000";
     const char * public_address = "127.0.0.1:40000";
     
-    next_server_t * server = next_server_create( NULL, bind_address, public_address );
-    if ( !server )
+    next_server_socket_t * server_socket = next_server_socket_create( NULL, public_address );
+    if ( !server_socket )
     {
-        next_error( "could not create server" );
+        next_error( "could not create server socket" );
         return 1;
     }
 
-    const int num_queues = next_server_num_queues( server );
+    const int num_queues = next_server_socket_num_queues( server_socket );
 
 #ifdef __linux__
     pin_thread_to_cpu( num_queues * 2 );
@@ -514,9 +514,9 @@ int main()
 
     while ( !quit )
     {
-        next_server_receive_packets( server );
+        next_server_socket_receive_packets( server_socket );
 
-        next_server_process_packets_t * packets = next_server_process_packets( server );
+        next_server_socket_process_packets_t * packets = next_server_socket_process_packets( server_socket );
 
         for ( int i = 0; i < packets->num_packets; i++ )
         {
@@ -526,7 +526,7 @@ int main()
             last_client_packet_time = next_platform_time();
         }
 
-        next_server_update( server );
+        next_server_socket_update( server_socket );
 
 #if LOAD_TEST
 
@@ -540,11 +540,11 @@ int main()
         if ( client_address.type == NEXT_ADDRESS_IPV4 && last_client_packet_time + 10.0 >= next_platform_time() )
         {
             uint64_t packet_id;
-            uint8_t * packet_data = next_server_start_packet( server, &client_address, &packet_id );
+            uint8_t * packet_data = next_server_socket_start_packet( server_socket, &client_address, &packet_id );
             if ( packet_data )
             {
                 memset( packet_data, 0, NEXT_MTU );
-                next_server_finish_packet( server, packet_id, packet_data, NEXT_MTU );
+                next_server_socket_finish_packet( server_socket, packet_id, packet_data, NEXT_MTU );
             }
         }
 
@@ -552,23 +552,23 @@ int main()
 
         next_platform_sleep( 1.0 / 100.0 );
 
-        next_server_send_packets( server );
+        next_server_socket_send_packets( server_socket );
     }
 
     next_info( "stopping" );
 
-    next_server_stop( server );
+    next_server_socket_stop( server_socket );
 
-    while ( next_server_state( server ) != NEXT_SERVER_STOPPED )
+    while ( next_server_socket_state( server_socket ) != NEXT_SERVER_SOCKET_STOPPED )
     {
-        next_server_receive_packets( server );
-        next_server_update( server );
+        next_server_socket_receive_packets( server_socket );
+        next_server_socket_update( server_socket );
         next_platform_sleep( 1.0 / 100.0 );
     }
 
     next_info( "stopped" );
 
-    next_server_destroy( server );
+    next_server_socket_destroy( server_socket );
 
     next_term();
 
