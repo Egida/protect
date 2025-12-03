@@ -326,8 +326,6 @@ next_server_socket_t * next_server_socket_create( void * context, const char * p
     next_assert( num_queues >= 1 );
     next_assert( public_address_string );
     
-    (void) bind_address_string;  // not used
-
     const char * num_queues_env = getenv( "NEXT_SERVER_NUM_QUEUES" );
     if ( num_queues_env )
     {
@@ -355,11 +353,11 @@ next_server_socket_t * next_server_socket_create( void * context, const char * p
         return NULL;
     }
 
-    next_server_socket_t * server = (next_server_socket_t*) next_malloc( context, sizeof(next_server_socket_t) );
-    if ( !server )
+    next_server_socket_t * server_socket = (next_server_socket_t*) next_malloc( context, sizeof(next_server_socket_t) );
+    if ( !server_socket )
         return NULL;
 
-    memset( server, 0, sizeof( next_server_socket_t) );
+    memset( server_socket, 0, sizeof( next_server_socket_t) );
     
     server_socket->context = context;
 
