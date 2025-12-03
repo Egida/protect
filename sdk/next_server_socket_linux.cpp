@@ -816,7 +816,7 @@ next_server_socket_t * next_server_socket_create( void * context, const char * p
     next_info( "server started on %s [xdp]", next_address_to_string( &public_address, address_string ) );
 
     server_socket->public_address = public_address;
-    server_socket->state = NEXT_SERVER_RUNNING;
+    server_socket->state = NEXT_SERVER_SOCKET_RUNNING;
     server_socket->server_id = next_hash_string( public_address_string );
     server_socket->match_id = next_random_uint64();
 
@@ -829,7 +829,7 @@ next_server_socket_t * next_server_socket_create( void * context, const char * p
 void next_server_socket_destroy( next_server_socket_t * server )
 {
     next_assert( server_socket );
-    next_assert( server_socket->state == NEXT_SERVER_STOPPED );        // IMPORTANT: Please stop the server and wait until state is NEXT_SERVER_STOPPED before destroying it
+    next_assert( server_socket->state == NEXT_SERVER_SOCKET_STOPPED );        // IMPORTANT: Please stop the server and wait until state is NEXT_SERVER_STOPPED before destroying it
 
     if ( server_socket->program != NULL )
     {
@@ -890,16 +890,16 @@ void next_server_socket_update( next_server_socket_t * server )
 {
     next_assert( server_socket );
 
-    if ( server_socket->state == NEXT_SERVER_STOPPING )
+    if ( server_socket->state == NEXT_SERVER_SOCKET_STOPPING )
     {
-        server_socket->state = NEXT_SERVER_STOPPED;
+        server_socket->state = NEXT_SERVER_SOCKET_STOPPED;
     }
 }
 
 void next_server_socket_stop( next_server_socket_t * server )
 {
     next_assert( server_socket );
-    server_socket->state = NEXT_SERVER_STOPPING;
+    server_socket->state = NEXT_SERVER_SOCKET_STOPPING;
 }
 
 int next_server_socket_state( next_server_socket_t * server )
