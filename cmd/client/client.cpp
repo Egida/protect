@@ -28,7 +28,7 @@ void interrupt_handler( int signal )
 
 static inline int generate_packet( uint8_t * packet_data, int max_size )
 {
-    const int packet_bytes = 1 + rand() % ( max_size - 1 );
+    const int packet_bytes = 100; // + rand() % ( max_size - 1 );
     packet_data[0] = (uint8_t) ( packet_bytes % 256 );
     const int start = packet_bytes % 256;
     for ( int i = 0; i < packet_bytes; i++ )
@@ -44,7 +44,11 @@ static inline bool verify_packet( uint8_t * packet_data, int packet_bytes )
     for ( int i = 0; i < packet_bytes; i++ )
     {
         if ( packet_data[1+i] != (uint8_t) ( ( start + i ) % 256 ) )
+        {
+            // todo
+            printf( "failed at index %d\n", i );
             return false;
+        }
     }
     return true;
 }
@@ -119,7 +123,7 @@ int main()
                 break;
 
             next_info( "client received %d byte packet from server", packet_bytes );
-            
+
             if ( !verify_packet( packet_data, packet_bytes ) )
             {
                 next_error( "packet did not verify" );
