@@ -40,9 +40,9 @@
 
 #define NEXT_MAX_CLIENTS                                       1000
 
-#define NEXT_MTU                                               1200
+#define NEXT_MTU                                               1450
 
-#define NEXT_MAX_PACKET_BYTES                                  1384
+#define NEXT_MAX_PACKET_BYTES                     ( 1500 - 8 - 20 )
 
 #define NEXT_LOG_LEVEL_NONE                                       0
 #define NEXT_LOG_LEVEL_ERROR                                      1

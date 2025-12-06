@@ -135,13 +135,12 @@ struct next_direct_packet_t
 {
     uint8_t type;
     uint8_t prefix[17];
-    uint64_t sequence;
     uint8_t payload[NEXT_MTU];
 };
 
 inline void next_endian_fix( next_direct_packet_t * packet )
 {
-    next_endian_fix( &packet->sequence );
+    // ...
 }
 
 // --------------------------------------------------------------------------------------------------

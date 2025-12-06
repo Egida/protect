@@ -378,6 +378,7 @@ void next_server_socket_receive_packets( next_server_socket_t * server_socket )
 struct next_server_socket_process_packets_t * next_server_socket_process_packets( struct next_server_socket_t * server_socket )
 {
     next_assert( server_socket );
+
     return &server_socket->process_packets;
 }
 

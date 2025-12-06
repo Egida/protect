@@ -81,22 +81,22 @@ struct next_client_socket_t
     next_client_socket_receive_buffer_t receive_buffer[2];
 };
 
-void next_client_socket_init_timed_out( next_client_socket_t * client )
+void next_client_socket_init_timed_out( next_client_socket_t * client_socket )
 {
     next_warn( "client init timed out" );
 }
 
-void next_client_socket_connection_timed_out( next_client_socket_t * client )
+void next_client_socket_connection_timed_out( next_client_socket_t * client_socket )
 {
     next_warn( "client connection timed out" );
 }
 
-void next_client_socket_connected( next_client_socket_t * client )
+void next_client_socket_connected( next_client_socket_t * client_socket )
 {
     next_info( "client connected" );
 }
 
-void next_client_socket_disconnected( next_client_socket_t * client )
+void next_client_socket_disconnected( next_client_socket_t * client_socket )
 {
     next_info( "client disconnected" );
 }
@@ -160,18 +160,18 @@ next_client_socket_t * next_client_socket_create( void * context, const char * c
 #endif // #if 0
     }
 
-    next_client_socket_t * client = (next_client_socket_t*) next_malloc( context, sizeof(next_client_socket_t) );
-    if ( !client )
+    next_client_socket_t * client_socket = (next_client_socket_t*) next_malloc( context, sizeof(next_client_socket_t) );
+    if ( !client_socket )
     {
         next_error( "could not allocate client" );
         return NULL;
     }
 
-    memset( (char*) client, 0, sizeof(next_client_socket_t) );
+    memset( (char*) client_socket, 0, sizeof(next_client_socket_t) );
     
     const uint64_t current_time = next_platform_time();
 
-    client->context = context;
+    client_socket->context = context;
 
     next_address_t bind_address;
     memset( &bind_address, 0, sizeof(bind_address) );
@@ -196,77 +196,77 @@ next_client_socket_t * next_client_socket_create( void * context, const char * c
         }
     }
 
-    client->socket = next_platform_socket_create( client->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, NEXT_SOCKET_SEND_BUFFER_SIZE, NEXT_SOCKET_RECEIVE_BUFFER_SIZE );
-    if ( client->socket == NULL )
+    client_socket->socket = next_platform_socket_create( client_socket->context, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0.0f, NEXT_SOCKET_SEND_BUFFER_SIZE, NEXT_SOCKET_RECEIVE_BUFFER_SIZE );
+    if ( client_socket->socket == NULL )
     {
         next_error( "client could not create socket" );
-        next_client_socket_destroy( client );
+        next_client_socket_destroy( client_socket );
         return NULL;
     }
 
     char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
     next_info( "client bound to %s", next_address_to_string( &bind_address, address_string ) );
 
-    client->bound_port = bind_address.port;
+    client_socket->bound_port = bind_address.port;
 
     if ( direct )
     {
-        client->direct = true;
-        client->direct_address = direct_address;
-        client->state = NEXT_CLIENT_SOCKET_CONNECTED;
-        client->last_packet_receive_time = current_time;
-        next_client_socket_connected( client );
+        client_socket->direct = true;
+        client_socket->direct_address = direct_address;
+        client_socket->state = NEXT_CLIENT_SOCKET_CONNECTED;
+        client_socket->last_packet_receive_time = current_time;
+        next_client_socket_connected( client_socket );
     }
     else
     {
-        client->connect_token = connect_token;
-        client->state = NEXT_CLIENT_SOCKET_INITIALIZING;
-        client->init_start_time = current_time;
-        client->last_refresh_backend_token_time = current_time;
-        client->refresh_backend_token_request_id = next_random_uint64();
+        client_socket->connect_token = connect_token;
+        client_socket->state = NEXT_CLIENT_SOCKET_INITIALIZING;
+        client_socket->init_start_time = current_time;
+        client_socket->last_refresh_backend_token_time = current_time;
+        client_socket->refresh_backend_token_request_id = next_random_uint64();
     }
 
-    if ( !next_platform_mutex_create( &client->mutex ) )
+    if ( !next_platform_mutex_create( &client_socket->mutex ) )
     {
         next_error( "client could not create mutex" );
-        next_client_socket_destroy( client );
+        next_client_socket_destroy( client_socket );
         return NULL;
     }
 
-    client->thread = next_platform_thread_create( NULL, next_client_socket_thread_function, client );
-    if ( !client->thread )
+    client_socket->thread = next_platform_thread_create( NULL, next_client_socket_thread_function, client_socket );
+    if ( !client_socket->thread )
     {
         next_error( "client could not create thread" );
-        next_client_socket_destroy( client );
+        next_client_socket_destroy( client_socket );
         return NULL;
     }
 
-    return client;    
+    return client_socket;
 }
 
-void next_client_socket_destroy( next_client_socket_t * client )
+void next_client_socket_destroy( next_client_socket_t * client_socket )
 {
     // IMPORTANT: Please call disconnect and wait for the client to disconnect before destroying the client
-    next_assert( client->state == NEXT_CLIENT_SOCKET_DISCONNECTED );
+    next_assert( client_socket->state == NEXT_CLIENT_SOCKET_DISCONNECTED );
 
-    if ( client->thread )
+    if ( client_socket->thread )
     {
-        client->quit = true;
-        next_platform_thread_join( client->thread );
-        next_platform_thread_destroy( client->thread );
+        client_socket->quit = true;
+        next_platform_thread_join( client_socket->thread );
+        next_platform_thread_destroy( client_socket->thread );
     }
 
-    if ( client->socket )
+    if ( client_socket->socket )
     {
-        next_platform_socket_destroy( client->socket );
+        next_platform_socket_destroy( client_socket->socket );
     }
 
-    next_platform_mutex_destroy( &client->mutex );
+    next_platform_mutex_destroy( &client_socket->mutex );
 
-    next_clear_and_free( client->context, client, sizeof(next_client_socket_t) );
+    next_clear_and_free( client_socket->context, client_socket, sizeof(next_client_socket_t) );
 }
 
-void next_client_socket_send_packet_internal( next_client_socket_t * client, next_address_t * to_address, uint8_t * packet_data, int packet_bytes )
+void next_client_socket_send_packet_internal( next_client_socket_t * client_socket, next_address_t * to_address, uint8_t * packet_data, int packet_bytes )
 {
     uint8_t to_address_data[32];
     next_address_data( to_address, to_address_data );
@@ -274,7 +274,7 @@ void next_client_socket_send_packet_internal( next_client_socket_t * client, nex
     next_address_t from_address;
     memset( &from_address, 0, sizeof(from_address) );
     from_address.type = NEXT_ADDRESS_IPV4;
-    memcpy( from_address.data.ipv4, (uint8_t*) &client->connect_token.client_public_address, 4 );
+    memcpy( from_address.data.ipv4, (uint8_t*) &client_socket->connect_token.client_public_address, 4 );
 
     uint8_t from_address_data[32];
     next_address_data( &from_address, from_address_data );
@@ -288,26 +288,26 @@ void next_client_socket_send_packet_internal( next_client_socket_t * client, nex
     next_generate_pittle( a, from_address_data, to_address_data, packet_bytes );
     next_generate_chonkle( b, magic, from_address_data, to_address_data, packet_bytes );
 
-    next_platform_socket_send_packet( client->socket, to_address, packet_data, packet_bytes );
+    next_platform_socket_send_packet( client_socket->socket, to_address, packet_data, packet_bytes );
 }
 
-void next_client_socket_update_direct( next_client_socket_t * client )
+void next_client_socket_update_direct( next_client_socket_t * client_socket )
 {
-    if ( !client->direct )
+    if ( !client_socket->direct )
         return;
 
-    if ( client->state != NEXT_CLIENT_SOCKET_INITIALIZING )
+    if ( client_socket->state != NEXT_CLIENT_SOCKET_INITIALIZING )
         return;
 }
 
-void next_client_socket_update_timeout( next_client_socket_t * client )
+void next_client_socket_update_timeout( next_client_socket_t * client_socket )
 {
-    if ( client->direct )
+    if ( client_socket->direct )
     {
-        if ( client->last_packet_receive_time + NEXT_DIRECT_TIMEOUT < next_platform_time() )
+        if ( client_socket->last_packet_receive_time + NEXT_DIRECT_TIMEOUT < next_platform_time() )
         {
-            client->state = NEXT_CLIENT_SOCKET_CONNECTION_TIMED_OUT;
-            next_client_socket_connection_timed_out( client );
+            client_socket->state = NEXT_CLIENT_SOCKET_CONNECTION_TIMED_OUT;
+            next_client_socket_connection_timed_out( client_socket );
             return;
         }
     }
@@ -317,66 +317,66 @@ void next_client_socket_update_timeout( next_client_socket_t * client )
     }
 }
 
-void next_client_socket_update_initialize( next_client_socket_t * client )
+void next_client_socket_update_initialize( next_client_socket_t * client_socket )
 {
     /*
         Our strategy is to ping n client backends and accept the first backend that we init with and receive n pongs from
         This biases us towards selecting the client backend with the lowest latency lowest packet loss for the client
     */
 
-    if ( client->direct )
+    if ( client_socket->direct )
         return;
 
-    if ( client->state != NEXT_CLIENT_SOCKET_INITIALIZING )
+    if ( client_socket->state != NEXT_CLIENT_SOCKET_INITIALIZING )
         return;
 
     double current_time = next_platform_time();
 
-    if ( client->init_start_time + client->connect_token.max_connect_seconds < current_time )
+    if ( client_socket->init_start_time + client_socket->connect_token.max_connect_seconds < current_time )
     {
-        client->state = NEXT_CLIENT_SOCKET_INIT_TIMED_OUT;
-        next_client_socket_init_timed_out( client );
+        client_socket->state = NEXT_CLIENT_SOCKET_INIT_TIMED_OUT;
+        next_client_socket_init_timed_out( client_socket );
         return;
     }
 
     next_address_t from;
-    next_address_load_ipv4( &from, client->connect_token.client_public_address, 0 );
+    next_address_load_ipv4( &from, client_socket->connect_token.client_public_address, 0 );
 
     for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
     {
-        if ( client->connect_token.backend_addresses[i] == 0 )
+        if ( client_socket->connect_token.backend_addresses[i] == 0 )
         {
             continue;
         }
 
-        if ( client->backend_init_data[i].next_update_time == 0.0 )
+        if ( client_socket->backend_init_data[i].next_update_time == 0.0 )
         {
-            client->backend_init_data[i].next_update_time = current_time + next_random_float() * ( 1.0 / client->connect_token.pings_per_second );
-            client->backend_init_data[i].request_id = next_random_uint64();
+            client_socket->backend_init_data[i].next_update_time = current_time + next_random_float() * ( 1.0 / client_socket->connect_token.pings_per_second );
+            client_socket->backend_init_data[i].request_id = next_random_uint64();
             continue;
         }
 
-        if ( client->backend_init_data[i].next_update_time > current_time )
+        if ( client_socket->backend_init_data[i].next_update_time > current_time )
         {
             continue;
         }
         
-        client->backend_init_data[i].next_update_time += ( 1.0 / client->connect_token.pings_per_second );            
+        client_socket->backend_init_data[i].next_update_time += ( 1.0 / client_socket->connect_token.pings_per_second );            
 
         next_address_t to;
-        next_address_load_ipv4( &to, client->connect_token.backend_addresses[i], client->connect_token.backend_ports[i] );
+        next_address_load_ipv4( &to, client_socket->connect_token.backend_addresses[i], client_socket->connect_token.backend_ports[i] );
 
-        if ( !client->backend_init_data[i].initialized )
+        if ( !client_socket->backend_init_data[i].initialized )
         {
             next_client_backend_init_request_packet_t packet;
             packet.type = NEXT_PACKET_CLIENT_BACKEND_INIT_REQUEST;
             packet.sdk_version_major = NEXT_VERSION_MAJOR_INT;
             packet.sdk_version_major = NEXT_VERSION_MINOR_INT;
             packet.sdk_version_major = NEXT_VERSION_PATCH_INT;
-            packet.connect_token = client->connect_token;
-            packet.request_id = client->backend_init_data[i].request_id;
+            packet.connect_token = client_socket->connect_token;
+            packet.request_id = client_socket->backend_init_data[i].request_id;
             next_endian_fix( &packet );
-            next_client_socket_send_packet_internal( client, &to, (uint8_t*) &packet, sizeof(next_client_backend_init_request_packet_t) );
+            next_client_socket_send_packet_internal( client_socket, &to, (uint8_t*) &packet, sizeof(next_client_backend_init_request_packet_t) );
         }
         else
         {
@@ -387,16 +387,16 @@ void next_client_socket_update_initialize( next_client_socket_t * client )
             packet.sdk_version_major = NEXT_VERSION_MAJOR_INT;
             packet.sdk_version_major = NEXT_VERSION_MINOR_INT;
             packet.sdk_version_major = NEXT_VERSION_PATCH_INT;
-            packet.request_id = client->backend_init_data[i].request_id;
-            packet.ping_sequence = client->backend_init_data[i].ping_sequence++;
-            packet.backend_token = client->backend_init_data[i].backend_token;
+            packet.request_id = client_socket->backend_init_data[i].request_id;
+            packet.ping_sequence = client_socket->backend_init_data[i].ping_sequence++;
+            packet.backend_token = client_socket->backend_init_data[i].backend_token;
             next_endian_fix( &packet );
-            next_client_socket_send_packet_internal( client, &to, (uint8_t*) &packet, sizeof(next_client_backend_ping_packet_t) );
+            next_client_socket_send_packet_internal( client_socket, &to, (uint8_t*) &packet, sizeof(next_client_backend_ping_packet_t) );
         }
     }
 }
 
-void next_client_socket_process_packet( next_client_socket_t * client, next_address_t * from, uint8_t * packet_data, int packet_bytes )
+void next_client_socket_process_packet( next_client_socket_t * client_socket, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {
     // we only support ipv4 at the moment
 
@@ -424,21 +424,21 @@ void next_client_socket_process_packet( next_client_socket_t * client, next_addr
 
     const uint8_t packet_type = packet_data[0];
 
-    if ( client->state == NEXT_CLIENT_SOCKET_CONNECTED )
+    if ( client_socket->state == NEXT_CLIENT_SOCKET_CONNECTED )
     {
         // common case: client is connected
 
-        if ( packet_type == NEXT_PACKET_DIRECT && next_address_equal( from, &client->direct_address ) && packet_bytes > NEXT_HEADER_BYTES )
+        if ( packet_type == NEXT_PACKET_DIRECT && next_address_equal( from, &client_socket->direct_address ) && packet_bytes > NEXT_HEADER_BYTES )
         {
-            client->last_packet_receive_time = next_platform_time();
+            client_socket->last_packet_receive_time = next_platform_time();
 
-            const int index = client->receive_packets.num_packets;
+            const int index = client_socket->receive_packets.num_packets;
 
             if ( index < NEXT_NUM_CLIENT_PACKETS )
             {
-                client->receive_packets.packet_data[index] = packet_data + NEXT_HEADER_BYTES;
-                client->receive_packets.packet_bytes[index] = packet_bytes - NEXT_HEADER_BYTES;
-                client->receive_packets.num_packets++;
+                client_socket->receive_packets.packet_data[index] = packet_data + NEXT_HEADER_BYTES;
+                client_socket->receive_packets.packet_bytes[index] = packet_bytes - NEXT_HEADER_BYTES;
+                client_socket->receive_packets.num_packets++;
             }
         }
         // todo: address check on selected client backend address?
@@ -446,17 +446,17 @@ void next_client_socket_process_packet( next_client_socket_t * client, next_addr
         {
             const next_client_backend_refresh_token_response_packet_t * packet = (const next_client_backend_refresh_token_response_packet_t*) packet_data;
 
-            if ( packet->request_id != client->refresh_backend_token_request_id )
+            if ( packet->request_id != client_socket->refresh_backend_token_request_id )
                 return;
 
             next_info( "client refreshed backend token" );
 
-            client->backend_token = packet->backend_token;
-            client->last_refresh_backend_token_time = next_platform_time();
-            client->refresh_backend_token_request_id = next_random_uint64();
+            client_socket->backend_token = packet->backend_token;
+            client_socket->last_refresh_backend_token_time = next_platform_time();
+            client_socket->refresh_backend_token_request_id = next_random_uint64();
         }
     }
-    else if ( client->state == NEXT_CLIENT_SOCKET_INITIALIZING && !client->direct )
+    else if ( client_socket->state == NEXT_CLIENT_SOCKET_INITIALIZING && !client_socket->direct )
     {
         // client is initializing with client backend
 
@@ -471,18 +471,18 @@ void next_client_socket_process_packet( next_client_socket_t * client, next_addr
 
             for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
             {
-                if ( client->connect_token.backend_addresses[i] != from_ipv4 || client->connect_token.backend_ports[i] != from_port )
+                if ( client_socket->connect_token.backend_addresses[i] != from_ipv4 || client_socket->connect_token.backend_ports[i] != from_port )
                     continue;
 
-                if ( client->backend_init_data[i].initialized )
+                if ( client_socket->backend_init_data[i].initialized )
                     break;
 
-                if ( client->backend_init_data[i].request_id != packet->request_id )
+                if ( client_socket->backend_init_data[i].request_id != packet->request_id )
                     break;
 
-                client->backend_init_data[i].initialized = true;
-                client->backend_init_data[i].next_update_time = next_platform_time();
-                client->backend_init_data[i].backend_token = packet->backend_token;
+                client_socket->backend_init_data[i].initialized = true;
+                client_socket->backend_init_data[i].next_update_time = next_platform_time();
+                client_socket->backend_init_data[i].backend_token = packet->backend_token;
 
                 next_info( "initialized with client backend %d", i );
 
@@ -497,30 +497,30 @@ void next_client_socket_process_packet( next_client_socket_t * client, next_addr
 
             for ( int i = 0; i < NEXT_MAX_CONNECT_TOKEN_BACKENDS; i++ )
             {
-                if ( client->connect_token.backend_addresses[i] != from_ipv4 || client->connect_token.backend_ports[i] != from_port )
+                if ( client_socket->connect_token.backend_addresses[i] != from_ipv4 || client_socket->connect_token.backend_ports[i] != from_port )
                     continue;
 
-                if ( !client->backend_init_data[i].initialized )
+                if ( !client_socket->backend_init_data[i].initialized )
                     break;
 
-                if ( client->backend_init_data[i].request_id != packet->request_id )
+                if ( client_socket->backend_init_data[i].request_id != packet->request_id )
                     break;
 
-                if ( packet->ping_sequence < client->backend_init_data[i].pong_sequence )
+                if ( packet->ping_sequence < client_socket->backend_init_data[i].pong_sequence )
                     break;
 
                 next_info( "received pong from client backend %d", i );
 
-                client->backend_init_data[i].pong_sequence = packet->ping_sequence + 1;
-                client->backend_init_data[i].num_pongs_received++;
+                client_socket->backend_init_data[i].pong_sequence = packet->ping_sequence + 1;
+                client_socket->backend_init_data[i].num_pongs_received++;
 
-                if ( client->backend_init_data[i].num_pongs_received++ > client->connect_token.pongs_before_select )
+                if ( client_socket->backend_init_data[i].num_pongs_received++ > client_socket->connect_token.pongs_before_select )
                 {
                     // todo: we're not really connected at this point, we should transition to pinging relays
 
-                    client->state = NEXT_CLIENT_SOCKET_CONNECTED;
-                    client->client_backend_address = *from;
-                    client->backend_token = client->backend_init_data[i].backend_token;
+                    client_socket->state = NEXT_CLIENT_SOCKET_CONNECTED;
+                    client_socket->client_backend_address = *from;
+                    client_socket->backend_token = client_socket->backend_init_data[i].backend_token;
 
                     next_info( "selected client backend %d", i );
                 }
@@ -531,20 +531,20 @@ void next_client_socket_process_packet( next_client_socket_t * client, next_addr
     }
 }
 
-void next_client_socket_update_refresh_backend_token( next_client_socket_t * client )
+void next_client_socket_update_refresh_backend_token( next_client_socket_t * client_socket )
 {
-    if ( client->direct )
+    if ( client_socket->direct )
         return;
 
-    if ( client->state <= NEXT_CLIENT_SOCKET_INITIALIZING )
+    if ( client_socket->state <= NEXT_CLIENT_SOCKET_INITIALIZING )
         return;
 
     const uint64_t current_time = next_platform_time();
 
-    if ( client->last_refresh_backend_token_time + client->connect_token.backend_token_refresh_seconds > current_time )
+    if ( client_socket->last_refresh_backend_token_time + client_socket->connect_token.backend_token_refresh_seconds > current_time )
         return;
 
-    if ( client->last_request_backend_token_refresh_time + 1.0 > current_time )
+    if ( client_socket->last_request_backend_token_refresh_time + 1.0 > current_time )
         return;
 
     next_info( "request refresh backend token" );
@@ -554,74 +554,74 @@ void next_client_socket_update_refresh_backend_token( next_client_socket_t * cli
     packet.sdk_version_major = NEXT_VERSION_MAJOR_INT;
     packet.sdk_version_major = NEXT_VERSION_MINOR_INT;
     packet.sdk_version_major = NEXT_VERSION_PATCH_INT;
-    packet.request_id = client->refresh_backend_token_request_id;
-    packet.backend_token = client->backend_token;
+    packet.request_id = client_socket->refresh_backend_token_request_id;
+    packet.backend_token = client_socket->backend_token;
     next_endian_fix( &packet );
-    next_client_socket_send_packet_internal( client, &client->client_backend_address, (uint8_t*) &packet, sizeof(next_client_backend_refresh_token_request_packet_t) );
+    next_client_socket_send_packet_internal( client_socket, &client_socket->client_backend_address, (uint8_t*) &packet, sizeof(next_client_backend_refresh_token_request_packet_t) );
 
-    client->last_request_backend_token_refresh_time = current_time;
+    client_socket->last_request_backend_token_refresh_time = current_time;
 }
 
-void next_client_socket_update_receive_packets( next_client_socket_t * client )
+void next_client_socket_update_receive_packets( next_client_socket_t * client_socket )
 {
-    next_platform_mutex_acquire( &client->mutex );
-    client->receive_buffer_index++;
-    client->receive_buffer_index &= 1;
-    const int off_index = client->receive_buffer_index ? 0 : 1;
-    client->receive_buffer[off_index].num_packets = 0;
-    next_platform_mutex_release( &client->mutex );
+    next_platform_mutex_acquire( &client_socket->mutex );
+    client_socket->receive_buffer_index++;
+    client_socket->receive_buffer_index &= 1;
+    const int off_index = client_socket->receive_buffer_index ? 0 : 1;
+    client_socket->receive_buffer[off_index].num_packets = 0;
+    next_platform_mutex_release( &client_socket->mutex );
 }
 
-void next_client_socket_update_process_packets( next_client_socket_t * client )
+void next_client_socket_update_process_packets( next_client_socket_t * client_socket )
 {
-    next_client_socket_receive_buffer_t * receive_buffer = &client->receive_buffer[client->receive_buffer_index];
+    next_client_socket_receive_buffer_t * receive_buffer = &client_socket->receive_buffer[client_socket->receive_buffer_index];
 
-    client->receive_packets.num_packets = 0;
-    client->receive_packets.receive_index = 0;
+    client_socket->receive_packets.num_packets = 0;
+    client_socket->receive_packets.receive_index = 0;
 
     const int num_packets = receive_buffer->num_packets;
 
     for ( int i = 0; i < num_packets; i++ )
     {
-        next_client_socket_process_packet( client, &receive_buffer->from[i], receive_buffer->packet_data[i], receive_buffer->packet_bytes[i] );
+        next_client_socket_process_packet( client_socket, &receive_buffer->from[i], receive_buffer->packet_data[i], receive_buffer->packet_bytes[i] );
     }
 
     receive_buffer->num_packets = 0;
 }
 
-void next_client_socket_update( next_client_socket_t * client )
+void next_client_socket_update( next_client_socket_t * client_socket )
 {
-    next_assert( client );
+    next_assert( client_socket );
 
-    next_client_socket_update_receive_packets( client );
+    next_client_socket_update_receive_packets( client_socket );
 
-    next_client_socket_update_process_packets( client );
+    next_client_socket_update_process_packets( client_socket );
 
-    next_client_socket_update_direct( client );
+    next_client_socket_update_direct( client_socket );
 
-    next_client_socket_update_initialize( client );
+    next_client_socket_update_initialize( client_socket );
 
-    next_client_socket_update_refresh_backend_token( client );
+    next_client_socket_update_refresh_backend_token( client_socket );
 
-    next_client_socket_update_timeout( client );
+    next_client_socket_update_timeout( client_socket );
 }
 
-void next_client_socket_send_packet( next_client_socket_t * client, const uint8_t * packet_data, int packet_bytes )
+void next_client_socket_send_packet( next_client_socket_t * client_socket, const uint8_t * packet_data, int packet_bytes )
 {
-    next_assert( client );
+    next_assert( client_socket );
     next_assert( packet_data );
     next_assert( packet_bytes > 0 );
     next_assert( packet_bytes <= NEXT_MTU );
 
-    if ( client->state != NEXT_CLIENT_SOCKET_CONNECTED )
+    if ( client_socket->state != NEXT_CLIENT_SOCKET_CONNECTED )
         return;
 
-    if ( client->direct )
+    if ( client_socket->direct )
     {
         next_direct_packet_t packet;
         packet.type = NEXT_PACKET_DIRECT;
         memcpy( packet.payload, packet_data, packet_bytes );
-        next_client_socket_send_packet_internal( client, &client->direct_address, (uint8_t*) &packet, NEXT_HEADER_BYTES + packet_bytes );
+        next_client_socket_send_packet_internal( client_socket, &client_socket->direct_address, (uint8_t*) &packet, NEXT_HEADER_BYTES + packet_bytes );
     }
     else
     {
@@ -652,55 +652,58 @@ int next_client_socket_receive_packet( next_client_socket_t * client_socket, uin
     return packet_bytes;
 }
 
-void next_client_socket_disconnect( next_client_socket_t * client )
+void next_client_socket_disconnect( next_client_socket_t * client_socket )
 {
-    next_assert( client );
+    // todo
+    next_info( "next_client_socket_disconnect" );
 
-    if ( !client->direct )
+    next_assert( client_socket );
+
+    if ( !client_socket->direct )
     {
         // todo: next disconnect. this is a state machine and we stay in this state until we receive ack from the relays that we have closed the sessions.
     }
 
-    client->state = NEXT_CLIENT_SOCKET_DISCONNECTED;
+    client_socket->state = NEXT_CLIENT_SOCKET_DISCONNECTED;
 
-    next_client_socket_disconnected( client );
+    next_client_socket_disconnected( client_socket );
 }
 
-int next_client_socket_state( next_client_socket_t * client )
+int next_client_socket_state( next_client_socket_t * client_socket )
 {
-    next_assert( client );
-    return client->state;
+    next_assert( client_socket );
+    return client_socket->state;
 }
 
-uint64_t next_client_socket_session_id( next_client_socket_t * client )
+uint64_t next_client_socket_session_id( next_client_socket_t * client_socket )
 {
-    next_assert( client );
-    return client->session_id;
+    next_assert( client_socket );
+    return client_socket->session_id;
 }
 
-uint64_t next_client_socket_server_id( next_client_socket_t * client )
+uint64_t next_client_socket_server_id( next_client_socket_t * client_socket )
 {
-    next_assert( client );
-    return client->server_id;
+    next_assert( client_socket );
+    return client_socket->server_id;
 }
 
-void next_client_socket_receive_packets( next_client_socket_t * client )
+void next_client_socket_receive_packets( next_client_socket_t * client_socket )
 {
-    next_assert( client );
+    next_assert( client_socket );
 
-    next_platform_mutex_acquire( &client->mutex );
-    next_client_socket_receive_buffer_t * receive_buffer = &client->receive_buffer[client->receive_buffer_index ? 0 : 1];
-    next_platform_mutex_release( &client->mutex );
+    next_platform_mutex_acquire( &client_socket->mutex );
+    next_client_socket_receive_buffer_t * receive_buffer = &client_socket->receive_buffer[client_socket->receive_buffer_index ? 0 : 1];
+    next_platform_mutex_release( &client_socket->mutex );
 
     while ( 1 )
     {
         if ( receive_buffer->num_packets >= NEXT_NUM_CLIENT_PACKETS )
             break;
 
-        uint8_t * packet_data = client->receive_buffer->data + receive_buffer->num_packets * NEXT_MAX_PACKET_BYTES;
+        uint8_t * packet_data = client_socket->receive_buffer->data + receive_buffer->num_packets * NEXT_MAX_PACKET_BYTES;
 
         struct next_address_t from;
-        int packet_bytes = next_platform_socket_receive_packet( client->socket, &from, packet_data, NEXT_MAX_PACKET_BYTES );
+        int packet_bytes = next_platform_socket_receive_packet( client_socket->socket, &from, packet_data, NEXT_MAX_PACKET_BYTES );
         if ( packet_bytes == 0 )
             break;
 
@@ -724,11 +727,11 @@ void next_client_socket_receive_packets( next_client_socket_t * client )
 
 static void next_client_socket_thread_function( void * data )
 {
-    next_client_socket_t * client = (next_client_socket_t*) data;
+    next_client_socket_t * client_socket = (next_client_socket_t*) data;
 
-    while ( !client->quit )
+    while ( !client_socket->quit )
     {
-        next_client_socket_receive_packets( client );
+        next_client_socket_receive_packets( client_socket );
 
         next_platform_sleep( 0.001 );       // IMPORTANT: ~1ms resolution for pings
     }

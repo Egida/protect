@@ -83,7 +83,7 @@ static int log_quiet = 0;
 
 void next_quiet( bool flag )
 {
-    log_quiet = flag;
+   log_quiet = flag;
 }
 
 static int log_level = NEXT_LOG_LEVEL_INFO;

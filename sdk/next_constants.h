@@ -35,7 +35,7 @@
 
 #define NEXT_NUM_CLIENT_PACKETS                                      1024
 
-#define NEXT_DIRECT_TIMEOUT                                           5.0
+#define NEXT_DIRECT_TIMEOUT                                          30.0
 
 #define NEXT_REPLAY_PROTECTION_BUFFER_SIZE                           1024
 
