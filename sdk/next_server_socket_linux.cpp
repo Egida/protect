@@ -1289,7 +1289,7 @@ static void xdp_send_thread_function( void * data )
                 xsk_ring_prod__submit( &socket->send_queue, batch_packets );
 
                 // todo
-                printf( "sent batch of %d packets\n" );
+                printf( "sent batch of %d packets\n", batch_packets );
 
                 // advance our send index past sent packets
 
