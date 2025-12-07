@@ -716,6 +716,9 @@ void next_client_socket_receive_packets( next_client_socket_t * client_socket )
         if ( packet_bytes == 0 )
             break;
 
+        // todo
+        printf( "*** wire packet %d bytes ***\n", packet_bytes );
+
         double receive_time = next_platform_time();
 
         const uint8_t packet_type = packet_data[0];
