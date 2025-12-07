@@ -30,8 +30,6 @@
 #include <atomic>
 #include <signal.h>
 
-// todo: we do need to run this on start: sudo xdp-loader unload -a
-
 const char * source_address_string = "192.168.1.4:40000"; // "69.67.149.151:40000";
 
 uint32_t destination_address_big_endian = 0xC0 | ( 0xA8 << 8 ) | ( 0x01 << 16 ) | ( 0x03 << 24 ); // 192.168.1.3

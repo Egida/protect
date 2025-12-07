@@ -655,9 +655,6 @@ int next_client_socket_receive_packet( next_client_socket_t * client_socket, uin
 
 void next_client_socket_disconnect( next_client_socket_t * client_socket )
 {
-    // todo
-    next_info( "next_client_socket_disconnect" );
-
     next_assert( client_socket );
 
     if ( !client_socket->direct )
