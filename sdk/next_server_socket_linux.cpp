@@ -1372,9 +1372,12 @@ void xdp_receive_thread_function( void * data )
 
             xsk_ring_cons__release( &socket->receive_queue, num_packets );
 
-            // let the driver do some work...
+            // busy poll the receive queue
 
-            poll( fds, 1, 0 );
+            if ( xsk_ring_prod__needs_wakeup( &socket->receive_queue ) )
+            {
+                sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
+            }
 
             // return processed packets to fill queue
 
