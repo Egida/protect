@@ -26,13 +26,21 @@ DONE
 
 	Simplest approach to fixing the fill queue stall seems to work. Added a fatal error in case non-zero fail to reserve can happen.
 
-TODO
-
 	OK I'm pretty confident I know what's going on. The same frame pointer is being used for multiple packets, thus, when the packets all have the same size, it does send a stream of them, but when teh packets have different sizes, they rarely get through.
 
 	This explains both why the random size packets (mostly) fail, and why it fails similarly when mulitple addresses are added to the mix, again, these packet data is re-used so the packets get all messed up.
 
 	Solution: Verify this is the case by printing out the pointer for the packet data for each packet sent.
+
+	Alternatively, something is messed up with the descriptor causing this to be all jacked up. TBD.
+
+TODO
+
+	OK. It's really simple. The send frame allocator is written and read from multiple threads, but it's not protected by a mutex.
+
+	Thus the frames are getting trashed between the two threads...
+
+	Should be able to verify this is the case by putting a simple mutex around the frame allocator.
 
 	-------------------------------
 
