@@ -1384,14 +1384,15 @@ void xdp_receive_thread_function( void * data )
                 }
 
                 if ( num_reserved == num_packets )
+                {
+                    xsk_ring_prod__submit( &socket->fill_queue, num_reserved );
                     break;
+                }
 
                 poll( fds, 1, 0 );
 
                 printf( "pump\n" );
             }
-            
-            xsk_ring_prod__submit( &socket->fill_queue, num_reserved );
         }
     }
 }
