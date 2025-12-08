@@ -58,8 +58,6 @@ DONE
 
 	Yes. Confirmed.	
 
-TODO
-	
 	Verify multiple clients work fine...
 
 	But after a while, it wraps around, and then it starts fucking up again.
@@ -71,3 +69,8 @@ TODO
 	It's working fine now, but it's possible that the trigger was trying to connect from the same ethernet address.
 
 	Try disabling the memset 0 and see if the weird hitchy shit comes back by itself.
+
+TODO
+
+	OK so the mystery is solved. Something is writing bad data to the header, and this is causing re-use of the same buffer to explode.
+	
