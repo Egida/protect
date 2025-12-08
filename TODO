@@ -18,7 +18,74 @@ DONE
 
 	There is no problem with packets not being completed. I don't think the AF_XDP send loop or receive loop are at fault here. Nothing is backing up.
 
+	I am able to send a significant number of packets from 10+ clients, 1000 packets per-second each to the server and it handles them fine.
+
+	The only thing is that occasionally we see this: could not reserve packets in fill queue (0)
+
+	It would be good to solve this problem, so at least we can be confident that the receive packet side is solid.
+
 TODO
+
+	Fix "could not reserve packets in fill queue".
+
+	Make it generic, so I can handle if it returns a non-zero I can reserve only x/y.
+
+	To do this I think I need a safety array of frames that couldn't be returned.
+
+	Keep adding to them, and again, if they are only partially finished, then we can memmove them.
+
+	This seems to be rare so this should be no problem.
+
+	Define this struct and see if this approach can work...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	-------------------------------
 
 	Things I can investigate:
 

@@ -1270,7 +1270,7 @@ void xdp_send_thread_function( void * data )
                     next_assert( frame != INVALID_FRAME );
                     if ( frame == INVALID_FRAME )
                     {
-                        next_error( "fatal error. this cannot happen unless you have too few frames. please adjust NEXT_XDP_NUM_FRAMES to the next highest power of two!" );
+                        next_error( "ran out of frames" );
                         exit(1);
                     }
 
@@ -1323,12 +1323,7 @@ void xdp_receive_thread_function( void * data )
     {
         // keep network driver active
 
-        int poll_result = poll( fds, 1, 0 );
-        if ( poll_result < 0 ) 
-        {
-            next_error( "poll error on socket receive queue %d (%d)", socket->queue, poll_result );
-            break;
-        }
+        poll( fds, 1, 0 );
 
         // receive packets
 
@@ -1376,6 +1371,10 @@ void xdp_receive_thread_function( void * data )
             }
 
             xsk_ring_cons__release( &socket->receive_queue, num_packets );
+
+            // let the driver do some work...
+
+            poll( fds, 1, 0 );
 
             // return processed packets to fill queue
 
