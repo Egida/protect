@@ -88,7 +88,6 @@ struct next_server_xdp_socket_t
     uint32_t num_free_receive_frames;
     uint64_t receive_frames[NEXT_XDP_NUM_FRAMES/2];
     next_platform_thread_t * receive_thread;
-    next_platform_mutex_t receive_mutex;
     std::atomic<uint64_t> receive_counter_main_thread;
     std::atomic<uint64_t> receive_counter_receive_thread;
     struct next_server_socket_receive_buffer_t receive_buffer[2];
@@ -103,7 +102,6 @@ struct next_server_xdp_socket_t
     uint32_t server_address_big_endian;
     uint16_t server_port_big_endian;
     next_platform_thread_t * send_thread;
-    next_platform_mutex_t send_mutex;
     std::atomic<uint64_t> send_counter_main_thread;
     std::atomic<uint64_t> send_counter_send_thread;
     struct next_server_socket_send_buffer_t send_buffer[2];
@@ -721,15 +719,6 @@ next_server_socket_t * next_server_socket_create( void * context, const char * p
         socket->server_port_big_endian = server_socket->server_port_big_endian;
     }
 
-    // create mutex for send threads
-
-    if ( !next_platform_mutex_create( &socket->send_mutex ) )
-    {
-        next_error( "server could not create send mutex" );
-        next_server_socket_destroy( server_socket );
-        return NULL;
-    }
-
     // setup send threads
 
     for ( int queue = 0; queue < num_queues; queue++ )
@@ -869,7 +858,6 @@ void next_server_socket_destroy( next_server_socket_t * server_socket )
             socket->send_quit = true;
             next_platform_thread_join( socket->send_thread );
             next_platform_thread_destroy( socket->send_thread );
-            next_platform_mutex_destroy( &socket->send_mutex );
         }
 
         // stop receive thread
@@ -1213,9 +1201,7 @@ void xdp_send_thread_function( void * data )
             for ( int i = 0; i < num_completed; i++ )
             {
                 uint64_t frame = *xsk_ring_cons__comp_addr( &socket->complete_queue, complete_index + i );
-                next_platform_mutex_acquire( &socket->send_mutex );
                 free_send_frame( socket, frame );
-                next_platform_mutex_release( &socket->send_mutex );
             }
 
             // todo
@@ -1280,9 +1266,7 @@ void xdp_send_thread_function( void * data )
 
                     struct xdp_desc * desc = xsk_ring_prod__tx_desc( &socket->send_queue, send_queue_index + j );
 
-                    next_platform_mutex_acquire( &socket->send_mutex );
                     int frame = alloc_send_frame( socket );
-                    next_platform_mutex_release( &socket->send_mutex );
 
                     // todo
                     printf( "--> %x [%d]\n", frame, send_queue_index + j );
