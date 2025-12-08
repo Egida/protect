@@ -13,6 +13,7 @@
 
 #include <memory.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <atomic>
 
 struct next_server_socket_send_buffer_t
