@@ -287,7 +287,7 @@ static uint64_t alloc_send_frame( next_server_xdp_socket_t * socket )
     // todo: hack test
     uint64_t frame = socket->send_frames[socket->send_frame_index];
     socket->send_frame_index++;
-    socket->send_frame_index &= NEXT_XDP_NUM_FRAMES / 2;
+    socket->send_frame_index %= NEXT_XDP_NUM_FRAMES / 2;
     return frame;
     /*
     uint64_t frame = INVALID_FRAME;
