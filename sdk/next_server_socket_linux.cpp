@@ -3,7 +3,7 @@
     Licensed under the Network Next Source Available License 2.0
 */
 
-#ifdef __linux__
+#ifdef NEXT_XDP
 
 #include "next_server_socket.h"
 #include "next_constants.h"
@@ -1448,8 +1448,8 @@ int next_server_socket_num_queues( struct next_server_socket_t * server_socket )
     return server_socket->num_queues;
 }
 
-#else // #ifdef __linux__
+#else // #ifdef NEXT_XDP
 
 int next_server_socket_linux_cpp_dummy = 0;
 
-#endif // #ifdef __linux__
+#endif // #ifdef NEXT_XDP
