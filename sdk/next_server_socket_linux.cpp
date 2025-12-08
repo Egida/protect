@@ -1187,29 +1187,6 @@ void xdp_send_thread_function( void * data )
             sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
         }
 
-        // mark any completed send packet frames as free to be reused
-
-        while ( true )
-        {
-            uint32_t complete_index;
-
-            unsigned int num_completed = xsk_ring_cons__peek( &socket->complete_queue, XSK_RING_CONS__DEFAULT_NUM_DESCS, &complete_index );
-
-            if ( num_completed == 0 )
-                break;
-
-            for ( int i = 0; i < num_completed; i++ )
-            {
-                uint64_t frame = *xsk_ring_cons__comp_addr( &socket->complete_queue, complete_index + i );
-                free_send_frame( socket, frame );
-            }
-
-            // todo
-            // printf( "completed %d packets on queue %d\n", num_completed, socket->queue );
-
-            xsk_ring_cons__release( &socket->complete_queue, num_completed );
-        }
-
         // count how many packets we have to send in the send buffer
 
         if ( send_buffer->num_packets > NEXT_XDP_SEND_QUEUE_SIZE )
@@ -1308,6 +1285,29 @@ void xdp_send_thread_function( void * data )
                 send_buffer->packet_start_index = send_packet_index[batch_packets-1] + 1;
             }
         }            
+
+        // mark any completed send packet frames as free to be reused
+
+        while ( true )
+        {
+            uint32_t complete_index;
+
+            unsigned int num_completed = xsk_ring_cons__peek( &socket->complete_queue, XSK_RING_CONS__DEFAULT_NUM_DESCS, &complete_index );
+
+            if ( num_completed == 0 )
+                break;
+
+            for ( int i = 0; i < num_completed; i++ )
+            {
+                uint64_t frame = *xsk_ring_cons__comp_addr( &socket->complete_queue, complete_index + i );
+                free_send_frame( socket, frame );
+            }
+
+            // todo
+            // printf( "completed %d packets on queue %d\n", num_completed, socket->queue );
+
+            xsk_ring_cons__release( &socket->complete_queue, num_completed );
+        }
     }
 }
 
