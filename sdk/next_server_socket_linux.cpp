@@ -991,11 +991,12 @@ int generate_packet_header( void * data, uint8_t * server_ethernet_address, uint
     ip->frag_off = __constant_htons( 0x4000 );
     ip->ttl      = 64;
     ip->protocol = IPPROTO_UDP;
+    ip->check    = 0; // IMPORTANT: Must clear for checksum calculation (!!!)
     ip->saddr    = server_address_big_endian;
     ip->daddr    = client_address_big_endian;
 
-    // IMPORTANT: clear before calculating checksum
-    ip->check    = 0;
+    // calculate ip checksum
+
     ip->check    = ipv4_checksum( ip, sizeof( struct iphdr ) );
 
     // generate udp header
