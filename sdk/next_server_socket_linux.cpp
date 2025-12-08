@@ -741,7 +741,8 @@ next_server_socket_t * next_server_socket_create( void * context, const char * p
             socket->send_frames[j] = j * NEXT_XDP_FRAME_SIZE;
         }
 
-        socket->num_free_send_frames = NEXT_XDP_NUM_FRAMES / 2;
+        // todo
+        // socket->num_free_send_frames = NEXT_XDP_NUM_FRAMES / 2;
 
         // start send thread for queue
 
