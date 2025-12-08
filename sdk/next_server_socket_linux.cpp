@@ -1372,26 +1372,23 @@ void xdp_receive_thread_function( void * data )
 
             xsk_ring_cons__release( &socket->receive_queue, num_packets );
 
-            // busy poll the receive queue
-
-            if ( xsk_ring_prod__needs_wakeup( &socket->fill_queue ) )
-            {
-                sendto( xsk_socket__fd( socket->xsk ), NULL, 0, MSG_DONTWAIT, NULL, 0 );
-            }
-
             // return processed packets to fill queue
 
-            uint32_t fill_index;
-            int num_reserved = xsk_ring_prod__reserve( &socket->fill_queue, num_packets, &fill_index );
-            for ( int i = 0; i < num_reserved; i++ )
+            while ( true )
             {
-                *xsk_ring_prod__fill_addr( &socket->fill_queue, fill_index + i ) = frame[i];
-            }
+                uint32_t fill_index;
+                int num_reserved = xsk_ring_prod__reserve( &socket->fill_queue, num_packets, &fill_index );
+                for ( int i = 0; i < num_reserved; i++ )
+                {
+                    *xsk_ring_prod__fill_addr( &socket->fill_queue, fill_index + i ) = frame[i];
+                }
 
-            if ( num_reserved != num_packets )
-            {
-                next_error( "could not reserve packets in fill queue (%d)", num_reserved );
-                exit(1);
+                if ( num_reserved == num_packets )
+                    break;
+
+                poll( fds, 1, 0 );
+
+                printf( "pump\n" );
             }
             
             xsk_ring_prod__submit( &socket->fill_queue, num_reserved );
