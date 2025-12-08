@@ -1,0 +1,31 @@
+DONE
+
+	When I packets all the same size it works, even if the size is something odd like 99.
+
+	When I send varying packet sizes only a few get through and then it stops.
+
+	I'm not really sure what is causing this? It seems very strange.
+
+	Clue. It *also* breaks in a similar way when sending to multiple client IPs.
+
+	It breaks the same way even if the client is on a linux server, so it's not something wrong with my ISP connection or the Mac dropping packets in some way.
+
+	The NIC definitely thinks it has transferred the packets out and isn't triggering any errors, so it could be something wrong with how the packet is constructed that gets it dropped on the internet.
+
+	But I can't understand how it would only break in this particular way?
+
+	Disabling zero copy on the XDP driver makes no difference. If it was a driver issues, this probably would have fixed it.
+
+	There is no problem with packets not being completed. I don't think the AF_XDP send loop or receive loop are at fault here. Nothing is backing up.
+
+TODO
+
+	Things I can investigate:
+
+		1. Wireshark the packets written by a non-XDP server vs. the packets written by the the AF_XDP server and see if there is any binary difference in them
+
+		2. Debug why we get this after a while, it could be clue: "error: could not reserve packets in fill queue" (although this is in receive so is probably unrelated)
+
+		3. There could be something wrong with how I am sending packets at the ethernet level (eg. gateway)
+
+		4. There could be something wrong with how I am sending packets at the IP level (hashes, addresses etc...)

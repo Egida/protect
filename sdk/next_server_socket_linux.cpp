@@ -687,7 +687,7 @@ next_server_socket_t * next_server_socket_create( void * context, const char * p
 
         xsk_config.rx_size = NEXT_XDP_RECV_QUEUE_SIZE;
         xsk_config.tx_size = NEXT_XDP_SEND_QUEUE_SIZE;
-        xsk_config.xdp_flags = 0; // XDP_ZEROCOPY;     
+        xsk_config.xdp_flags = XDP_ZEROCOPY;     
         xsk_config.bind_flags = XDP_USE_NEED_WAKEUP;
         xsk_config.libbpf_flags = XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD;
 
@@ -1388,7 +1388,7 @@ void xdp_receive_thread_function( void * data )
 
             if ( num_reserved != num_packets )
             {
-                next_error( "could not reserve packets to send in send queue" );
+                next_error( "could not reserve packets in fill queue (%d)", num_reserved );
                 exit(1);
             }
             
