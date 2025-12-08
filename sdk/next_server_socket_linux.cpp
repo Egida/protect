@@ -86,6 +86,7 @@ struct next_server_xdp_socket_t
 
     std::atomic<bool> receive_quit;
     uint32_t receive_frame_index;
+    int num_free_receive_frames;
     uint64_t receive_frames[NEXT_XDP_NUM_FRAMES/2];
     next_platform_thread_t * receive_thread;
     std::atomic<uint64_t> receive_counter_main_thread;
@@ -96,6 +97,7 @@ struct next_server_xdp_socket_t
 
     std::atomic<bool> send_quit;
     uint32_t send_frame_index;
+    int num_free_send_frames;
     uint64_t send_frames[NEXT_XDP_NUM_FRAMES/2];
     uint8_t server_ethernet_address[ETH_ALEN];
     uint8_t gateway_ethernet_address[ETH_ALEN];
@@ -284,6 +286,45 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
 
 static uint64_t alloc_send_frame( next_server_xdp_socket_t * socket )
 {
+    uint64_t frame = INVALID_FRAME;
+    if ( socket->num_free_send_frames > 0 )
+    {
+        socket->num_free_send_frames--;
+        frame = socket->send_frames[socket->num_free_send_frames];
+        socket->send_frames[socket->num_free_send_frames] = INVALID_FRAME;
+    }
+    return frame;
+}
+
+static void free_send_frame( next_server_xdp_socket_t * socket, uint64_t frame )
+{
+    next_assert( socket->num_free_send_frames < NEXT_XDP_NUM_FRAMES );
+    socket->send_frames[socket->num_free_send_frames] = frame;
+    socket->num_free_send_frames++;
+}
+
+static uint64_t alloc_receive_frame( next_server_xdp_socket_t * socket )
+{
+    uint64_t frame = INVALID_FRAME;
+    if ( socket->num_free_receive_frames > 0 )
+    {
+        socket->num_free_receive_frames--;
+        frame = socket->receive_frames[socket->num_free_receive_frames];
+        socket->receive_frames[socket->num_free_receive_frames] = INVALID_FRAME;
+    }
+    return frame;
+}
+
+static void free_receive_frame( next_server_xdp_socket_t * socket, uint64_t frame )
+{
+    next_assert( socket->num_free_receive_frames < NEXT_XDP_NUM_FRAMES );
+    socket->receive_frames[socket->num_free_receive_frames] = frame;
+    socket->num_free_receive_frames++;
+}
+
+/*
+static uint64_t alloc_send_frame( next_server_xdp_socket_t * socket )
+{
     uint64_t frame = socket->send_frames[socket->send_frame_index];
     socket->send_frame_index++;
     socket->send_frame_index %= NEXT_XDP_NUM_FRAMES / 2;
@@ -309,6 +350,7 @@ static void free_receive_frame( next_server_xdp_socket_t * socket, uint64_t fram
     (void) frame;
     // ...
 }
+*/
 
 void xdp_send_thread_function( void * data );
 
@@ -725,6 +767,8 @@ next_server_socket_t * next_server_socket_create( void * context, const char * p
             socket->send_frames[j] = j * NEXT_XDP_FRAME_SIZE;
         }
 
+        socket->num_free_send_frames = NEXT_XDP_NUM_FRAMES / 2;
+
         // start send thread for queue
 
         next_info( "starting send thread for socket queue %d", socket->queue );
@@ -750,6 +794,8 @@ next_server_socket_t * next_server_socket_create( void * context, const char * p
         {
             socket->receive_frames[j] = ( NEXT_XDP_NUM_FRAMES / 2 + j ) * NEXT_XDP_FRAME_SIZE;
         }
+
+        socket->num_free_receive_frames = NEXT_XDP_NUM_FRAMES / 2;
 
         // populate fill ring for packets to be received in
         {
