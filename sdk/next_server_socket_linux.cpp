@@ -56,7 +56,7 @@ struct next_server_socket_receive_buffer_t
 {
     uint8_t padding_0[1024];
 
-    int num_packets;
+    uint32_t num_packets;
     uint8_t eth[NEXT_XDP_RECV_QUEUE_SIZE][ETH_ALEN];
     next_address_t from[NEXT_XDP_RECV_QUEUE_SIZE];
     size_t packet_bytes[NEXT_XDP_RECV_QUEUE_SIZE];
@@ -1387,7 +1387,7 @@ void xdp_receive_thread_function( void * data )
 
                 if ( packet_bytes >= header_bytes + NEXT_HEADER_BYTES )
                 {
-                    const int index = receive_buffer->num_packets++;
+                    const int index = receive_buffer->num_packets;
 
                     struct ethhdr * __restrict__ eth = (ethhdr*) packet_data;
                     struct iphdr  * __restrict__ ip  = (iphdr*) ( (uint8_t*)packet_data + sizeof( struct ethhdr ) );
@@ -1404,6 +1404,8 @@ void xdp_receive_thread_function( void * data )
                     memcpy( receive_buffer->packet_data + index * NEXT_MAX_PACKET_BYTES, payload_data, payload_bytes );
 
                     receive_buffer->packet_bytes[index] = payload_bytes;
+
+                    receive_buffer->num_packets++;
                 }
             }
 
@@ -1411,6 +1413,7 @@ void xdp_receive_thread_function( void * data )
 
             xsk_ring_cons__release( &socket->receive_queue, num_packets );
 
+            /*
             // return processed packets to fill queue
 
             while ( true )
@@ -1437,6 +1440,7 @@ void xdp_receive_thread_function( void * data )
 
                 poll( fds, 1, 0 );
             }
+            */
         }
         else
         {
