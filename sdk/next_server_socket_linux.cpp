@@ -1194,6 +1194,7 @@ static inline bool verify_packet( uint8_t * packet_data, int packet_bytes )
     }
     if ( fail )
     {
+        fflush( stdout );
         exit(1);
     }
     return fail;
@@ -1459,7 +1460,8 @@ void xdp_receive_thread_function( void * data )
                         {
                             if ( !verify_packet( payload_data + 18, payload_bytes - 18 ) )
                             {
-                                printf( "*** failed to verify in receive thread (%x | %d bytes) ***\n", (int) frame[i], payload_bytes - 18 );
+                                printf( "*** failed to verify in receive thread ***\n" );
+                                exit(1);
                             }
                         }
                     }
