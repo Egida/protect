@@ -285,7 +285,6 @@ static bool get_gateway_mac_address( const char * interface_name, uint8_t * mac_
 
 #define INVALID_FRAME UINT64_MAX
 
-/*
 static uint64_t alloc_send_frame( next_server_xdp_socket_t * socket )
 {
     uint64_t frame = INVALID_FRAME;
@@ -323,8 +322,8 @@ static void free_receive_frame( next_server_xdp_socket_t * socket, uint64_t fram
     socket->receive_frames[socket->num_free_receive_frames] = frame;
     socket->num_free_receive_frames++;
 }
-*/
 
+/*
 static uint64_t alloc_send_frame( next_server_xdp_socket_t * socket )
 {
     uint64_t frame = socket->send_frames[socket->send_frame_index];
@@ -352,6 +351,7 @@ static void free_receive_frame( next_server_xdp_socket_t * socket, uint64_t fram
     (void) frame;
     // ...
 }
+*/
 
 void xdp_send_thread_function( void * data );
 
