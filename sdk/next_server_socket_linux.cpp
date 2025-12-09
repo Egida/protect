@@ -106,6 +106,7 @@ struct next_server_xdp_socket_t
     next_platform_thread_t * send_thread;
     next_platform_mutex_t send_mutex;
     uint64_t send_counter;
+    int send_off_index;
     struct next_server_socket_send_buffer_t send_buffer[2];
 
     uint8_t padding_4[1024];
@@ -769,6 +770,10 @@ next_server_socket_t * next_server_socket_create( void * context, const char * p
 
         socket->num_free_send_frames = NEXT_XDP_NUM_FRAMES / 2;
 
+        // make sure we start off with the correct send buffer off index
+
+        socket->send_off_index = ( socket->send_counter + 1 ) % 2;
+
         // create send mutex
 
         if ( !next_platform_mutex_create( &socket->send_mutex ) )
@@ -1033,15 +1038,13 @@ uint8_t * next_server_socket_start_packet_internal( struct next_server_socket_t 
 {
     next_server_xdp_socket_t * socket = &server_socket->socket[queue];
 
-    // todo: off index needs to be saved
-    const int off_index = ( socket->send_counter + 1 ) % 2;
-
-    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[off_index];
+    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_off_index];
 
     int packet_index = send_buffer->num_packets.fetch_add(1);
 
     if ( packet_index >= NEXT_XDP_SEND_QUEUE_SIZE )
     {
+        warn( "sent too many packets. increase NEXT_XDP_SEND_QUEUE_SIZE" );
         return NULL;
     }
 
@@ -1066,15 +1069,7 @@ uint8_t * next_server_socket_start_packet( struct next_server_socket_t * server_
 
     const int queue = *packet_id % server_socket->num_queues;
 
-    // direct packet
-
-    uint8_t * packet_data = next_server_socket_start_packet_internal( server_socket, queue, to, NEXT_PACKET_DIRECT );
-    if ( !packet_data )
-    {
-        return NULL;
-    }
-
-    return packet_data;
+    return next_server_socket_start_packet_internal( server_socket, queue, to, NEXT_PACKET_DIRECT );
 }
 
 void next_server_socket_finish_packet( struct next_server_socket_t * server_socket, uint64_t packet_id, uint8_t * packet_data, int packet_bytes )
@@ -1087,10 +1082,7 @@ void next_server_socket_finish_packet( struct next_server_socket_t * server_sock
 
     next_server_xdp_socket_t * socket = &server_socket->socket[queue];
 
-    // todo: off index needs to be saved
-    const int off_index = ( socket->send_counter + 1 ) % 2;
-
-    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[off_index];
+    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[send_off_index];
 
     size_t offset = ( packet_data - send_buffer->packet_data );
 
@@ -1139,10 +1131,7 @@ void next_server_socket_abort_packet( struct next_server_socket_t * server_socke
 
     next_server_xdp_socket_t * socket = &server_socket->socket[queue];
 
-    // todo: off index needs to be saved
-    const int off_index = ( socket->send_counter + 1 ) % 2;
-
-    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[off_index];
+    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_off_index];
 
     size_t offset = ( packet_data - send_buffer->packet_data );
 
@@ -1173,6 +1162,7 @@ void next_server_socket_send_packets( struct next_server_socket_t * server_socke
         const int off_index = ( socket->send_counter + 1 ) % 2;
         socket->send_buffer[off_index].num_packets = 0;
         socket->send_buffer[off_index].packet_start_index = 0;
+        socket->send_off_index = off_index;
         next_platform_mutex_release( &socket->send_mutex );
     }
 }
@@ -1344,8 +1334,6 @@ void xdp_send_thread_function( void * data )
                 next_error( "need more complicated logic for batch packets" );
                 exit(1);
             }
-
-            // todo: if batch packets is zero, we should cache (hold) the batch of packets to send and operate in a mode to flush out the batch before we start a new batch
 
             if ( send_packets > 0 )
             {
