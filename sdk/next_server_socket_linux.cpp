@@ -1189,6 +1189,8 @@ void next_server_socket_process_direct_packet( next_server_socket_t * server_soc
     packet_data += NEXT_HEADER_BYTES;
     packet_bytes -= NEXT_HEADER_BYTES;
 
+
+
     next_assert( packet_bytes >= 0 );
 
     server_socket->process_packets.from[index] = *from;
@@ -1364,6 +1366,22 @@ void xdp_send_thread_function( void * data )
     }
 }
 
+// todo
+static inline bool verify_packet( uint8_t * packet_data, int packet_bytes )
+{
+    const int start = packet_bytes % 256;
+    for ( int i = 0; i < packet_bytes; i++ )
+    {
+        if ( packet_data[i] != (uint8_t) ( ( start + i ) % 256 ) )
+        {
+            // todo
+            printf("%d: expected %d, got %d\n", i, ( start + i ) % 256, packet_data[i] );
+            return false;
+        }
+    }
+    return true;
+}
+
 void xdp_receive_thread_function( void * data )
 {
     next_server_xdp_socket_t * socket = (next_server_xdp_socket_t*) data;
@@ -1412,13 +1430,18 @@ void xdp_receive_thread_function( void * data )
 
                 int packet_bytes = desc->len - header_bytes;
 
-                if ( packet_bytes >= 18 && receive_buffer->num_packets < NEXT_XDP_RECV_QUEUE_SIZE )
+                if ( packet_bytes >= 18 )
                 {
                     const int index = receive_buffer->num_packets++;
 
                     struct ethhdr * eth = (ethhdr*) packet_data;
                     struct iphdr  * ip  = (iphdr*) ( (uint8_t*)packet_data + sizeof( struct ethhdr ) );
                     struct udphdr * udp = (udphdr*) ( (uint8_t*)ip + sizeof( struct iphdr ) );
+
+                    if ( !verify_packet( packet_data + 18, packet_bytes - 18 ) )
+                    {
+                        printf( "*** packet did not verify on receive packets thread ***\n" );
+                    }
 
                     next_address_load_ipv4( &receive_buffer->from[index], (uint32_t) ip->saddr, udp->source );
                     receive_buffer->packet_bytes[index] = packet_bytes;
