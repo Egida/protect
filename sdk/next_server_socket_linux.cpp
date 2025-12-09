@@ -1189,7 +1189,10 @@ void next_server_socket_process_direct_packet( next_server_socket_t * server_soc
     packet_data += NEXT_HEADER_BYTES;
     packet_bytes -= NEXT_HEADER_BYTES;
 
-
+    if ( !verify_packet( packet_data, packet_bytes ) )
+    {
+        printf( "failed to verify direct packet\n" );
+    }
 
     next_assert( packet_bytes >= 0 );
 
@@ -1440,12 +1443,6 @@ void xdp_receive_thread_function( void * data )
                     struct ethhdr * eth = (ethhdr*) packet_data;
                     struct iphdr  * ip  = (iphdr*) ( (uint8_t*)packet_data + sizeof( struct ethhdr ) );
                     struct udphdr * udp = (udphdr*) ( (uint8_t*)ip + sizeof( struct iphdr ) );
-
-                    // todo
-                    if ( packet_data[header_bytes] == 6 && !verify_packet( packet_data + header_bytes + 18, packet_bytes - header_bytes - 18 ) )
-                    {
-                        printf( "*** packet did not verify on receive packets thread ***\n" );
-                    }
 
                     next_address_load_ipv4( &receive_buffer->from[index], (uint32_t) ip->saddr, udp->source );
                     receive_buffer->packet_bytes[index] = packet_bytes;
