@@ -1422,7 +1422,7 @@ void xdp_receive_thread_function( void * data )
 
             // receive packets
 
-            uint64_t frame[NEXT_XDP_RECV_QUEUE_SIZE];
+            static uint64_t frame[NEXT_XDP_RECV_QUEUE_SIZE];
 
             for ( uint32_t i = 0; i < num_packets; i++ ) 
             {
