@@ -1412,7 +1412,7 @@ void xdp_receive_thread_function( void * data )
 
             const int on_index = socket->receive_counter % 2;
 
-            next_server_socket_receive_buffer_t * receive_buffer = &socket->receive_buffer[on_index];
+            next_server_socket_receive_buffer_t * __restrict__ receive_buffer = &socket->receive_buffer[on_index];
 
             // receive packets
 
@@ -1420,6 +1420,9 @@ void xdp_receive_thread_function( void * data )
 
             for ( uint32_t i = 0; i < num_packets; i++ ) 
             {
+                if ( receive_buffer->num_packets >= NEXT_XDP_RECV_QUEUE_SIZE )
+                    break;
+
                 const struct xdp_desc * desc = xsk_ring_cons__rx_desc( &socket->receive_queue, receive_index + i );
 
                 frame[i] = desc->addr;
@@ -1438,7 +1441,8 @@ void xdp_receive_thread_function( void * data )
                     struct iphdr  * ip  = (iphdr*) ( (uint8_t*)packet_data + sizeof( struct ethhdr ) );
                     struct udphdr * udp = (udphdr*) ( (uint8_t*)ip + sizeof( struct iphdr ) );
 
-                    if ( !verify_packet( packet_data + 18, packet_bytes - 18 ) )
+                    // todo
+                    if ( !verify_packet( packet_data + header_bytes + 18, packet_bytes - header_bytes - 18 ) )
                     {
                         printf( "*** packet did not verify on receive packets thread ***\n" );
                     }
