@@ -316,7 +316,6 @@ static uint64_t alloc_receive_frame( next_server_xdp_socket_t * socket )
     }
     return frame;
 }
-*/
 
 static void free_receive_frame( next_server_xdp_socket_t * socket, uint64_t frame )
 {
@@ -324,6 +323,7 @@ static void free_receive_frame( next_server_xdp_socket_t * socket, uint64_t fram
     socket->receive_frames[socket->num_free_receive_frames] = frame;
     socket->num_free_receive_frames++;
 }
+*/
 
 static uint64_t alloc_send_frame( next_server_xdp_socket_t * socket )
 {
