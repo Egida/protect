@@ -1465,6 +1465,8 @@ void xdp_receive_thread_function( void * data )
 
             xsk_ring_cons__release( &socket->receive_queue, num_packets );
 
+            // todo
+            /*
             // return processed packets to fill queue
 
             while ( true )
@@ -1491,14 +1493,12 @@ void xdp_receive_thread_function( void * data )
 
                 poll( fds, 1, 0 );
             }
+            */
         }
-        // todo: ?
-        /*
         else
         {
             next_platform_sleep( 0.0 );            
         }
-        */
     }
 }
 
