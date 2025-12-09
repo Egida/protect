@@ -125,8 +125,7 @@ int main()
 
             if ( !verify_packet( packet_data, packet_bytes ) )
             {
-                next_error( "packet did not verify" );
-                exit( 1 );
+                next_warn( " ---> packet did not verify" );
             }
         }
 

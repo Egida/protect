@@ -548,12 +548,19 @@ int main()
             client_address = packets->from[i];
             last_client_packet_time = next_platform_time();
 
-            uint64_t packet_id;
-            uint8_t * packet_data = next_server_socket_start_packet( server_socket, &client_address, &packet_id );
-            if ( packet_data )
+            if ( !verify_packet( packets->packet_data[i], packets->packet_bytes[i] ) )
             {
-                const int packet_bytes = generate_packet( packet_data, 1000, NEXT_MTU );
-                next_server_socket_finish_packet( server_socket, packet_id, packet_data, packet_bytes );
+                next_warn( " ---> packet did not verify" );
+            }
+            else
+            {
+                uint64_t packet_id;
+                uint8_t * packet_data = next_server_socket_start_packet( server_socket, &client_address, &packet_id );
+                if ( packet_data )
+                {
+                    const int packet_bytes = generate_packet( packet_data, 1000, NEXT_MTU );
+                    next_server_socket_finish_packet( server_socket, packet_id, packet_data, packet_bytes );
+                }
             }
         }
 
