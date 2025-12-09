@@ -1205,12 +1205,6 @@ void next_server_socket_process_direct_packet( next_server_socket_t * server_soc
     packet_data += NEXT_HEADER_BYTES;
     packet_bytes -= NEXT_HEADER_BYTES;
 
-    // todo
-    if ( !verify_packet( packet_data, packet_bytes ) )
-    {
-        printf( "failed to verify direct packet\n" );
-    }
-
     next_assert( packet_bytes >= 0 );
 
     server_socket->process_packets.from[index] = *from;
@@ -1282,7 +1276,7 @@ void xdp_send_thread_function( void * data )
 
             const int on_index = socket->send_counter % 2;
 
-            next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[on_index];        
+            next_server_socket_send_buffer_t * __restrict__ send_buffer = &socket->send_buffer[on_index];        
 
             // IMPORTANT: clamp num packets because it's an atomic increment across multiple threads so it can go over max if unlucky
 
@@ -1363,7 +1357,7 @@ void xdp_send_thread_function( void * data )
 
                 for ( int i = 0; i < send_packets; i++ )
                 {
-                    struct xdp_desc * desc = xsk_ring_prod__tx_desc( &socket->send_queue, send_queue_index + i );
+                    struct xdp_desc * __restrict__ desc = xsk_ring_prod__tx_desc( &socket->send_queue, send_queue_index + i );
                     desc->addr = batch_frames[i];
                     desc->len = batch_packet_bytes[i];
                 }
@@ -1449,16 +1443,22 @@ void xdp_receive_thread_function( void * data )
 
                     const int payload_bytes = packet_bytes - header_bytes;
 
+
+
+
                     // todo: verify right off the network stack (!!!)
                     {
                         if ( payload_data[0] == NEXT_PACKET_DIRECT )
                         {
                             if ( !verify_packet( payload_data + 18, payload_bytes - 18 ) )
                             {
-                                printf( "*** failed to verify in receive thread ***\n" );
+                                printf( "*** failed to verify in receive thread (%d bytes) ***\n", payload_bytes - 18 );
                             }
                         }
                     }
+
+
+
 
                     next_address_load_ipv4( &receive_buffer->from[index], (uint32_t) ip->saddr, udp->source );
 
