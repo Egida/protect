@@ -1176,6 +1176,22 @@ void next_server_socket_process_packet_internal( next_server_socket_t * server_s
     (void) packet_type;
 }
 
+// todo
+static inline bool verify_packet( uint8_t * packet_data, int packet_bytes )
+{
+    const int start = packet_bytes % 256;
+    for ( int i = 0; i < packet_bytes; i++ )
+    {
+        if ( packet_data[i] != (uint8_t) ( ( start + i ) % 256 ) )
+        {
+            // todo
+            printf("%d: expected %d, got %d\n", i, ( start + i ) % 256, packet_data[i] );
+            return false;
+        }
+    }
+    return true;
+}
+
 void next_server_socket_process_direct_packet( next_server_socket_t * server_socket, uint8_t * eth, next_address_t * from, uint8_t * packet_data, int packet_bytes )
 {   
     if ( packet_bytes < NEXT_HEADER_BYTES )
@@ -1367,22 +1383,6 @@ void xdp_send_thread_function( void * data )
             next_platform_sleep( 0.0 );
         }
     }
-}
-
-// todo
-static inline bool verify_packet( uint8_t * packet_data, int packet_bytes )
-{
-    const int start = packet_bytes % 256;
-    for ( int i = 0; i < packet_bytes; i++ )
-    {
-        if ( packet_data[i] != (uint8_t) ( ( start + i ) % 256 ) )
-        {
-            // todo
-            printf("%d: expected %d, got %d\n", i, ( start + i ) % 256, packet_data[i] );
-            return false;
-        }
-    }
-    return true;
 }
 
 void xdp_receive_thread_function( void * data )
