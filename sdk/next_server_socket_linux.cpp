@@ -1044,7 +1044,7 @@ uint8_t * next_server_socket_start_packet_internal( struct next_server_socket_t 
 
     if ( packet_index >= NEXT_XDP_SEND_QUEUE_SIZE )
     {
-        warn( "sent too many packets. increase NEXT_XDP_SEND_QUEUE_SIZE" );
+        next_warn( "sent too many packets. increase NEXT_XDP_SEND_QUEUE_SIZE" );
         return NULL;
     }
 
@@ -1082,7 +1082,7 @@ void next_server_socket_finish_packet( struct next_server_socket_t * server_sock
 
     next_server_xdp_socket_t * socket = &server_socket->socket[queue];
 
-    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[send_off_index];
+    next_server_socket_send_buffer_t * send_buffer = &socket->send_buffer[socket->send_off_index];
 
     size_t offset = ( packet_data - send_buffer->packet_data );
 
