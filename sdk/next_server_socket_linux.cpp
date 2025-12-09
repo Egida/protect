@@ -1407,9 +1407,9 @@ void xdp_receive_thread_function( void * data )
                 }
             }
 
-            xsk_ring_cons__release( &socket->receive_queue, num_packets );
-
             next_platform_mutex_release( &socket->receive_mutex );
+
+            xsk_ring_cons__release( &socket->receive_queue, num_packets );
 
             // return processed packets to fill queue
 
