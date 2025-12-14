@@ -61,7 +61,7 @@ struct next_server_socket_send_buffer_t
 
     uint8_t padding_3[4096];
 
-    uint8_t packet_data[NEXT_XDP_SEND_QUEUE_SIZE][NEXT_MAX_PACKET_BYTES];       // todo: increase to 2048 frame size
+    uint8_t packet_data[NEXT_XDP_SEND_QUEUE_SIZE][NEXT_XDP_FRAME_SIZE];
 
     uint8_t padding_4[4096];
 };
@@ -74,7 +74,7 @@ struct next_server_socket_receive_buffer_t
     uint8_t eth[NEXT_XDP_RECV_QUEUE_SIZE][ETH_ALEN];
     next_address_t from[NEXT_XDP_RECV_QUEUE_SIZE];
     size_t packet_bytes[NEXT_XDP_RECV_QUEUE_SIZE];
-    uint8_t packet_data[NEXT_MAX_PACKET_BYTES*NEXT_XDP_RECV_QUEUE_SIZE];
+    uint8_t packet_data[NEXT_XDP_FRAME_SIZE*NEXT_XDP_RECV_QUEUE_SIZE];
 
     uint8_t padding_1[4096];
 };
@@ -1070,9 +1070,9 @@ void next_server_socket_finish_packet( struct next_server_socket_t * server_sock
 
     size_t offset = ( packet_data - send_buffer->packet_data[0] );
 
-    offset -= offset % NEXT_MAX_PACKET_BYTES;
+    offset -= offset % NEXT_XDP_FRAME_SIZE;
 
-    const int packet_index = (int) ( offset / NEXT_MAX_PACKET_BYTES );
+    const int packet_index = (int) ( offset / NEXT_XDP_FRAME_SIZE );
 
     next_assert( packet_index >= 0 );  
     next_assert( packet_index < NEXT_XDP_SEND_QUEUE_SIZE );  
@@ -1118,9 +1118,9 @@ void next_server_socket_abort_packet( struct next_server_socket_t * server_socke
     long offset = ( packet_data - send_buffer->packet_data[0] );
 
     next_assert( offset >= 0 );
-    next_assert( offset < NEXT_MAX_PACKET_BYTES * NEXT_XDP_SEND_QUEUE_SIZE );
+    next_assert( offset < NEXT_XDP_FRAME_SIZE * NEXT_XDP_SEND_QUEUE_SIZE );
 
-    const int packet_index = (int) ( offset / NEXT_MAX_PACKET_BYTES );
+    const int packet_index = (int) ( offset / NEXT_XDP_FRAME_SIZE );
 
     next_assert( packet_index >= 0 );  
     next_assert( packet_index < NEXT_XDP_SEND_QUEUE_SIZE );  
@@ -1290,7 +1290,7 @@ void xdp_send_thread_function( void * data )
 
                     const int payload_bytes = send_buffer->packet_info[i].packet_bytes;
 
-                    memcpy( packet_data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr), send_buffer->packet_data + i * NEXT_MAX_PACKET_BYTES, payload_bytes );
+                    memcpy( packet_data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr), send_buffer->packet_data[i], payload_bytes );
 
                     uint32_t to_address_big_endian = next_address_ipv4( &send_buffer->packet_info[i].to );
                     uint16_t to_port_big_endian = next_platform_htons( send_buffer->packet_info[i].to.port );
@@ -1420,7 +1420,7 @@ void xdp_receive_thread_function( void * data )
 
                     memcpy( receive_buffer->eth[index], eth->h_source, ETH_ALEN );
 
-                    memcpy( receive_buffer->packet_data + index * NEXT_MAX_PACKET_BYTES, payload_data, payload_bytes );
+                    memcpy( receive_buffer->packet_data[index], payload_data, payload_bytes );
 
                     receive_buffer->packet_bytes[index] = payload_bytes;
 
@@ -1493,7 +1493,7 @@ void next_server_socket_receive_packets( next_server_socket_t * server_socket )
         {
             uint8_t * eth = receive_buffer->eth[i];
             next_address_t from = receive_buffer->from[i];
-            uint8_t * packet_data = receive_buffer->packet_data + i * NEXT_MAX_PACKET_BYTES;
+            uint8_t * packet_data = receive_buffer->packet_data[i];
             const int packet_bytes = receive_buffer->packet_bytes[i];
 
             next_assert( packet_bytes >= 18 );
