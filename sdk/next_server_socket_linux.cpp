@@ -1420,7 +1420,7 @@ void xdp_receive_thread_function( void * data )
 
                     memcpy( receive_buffer->eth[index], eth->h_source, ETH_ALEN );
 
-                    memcpy( receive_buffer->packet_data[index], payload_data, payload_bytes );
+                    memcpy( receive_buffer->packet_data + index * NEXT_XDP_FRAME_SIZE, payload_data, payload_bytes );
 
                     receive_buffer->packet_bytes[index] = payload_bytes;
 
@@ -1493,7 +1493,7 @@ void next_server_socket_receive_packets( next_server_socket_t * server_socket )
         {
             uint8_t * eth = receive_buffer->eth[i];
             next_address_t from = receive_buffer->from[i];
-            uint8_t * packet_data = receive_buffer->packet_data[i];
+            uint8_t * packet_data = receive_buffer->packet_data + i * NEXT_XDP_FRAME_SIZE;
             const int packet_bytes = receive_buffer->packet_bytes[i];
 
             next_assert( packet_bytes >= 18 );
