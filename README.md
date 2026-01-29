@@ -8,6 +8,6 @@ How is it different to the current Network Next?
 2. All clients are accelerated, helping you to get the most players around the world connecting to your game servers, even players in restrictive countries like Mainland China.
 3. All performance critical backends are written in XDP for maximum scalability and minimum cost.
 
-IMPORTANT: This is pre-release software and is at least a year away from being production ready. 
+IMPORTANT: This is pre-release software and is at least a few months of work away from being production ready.
 
 Please [contact me](mailto:glenn@networknext.com) if it fits your use case.
